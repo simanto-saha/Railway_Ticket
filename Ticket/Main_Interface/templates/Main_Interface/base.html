@@ -64,7 +64,6 @@
 
   .wrap{ max-width:var(--maxw); margin:0 auto; padding:0 32px; }
 
-  /* ---------------- buttons ---------------- */
   .btn{
     border-radius:999px;
     font-weight:600;
@@ -79,6 +78,7 @@
     box-shadow:0 10px 24px rgba(182,130,63,0.28);
   }
   .btn-accent:hover{ background:var(--accent-deep); color:#fff; box-shadow:0 12px 28px rgba(182,130,63,0.34); }
+  .btn-accent:disabled{ opacity:0.7; cursor:not-allowed; }
   .btn-outline-ink{
     background:transparent;
     border-color:rgba(16,31,46,0.16);
@@ -95,7 +95,6 @@
   .btn-icon-right i{ transition:transform 0.18s ease; }
   .btn-icon-right:hover i{ transform:translateX(3px); }
 
-  /* ---------------- navbar ---------------- */
   .site-nav{
     position:sticky; top:0; z-index:1030;
     background:rgba(16,31,46,0.92);
@@ -156,7 +155,6 @@
     .nav-actions .btn{ padding:0.6rem 0.9rem; }
   }
 
-  /* ---------------- modals ---------------- */
   .modal-content{
     border:none;
     border-radius:var(--radius-l);
@@ -235,7 +233,9 @@
   }
   .form-switch-text a{ color:var(--accent-deep); font-weight:600; cursor:pointer; }
 
-  /* ---------------- footer ---------------- */
+  .js-alert-box{ display:none; margin-bottom:16px; }
+  .js-alert-box.show{ display:block; }
+
   .site-footer{
     background:var(--ink);
     color:rgba(255,255,255,0.6);
@@ -308,7 +308,8 @@
         <p>Log in with your phone number to manage your bookings.</p>
       </div>
       <div class="modal-body">
-        <form method="post" action="#">
+        <div id="loginAlert" class="js-alert-box"></div>
+        <form method="post" id="loginForm" action="{% url 'login' %}">
           {% csrf_token %}
           <label class="field-label" for="login-phone">Phone Number</label>
           <div class="input-icon">
@@ -350,7 +351,8 @@
         <p>Set up your profile once, book journeys in seconds from now on.</p>
       </div>
       <div class="modal-body">
-        <form method="post" action="#">
+        <div id="registerAlert" class="js-alert-box"></div>
+        <form method="post" id="registerForm" action="{% url 'register' %}">
           {% csrf_token %}
           <label class="field-label" for="reg-name">Full Name</label>
           <div class="input-icon">
@@ -410,25 +412,175 @@
   </div>
 </div>
 
+<!-- ================= VERIFICATION MODAL ================= -->
+<div class="modal fade" id="verifyModal" tabindex="-1" aria-labelledby="verifyModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="d-flex justify-content-end"><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+      <div class="auth-modal-head">
+        <span class="badge-kicker"><i class="bi bi-shield-check"></i> One step left</span>
+        <h3 id="verifyModalLabel">Verify your email</h3>
+        <p>We've sent a 6-digit code to your email. Enter it below to activate your account.</p>
+      </div>
+      <div class="modal-body">
+        <div id="verifyAlert" class="js-alert-box"></div>
+        <form method="post" id="verifyForm" action="{% url 'varification_code' %}">
+          {% csrf_token %}
+          <label class="field-label" for="verify-code">Verification Code</label>
+          <div class="input-icon">
+            <i class="bi bi-key"></i>
+            <input type="text" id="verify-code" name="code" placeholder="••••••" maxlength="6" required>
+          </div>
+
+          <button type="submit" class="btn btn-accent w-100 btn-lg mt-2">Verify Account</button>
+
+          <p class="form-switch-text">
+            Didn't get a code?
+            <a href="#" id="resendLink">Resend Code</a>
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // Switch between Login / Create Account modals smoothly
-  document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('[data-switch-modal]').forEach(function (trigger) {
-      trigger.addEventListener('click', function (e) {
-        e.preventDefault();
-        var currentModalEl = trigger.closest('.modal');
-        var targetSelector = trigger.getAttribute('data-switch-modal');
-        var targetEl = document.querySelector(targetSelector);
-        var currentModal = bootstrap.Modal.getOrCreateInstance(currentModalEl);
-        currentModal.hide();
-        currentModalEl.addEventListener('hidden.bs.modal', function handler() {
-          bootstrap.Modal.getOrCreateInstance(targetEl).show();
-          currentModalEl.removeEventListener('hidden.bs.modal', handler);
-        });
+document.addEventListener('DOMContentLoaded', function () {
+
+  // ---------- Modal switch (login <-> register) ----------
+  document.querySelectorAll('[data-switch-modal]').forEach(function (trigger) {
+    trigger.addEventListener('click', function (e) {
+      e.preventDefault();
+      var currentModalEl = trigger.closest('.modal');
+      var targetSelector = trigger.getAttribute('data-switch-modal');
+      var targetEl = document.querySelector(targetSelector);
+      var currentModal = bootstrap.Modal.getOrCreateInstance(currentModalEl);
+      currentModal.hide();
+      currentModalEl.addEventListener('hidden.bs.modal', function handler() {
+        bootstrap.Modal.getOrCreateInstance(targetEl).show();
+        currentModalEl.removeEventListener('hidden.bs.modal', handler);
       });
     });
   });
+
+  function getCSRFToken(form) {
+    return form.querySelector('[name=csrfmiddlewaretoken]').value;
+  }
+
+  function showAlert(containerId, message, type) {
+    var container = document.getElementById(containerId);
+    container.className = 'js-alert-box show alert alert-' + type + ' py-2';
+    container.textContent = message;
+  }
+
+  function switchToModal(fromEl, toId) {
+    var fromModal = bootstrap.Modal.getOrCreateInstance(fromEl);
+    fromModal.hide();
+    fromEl.addEventListener('hidden.bs.modal', function handler() {
+      bootstrap.Modal.getOrCreateInstance(document.getElementById(toId)).show();
+      fromEl.removeEventListener('hidden.bs.modal', handler);
+    });
+  }
+
+  function setLoading(button, isLoading, originalText) {
+    button.disabled = isLoading;
+    button.textContent = isLoading ? 'Please wait...' : originalText;
+  }
+
+  function postForm(form, onSuccess, onError) {
+    var submitBtn = form.querySelector('button[type=submit]');
+    var originalText = submitBtn.textContent;
+    setLoading(submitBtn, true, originalText);
+
+    var formData = new FormData(form);
+
+    fetch(form.action, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCSRFToken(form) },
+      body: formData
+    })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      setLoading(submitBtn, false, originalText);
+      if (data.success) {
+        onSuccess(data);
+      } else {
+        onError(data.message || 'Something went wrong.');
+      }
+    })
+    .catch(function () {
+      setLoading(submitBtn, false, originalText);
+      onError('Network error. Please try again.');
+    });
+  }
+
+  // ---------- REGISTER ----------
+  var registerForm = document.getElementById('registerForm');
+  registerForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    postForm(
+      registerForm,
+      function (data) {
+        showAlert('registerAlert', data.message, 'success');
+        switchToModal(document.getElementById('registerModal'), 'verifyModal');
+      },
+      function (msg) { showAlert('registerAlert', msg, 'danger'); }
+    );
+  });
+
+  // ---------- VERIFY ----------
+  var verifyForm = document.getElementById('verifyForm');
+  verifyForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    postForm(
+      verifyForm,
+      function (data) {
+        showAlert('verifyAlert', data.message, 'success');
+        setTimeout(function () {
+          window.location.href = data.redirect_url || '/';
+        }, 900);
+      },
+      function (msg) { showAlert('verifyAlert', msg, 'danger'); }
+    );
+  });
+
+  // ---------- LOGIN ----------
+  var loginForm = document.getElementById('loginForm');
+  loginForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    postForm(
+      loginForm,
+      function (data) {
+        showAlert('loginAlert', data.message, 'success');
+        setTimeout(function () {
+          window.location.href = data.redirect_url || '/';
+        }, 700);
+      },
+      function (msg) { showAlert('loginAlert', msg, 'danger'); }
+    );
+  });
+
+  // ---------- RESEND CODE ----------
+  var resendLink = document.getElementById('resendLink');
+  resendLink.addEventListener('click', function (e) {
+    e.preventDefault();
+    var csrfToken = verifyForm.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    fetch("{% url 'resend_code' %}", {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken }
+    })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      showAlert('verifyAlert', data.message, data.success ? 'success' : 'danger');
+    })
+    .catch(function () {
+      showAlert('verifyAlert', 'Network error. Please try again.', 'danger');
+    });
+  });
+
+});
 </script>
 {% block extra_js %}{% endblock %}
 </body>
