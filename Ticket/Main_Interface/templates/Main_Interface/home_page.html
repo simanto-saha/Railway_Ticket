@@ -1,0 +1,342 @@
+{% extends "Main_Interface/base.html" %}
+{% load static %}
+
+{% block title %}RailPremium — Your Journey Starts Here{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ================= HERO ================= */
+  .hero{
+    background:var(--paper);
+    padding:76px 0 90px;
+  }
+  .hero-grid{
+    display:grid;
+    grid-template-columns:1.05fr 0.95fr;
+    gap:64px;
+    align-items:center;
+  }
+
+  .hero-kicker{
+    display:inline-flex; align-items:center; gap:8px;
+    background:var(--accent-soft);
+    color:var(--accent-deep);
+    font-size:0.82rem;
+    font-weight:600;
+    padding:7px 15px;
+    border-radius:999px;
+    margin-bottom:22px;
+  }
+  .hero h1{
+    font-size:clamp(2.4rem, 4vw, 3.4rem);
+    line-height:1.12;
+    max-width:13ch;
+  }
+  .hero p.lede{
+    margin-top:20px;
+    max-width:48ch;
+    font-size:1.08rem;
+    color:var(--charcoal-soft);
+  }
+  .hero-cta-row{
+    display:flex; align-items:center; gap:22px;
+    margin-top:34px;
+    flex-wrap:wrap;
+  }
+  .hero-cta-row .btn i{ margin-left:8px; }
+  .secure-note{
+    display:flex; align-items:center; gap:8px;
+    font-size:0.88rem;
+    color:var(--charcoal-soft);
+  }
+  .secure-note i{ color:var(--accent-deep); }
+
+  .trust-row{
+    display:flex;
+    gap:36px;
+    margin-top:52px;
+    padding-top:32px;
+    border-top:1px solid var(--line);
+    flex-wrap:wrap;
+  }
+  .trust-item{
+    display:flex; align-items:flex-start; gap:12px;
+    max-width:170px;
+  }
+  .trust-item i{
+    font-size:1.15rem;
+    color:var(--accent-deep);
+    margin-top:2px;
+  }
+  .trust-item strong{
+    display:block;
+    color:var(--ink);
+    font-size:0.94rem;
+    font-weight:700;
+    margin-bottom:2px;
+  }
+  .trust-item span{
+    font-size:0.82rem;
+    color:var(--charcoal-soft);
+  }
+
+  /* ================= VISUAL PANEL ================= */
+  .visual-panel{
+    position:relative;
+    aspect-ratio: 1 / 1.08;
+    border-radius:var(--radius-l);
+    overflow:hidden;
+    background:
+      radial-gradient(560px 420px at 78% 8%, rgba(182,130,63,0.28), transparent 62%),
+      linear-gradient(155deg, #0d1826 0%, #16283c 55%, #0e1c2c 100%);
+    box-shadow:var(--shadow-2);
+  }
+  .visual-panel .glow{
+    position:absolute;
+    top:-60px; right:-60px;
+    width:280px; height:280px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(255,224,178,0.22), transparent 70%);
+    filter:blur(4px);
+  }
+  .visual-panel .route-path{
+    position:absolute;
+    inset:0;
+    padding:54px 40px 0;
+  }
+  .visual-panel .route-path svg{ width:100%; height:auto; }
+
+  .visual-scene{
+    position:absolute;
+    left:0; right:0; bottom:0;
+    height:44%;
+  }
+  .visual-scene .track{
+    position:absolute; left:0; right:0; bottom:38px; height:40px;
+  }
+  .visual-scene .ballast{
+    position:absolute; left:0; right:0; bottom:0; height:24px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.05), transparent);
+  }
+  .visual-scene .ties{
+    position:absolute; left:0; right:0; bottom:16px; height:6px;
+    background-image:repeating-linear-gradient(
+      90deg, rgba(255,255,255,0.14) 0px, rgba(255,255,255,0.14) 16px,
+      transparent 16px, transparent 36px
+    );
+  }
+  .visual-scene .rail{
+    position:absolute; left:0; right:0; bottom:20px; height:2px;
+    background:rgba(214,175,120,0.55);
+  }
+  .visual-scene .rail.rail-2{ bottom:14px; background:rgba(214,175,120,0.32); }
+
+  .train-lane{
+    position:absolute; left:0; right:0; bottom:34px; height:60px;
+    overflow:hidden;
+  }
+  .train{
+    position:absolute; bottom:0; left:0;
+    width:230px;
+    animation: glide 11s linear infinite;
+    will-change:transform;
+  }
+  @keyframes glide{
+    from{ transform:translateX(-260px); }
+    to{ transform:translateX(340px); }
+  }
+  .train svg{ width:100%; height:auto; display:block; overflow:visible; }
+  .headlight{ animation:pulse 1.7s ease-in-out infinite alternate; }
+  @keyframes pulse{ from{ opacity:0.5; } to{ opacity:1; } }
+
+  .panel-caption{
+    position:absolute;
+    left:40px; bottom:20px;
+    color:rgba(255,255,255,0.55);
+    font-size:0.78rem;
+    letter-spacing:0.02em;
+  }
+
+  @media (max-width:940px){
+    .hero-grid{ grid-template-columns:1fr; }
+    .visual-panel{ aspect-ratio:16/10; order:-1; }
+    .trust-row{ margin-top:38px; }
+  }
+  @media (max-width:560px){
+    .trust-row{ gap:24px; }
+    .trust-item{ max-width:100%; }
+  }
+
+  /* ================= FEATURE STRIP ================= */
+  .features{
+    padding:10px 0 100px;
+  }
+  .features-head{
+    max-width:52ch;
+    margin-bottom:44px;
+  }
+  .features-head .eyebrow{
+    color:var(--accent-deep);
+    font-weight:600;
+    font-size:0.86rem;
+    margin-bottom:12px;
+    display:block;
+  }
+  .features-head h2{
+    font-size:clamp(1.6rem, 2.6vw, 2.1rem);
+  }
+  .feature-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:24px;
+  }
+  .feature-card{
+    background:var(--mist);
+    border-radius:var(--radius-m);
+    padding:30px 28px;
+    transition:transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+  .feature-card:hover{
+    transform:translateY(-4px);
+    box-shadow:var(--shadow-1);
+    background:#fff;
+  }
+  .feature-icon{
+    width:46px; height:46px;
+    border-radius:12px;
+    background:var(--accent-soft);
+    color:var(--accent-deep);
+    display:grid; place-items:center;
+    font-size:1.15rem;
+    margin-bottom:18px;
+  }
+  .feature-card h3{
+    font-size:1.08rem;
+    margin-bottom:8px;
+  }
+  .feature-card p{
+    font-size:0.92rem;
+    color:var(--charcoal-soft);
+    margin:0;
+  }
+
+  @media (max-width:860px){
+    .feature-grid{ grid-template-columns:1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<section class="hero">
+  <div class="wrap hero-grid">
+
+    <div class="hero-copy">
+      <span class="hero-kicker"><i class="bi bi-train-front-fill"></i> Bangladesh Railway E-Ticketing</span>
+      <h1>Your Journey Starts Here</h1>
+      <p class="lede">Book train tickets in minutes with real-time seat availability, secure payments, and an instant e-ticket — no counters, no queues.</p>
+
+      <div class="hero-cta-row">
+        <a href="#" class="btn btn-accent btn-lg btn-icon-right">
+          Book Your Ticket <i class="bi bi-arrow-right"></i>
+        </a>
+        <span class="secure-note"><i class="bi bi-shield-check"></i> Bank-grade secure checkout</span>
+      </div>
+
+      <div class="trust-row">
+        <div class="trust-item">
+          <i class="bi bi-geo-alt"></i>
+          <div><strong>250+ Routes</strong><span>Across every division</span></div>
+        </div>
+        <div class="trust-item">
+          <i class="bi bi-lightning-charge"></i>
+          <div><strong>Instant E-Ticket</strong><span>Delivered in seconds</span></div>
+        </div>
+        <div class="trust-item">
+          <i class="bi bi-headset"></i>
+          <div><strong>24/7 Support</strong><span>Real help, anytime</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="visual-panel" aria-hidden="true">
+      <div class="glow"></div>
+
+      <div class="route-path">
+        <svg viewBox="0 0 320 140" fill="none">
+          <circle cx="26" cy="24" r="5" fill="#e9c98f"/>
+          <path d="M26 24 C 110 10, 150 70, 200 60 S 300 30, 300 90" stroke="rgba(255,255,255,0.28)" stroke-width="2" stroke-dasharray="2 8" stroke-linecap="round"/>
+          <circle cx="300" cy="90" r="5" fill="#e9c98f"/>
+        </svg>
+      </div>
+
+      <div class="visual-scene">
+        <div class="track">
+          <div class="ballast"></div>
+          <div class="rail rail-2"></div>
+          <div class="ties"></div>
+          <div class="rail"></div>
+        </div>
+        <div class="train-lane">
+          <div class="train">
+            <svg viewBox="0 0 230 62" fill="none">
+              <ellipse cx="115" cy="56" rx="112" ry="4.5" fill="#000" opacity="0.3"/>
+              <path d="M14 46 C14 30 22 22 40 20 L188 20 C204 20 214 28 214 42 L214 46 C214 49 211 52 208 52 L20 52 C16 52 14 49 14 46 Z" fill="#f4f1ea"/>
+              <path d="M14 46 C14 30 22 22 40 20 L60 20 L60 46 Z" fill="#eadfc9"/>
+              <rect x="32" y="26" width="150" height="12" rx="3" fill="#16293c"/>
+              <rect x="34" y="27.5" width="20" height="9" rx="1.5" fill="#3a5878"/>
+              <rect x="58" y="27.5" width="20" height="9" rx="1.5" fill="#3a5878"/>
+              <rect x="82" y="27.5" width="20" height="9" rx="1.5" fill="#3a5878"/>
+              <rect x="106" y="27.5" width="20" height="9" rx="1.5" fill="#3a5878"/>
+              <rect x="130" y="27.5" width="46" height="9" rx="1.5" fill="#3a5878"/>
+              <rect x="14" y="41" width="200" height="3" fill="#b6823f"/>
+              <circle class="headlight" cx="211" cy="44" r="3.4" fill="#ffe3ad"/>
+              <circle cx="46" cy="54" r="8" fill="#101f2e"/>
+              <circle cx="82" cy="54" r="8" fill="#101f2e"/>
+              <circle cx="118" cy="54" r="8" fill="#101f2e"/>
+              <circle cx="154" cy="54" r="8" fill="#101f2e"/>
+              <circle cx="190" cy="54" r="8" fill="#101f2e"/>
+              <circle cx="46" cy="54" r="2.6" fill="#5b6b7a"/>
+              <circle cx="82" cy="54" r="2.6" fill="#5b6b7a"/>
+              <circle cx="118" cy="54" r="2.6" fill="#5b6b7a"/>
+              <circle cx="154" cy="54" r="2.6" fill="#5b6b7a"/>
+              <circle cx="190" cy="54" r="2.6" fill="#5b6b7a"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <span class="panel-caption">Dhaka → Chattogram · Departs 07:10</span>
+    </div>
+
+  </div>
+</section>
+
+<section class="features">
+  <div class="wrap">
+    <div class="features-head">
+      <span class="eyebrow">Why RailPremium</span>
+      <h2>Everything a modern rail traveler needs, nothing they don't</h2>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon"><i class="bi bi-shield-lock"></i></div>
+        <h3>Secure Payments</h3>
+        <p>Encrypted checkout with support for cards, mobile banking, and wallets.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="bi bi-qr-code"></i></div>
+        <h3>Instant E-Ticket</h3>
+        <p>Your QR-coded ticket lands in your account the moment payment clears.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="bi bi-person-check"></i></div>
+        <h3>NID-Verified Booking</h3>
+        <p>Every seat is tied to a verified identity, keeping journeys safer for everyone.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

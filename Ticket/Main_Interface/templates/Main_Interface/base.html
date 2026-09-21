@@ -1,0 +1,435 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}RailPremium — Modern Railway Ticket Booking{% endblock %}</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+  :root{
+    --ink:          #101f2e;
+    --ink-2:        #16293c;
+    --ink-3:        #1e3752;
+    --charcoal:     #3c4552;
+    --charcoal-soft:#6b7480;
+    --paper:        #ffffff;
+    --mist:         #f5f6f8;
+    --line:         #e6e9ed;
+    --accent:       #b6823f;
+    --accent-deep:  #93672f;
+    --accent-soft:  #f5ead9;
+    --radius-s:     10px;
+    --radius-m:     16px;
+    --radius-l:     26px;
+    --shadow-1:     0 2px 10px rgba(16,31,46,0.05);
+    --shadow-2:     0 18px 44px rgba(16,31,46,0.14);
+    --maxw:         1240px;
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--charcoal);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.6;
+  }
+  h1,h2,h3,h4,.font-display{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    letter-spacing:-0.015em;
+    color:var(--ink);
+    margin:0;
+  }
+  a{ text-decoration:none; }
+  img{ max-width:100%; display:block; }
+
+  :focus-visible{
+    outline:2px solid var(--accent);
+    outline-offset:3px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; }
+  }
+
+  .wrap{ max-width:var(--maxw); margin:0 auto; padding:0 32px; }
+
+  /* ---------------- buttons ---------------- */
+  .btn{
+    border-radius:999px;
+    font-weight:600;
+    padding:0.7rem 1.5rem;
+    transition:transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+    border:1px solid transparent;
+  }
+  .btn:active{ transform:translateY(1px); }
+  .btn-accent{
+    background:var(--accent);
+    color:#fff;
+    box-shadow:0 10px 24px rgba(182,130,63,0.28);
+  }
+  .btn-accent:hover{ background:var(--accent-deep); color:#fff; box-shadow:0 12px 28px rgba(182,130,63,0.34); }
+  .btn-outline-ink{
+    background:transparent;
+    border-color:rgba(16,31,46,0.16);
+    color:var(--ink);
+  }
+  .btn-outline-ink:hover{ border-color:var(--ink); background:rgba(16,31,46,0.04); color:var(--ink); }
+  .btn-ghost-light{
+    background:transparent;
+    color:rgba(255,255,255,0.88);
+    border-color:rgba(255,255,255,0.28);
+  }
+  .btn-ghost-light:hover{ background:rgba(255,255,255,0.08); color:#fff; border-color:rgba(255,255,255,0.5); }
+  .btn-lg{ padding:0.95rem 2.1rem; font-size:1.02rem; }
+  .btn-icon-right i{ transition:transform 0.18s ease; }
+  .btn-icon-right:hover i{ transform:translateX(3px); }
+
+  /* ---------------- navbar ---------------- */
+  .site-nav{
+    position:sticky; top:0; z-index:1030;
+    background:rgba(16,31,46,0.92);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+  }
+  .site-nav .wrap{
+    display:flex; align-items:center; justify-content:space-between;
+    height:76px;
+  }
+  .brand{
+    display:flex; align-items:center; gap:11px;
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:1.28rem;
+    color:#fff;
+  }
+  .brand-mark{
+    width:34px; height:34px;
+    border-radius:9px;
+    background:linear-gradient(155deg, var(--accent), var(--accent-deep));
+    display:grid; place-items:center;
+    color:#fff;
+    font-size:1rem;
+  }
+  .nav-center{
+    display:flex; align-items:center; gap:36px;
+  }
+  .nav-center a{
+    color:rgba(255,255,255,0.72);
+    font-size:0.96rem;
+    font-weight:500;
+    position:relative;
+    padding:8px 0;
+  }
+  .nav-center a.active{ color:#fff; }
+  .nav-center a.active::after{
+    content:"";
+    position:absolute; left:0; right:0; bottom:-2px;
+    height:2px; border-radius:2px;
+    background:var(--accent);
+  }
+  .nav-actions{ display:flex; align-items:center; gap:10px; }
+
+  .navbar-toggler-custom{
+    display:none;
+    background:transparent;
+    border:1px solid rgba(255,255,255,0.24);
+    color:#fff;
+    border-radius:8px;
+    padding:8px 11px;
+  }
+
+  @media (max-width:860px){
+    .nav-center{ display:none; }
+    .navbar-toggler-custom{ display:inline-flex; }
+    .nav-actions .btn span{ display:none; }
+    .nav-actions .btn{ padding:0.6rem 0.9rem; }
+  }
+
+  /* ---------------- modals ---------------- */
+  .modal-content{
+    border:none;
+    border-radius:var(--radius-l);
+    box-shadow:var(--shadow-2);
+    overflow:hidden;
+  }
+  .auth-modal-head{
+    padding:34px 34px 0;
+  }
+  .auth-modal-head .badge-kicker{
+    display:inline-flex; align-items:center; gap:8px;
+    color:var(--accent-deep);
+    background:var(--accent-soft);
+    padding:6px 13px;
+    border-radius:999px;
+    font-size:0.8rem;
+    font-weight:600;
+    margin-bottom:16px;
+  }
+  .auth-modal-head h3{ font-size:1.55rem; margin-bottom:6px; }
+  .auth-modal-head p{ color:var(--charcoal-soft); font-size:0.94rem; margin-bottom:0; }
+  .modal-body{ padding:26px 34px 34px; }
+  .btn-close{ margin:20px 20px 0 0; }
+
+  .field-label{
+    font-size:0.85rem;
+    font-weight:600;
+    color:var(--ink);
+    margin-bottom:7px;
+    display:block;
+  }
+  .input-icon{
+    position:relative;
+    margin-bottom:18px;
+  }
+  .input-icon i{
+    position:absolute;
+    left:16px; top:50%;
+    transform:translateY(-50%);
+    color:var(--charcoal-soft);
+    font-size:0.98rem;
+    transition:color 0.18s ease;
+  }
+  .input-icon input{
+    width:100%;
+    padding:12px 16px 12px 44px;
+    border:1.5px solid var(--line);
+    border-radius:var(--radius-s);
+    font-size:0.96rem;
+    color:var(--ink);
+    background:var(--mist);
+    transition:border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  }
+  .input-icon input:focus{
+    outline:none;
+    border-color:var(--accent);
+    background:#fff;
+    box-shadow:0 0 0 4px rgba(182,130,63,0.12);
+  }
+  .input-icon input:focus + i,
+  .input-icon:focus-within i{ color:var(--accent); }
+  .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:520px){ .field-row{ grid-template-columns:1fr; } }
+
+  .form-meta-row{
+    display:flex; align-items:center; justify-content:space-between;
+    margin:-4px 0 20px;
+    font-size:0.86rem;
+  }
+  .form-meta-row a{ color:var(--accent-deep); font-weight:600; }
+  .form-switch-text{
+    text-align:center;
+    margin-top:18px;
+    font-size:0.9rem;
+    color:var(--charcoal-soft);
+  }
+  .form-switch-text a{ color:var(--accent-deep); font-weight:600; cursor:pointer; }
+
+  /* ---------------- footer ---------------- */
+  .site-footer{
+    background:var(--ink);
+    color:rgba(255,255,255,0.6);
+    margin-top:120px;
+  }
+  .site-footer .wrap{
+    padding:42px 32px;
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:14px;
+    font-size:0.88rem;
+  }
+  .site-footer .brand{ color:#fff; font-size:1.05rem; }
+</style>
+{% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="wrap">
+    <a href="{% url 'home_page' %}" class="brand">
+      <span class="brand-mark"><i class="bi bi-train-front-fill"></i></span>
+      RailPremium
+    </a>
+
+    <div class="nav-center">
+      <a href="{% url 'home_page' %}" class="active">Home</a>
+    </div>
+
+    <div class="nav-actions">
+      <button type="button" class="navbar-toggler-custom d-md-none" data-bs-toggle="collapse" data-bs-target="#navMobile" aria-label="Toggle menu">
+        <i class="bi bi-list"></i>
+      </button>
+      <button type="button" class="btn btn-ghost-light" data-bs-toggle="modal" data-bs-target="#loginModal">
+        <span>Login</span>
+      </button>
+      <button type="button" class="btn btn-accent" data-bs-toggle="modal" data-bs-target="#registerModal">
+        <span>Create Account</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="collapse d-md-none" id="navMobile">
+    <div class="wrap pb-3">
+      <a href="{% url 'home_page' %}" class="d-block text-white-50 py-2">Home</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="brand d-flex align-items-center gap-2">
+      <span class="brand-mark"><i class="bi bi-train-front-fill"></i></span>
+      RailPremium
+    </div>
+    <span>© {% now "Y" %} RailPremium. Modern railway ticket booking, made simple.</span>
+  </div>
+</footer>
+
+<!-- ================= LOGIN MODAL ================= -->
+<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="d-flex justify-content-end"><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+      <div class="auth-modal-head">
+        <h3 id="loginModalLabel">Welcome back</h3>
+        <p>Log in with your phone number to manage your bookings.</p>
+      </div>
+      <div class="modal-body">
+        <form method="post" action="#">
+          {% csrf_token %}
+          <label class="field-label" for="login-phone">Phone Number</label>
+          <div class="input-icon">
+            <i class="bi bi-telephone"></i>
+            <input type="tel" id="login-phone" name="phone_number" placeholder="01XXXXXXXXX" required>
+          </div>
+
+          <label class="field-label" for="login-password">Password</label>
+          <div class="input-icon">
+            <i class="bi bi-lock"></i>
+            <input type="password" id="login-password" name="password" placeholder="••••••••" required>
+          </div>
+
+          <div class="form-meta-row">
+            <span></span>
+            <a href="#">Forgot Password?</a>
+          </div>
+
+          <button type="submit" class="btn btn-accent w-100 btn-lg">Login</button>
+
+          <p class="form-switch-text">
+            Don't have an account?
+            <a data-bs-dismiss="modal" data-switch-modal="#registerModal">Create Account</a>
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= REGISTER MODAL ================= -->
+<div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="d-flex justify-content-end"><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+      <div class="auth-modal-head">
+        <span class="badge-kicker"><i class="bi bi-person-badge"></i> New here?</span>
+        <h3 id="registerModalLabel">Create your account</h3>
+        <p>Set up your profile once, book journeys in seconds from now on.</p>
+      </div>
+      <div class="modal-body">
+        <form method="post" action="#">
+          {% csrf_token %}
+          <label class="field-label" for="reg-name">Full Name</label>
+          <div class="input-icon">
+            <i class="bi bi-person"></i>
+            <input type="text" id="reg-name" name="full_name" placeholder="Your full name" required>
+          </div>
+
+          <div class="field-row">
+            <div>
+              <label class="field-label" for="reg-phone">Phone Number</label>
+              <div class="input-icon">
+                <i class="bi bi-telephone"></i>
+                <input type="tel" id="reg-phone" name="phone_number" placeholder="01XXXXXXXXX" required>
+              </div>
+            </div>
+            <div>
+              <label class="field-label" for="reg-email">Email Address</label>
+              <div class="input-icon">
+                <i class="bi bi-envelope"></i>
+                <input type="email" id="reg-email" name="email" placeholder="you@example.com" required>
+              </div>
+            </div>
+          </div>
+
+          <label class="field-label" for="reg-nid">NID Number</label>
+          <div class="input-icon">
+            <i class="bi bi-card-text"></i>
+            <input type="text" id="reg-nid" name="nid_number" placeholder="National ID number" required>
+          </div>
+
+          <div class="field-row">
+            <div>
+              <label class="field-label" for="reg-password">Password</label>
+              <div class="input-icon">
+                <i class="bi bi-lock"></i>
+                <input type="password" id="reg-password" name="password" placeholder="••••••••" required>
+              </div>
+            </div>
+            <div>
+              <label class="field-label" for="reg-confirm">Confirm Password</label>
+              <div class="input-icon">
+                <i class="bi bi-lock-fill"></i>
+                <input type="password" id="reg-confirm" name="confirm_password" placeholder="••••••••" required>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-accent w-100 btn-lg mt-2">Create Account</button>
+
+          <p class="form-switch-text">
+            Already have an account?
+            <a data-bs-dismiss="modal" data-switch-modal="#loginModal">Login</a>
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Switch between Login / Create Account modals smoothly
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-switch-modal]').forEach(function (trigger) {
+      trigger.addEventListener('click', function (e) {
+        e.preventDefault();
+        var currentModalEl = trigger.closest('.modal');
+        var targetSelector = trigger.getAttribute('data-switch-modal');
+        var targetEl = document.querySelector(targetSelector);
+        var currentModal = bootstrap.Modal.getOrCreateInstance(currentModalEl);
+        currentModal.hide();
+        currentModalEl.addEventListener('hidden.bs.modal', function handler() {
+          bootstrap.Modal.getOrCreateInstance(targetEl).show();
+          currentModalEl.removeEventListener('hidden.bs.modal', handler);
+        });
+      });
+    });
+  });
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
