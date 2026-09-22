@@ -1,14 +1,16 @@
 import random
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.http import JsonResponse
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.hashers import make_password
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
-
+from django.urls import reverse
 from .models import Profile, VarificationCode
 
 
@@ -61,13 +63,13 @@ def register(request):
     if Profile.objects.filter(nid=nid).exists():
         return JsonResponse({'success': False, 'message': 'NID already exists.'})
 
-    # User create করার আগে সব ডেটা session এ রাখা হলো
+     
     request.session['pending_registration'] = {
         'full_name': full_name,
         'email': email,
         'phone_number': phone_number,
         'nid': nid,
-        'password': make_password(password),  # hash করে রাখা হলো, plain text না
+        'password': make_password(password),   
     }
     request.session['pending_email'] = email
 
@@ -102,12 +104,12 @@ def varification_code(request):
     entry.is_used = True
     entry.save()
 
-    # এখন verify হয়ে গেছে, তাই User + Profile তৈরি হবে
+     
     user = User.objects.create(
         username=pending_data['email'],
         email=pending_data['email'],
         first_name=pending_data['full_name'],
-        password=pending_data['password'],  # আগেই hash করা আছে
+        password=pending_data['password'],   
     )
 
     Profile.objects.create(
@@ -154,11 +156,40 @@ def login_view(request):
     user = authenticate(request, username=username, password=password)
     if user is not None:
         login(request, user)
-        return JsonResponse({'success': True, 'message': 'Logged in successfully!', 'redirect_url': '/'})
+        return JsonResponse({'success': True, 'message': 'Logged in successfully!', 'redirect_url': reverse('ticket_page'),})
     else:
         return JsonResponse({'success': False, 'message': 'Invalid phone number or password.'})
 
 
 def logout_view(request):
     logout(request)
-    return JsonResponse({'success': True, 'message': 'Logged out successfully.', 'redirect_url': '/'})
+    return redirect('home_page')
+
+
+@login_required
+def profile_view(request):
+    return render(request, "Main_Interface/profile.html", {
+        'password_form': PasswordChangeForm(request.user),
+    })
+
+
+@login_required
+def change_password(request):
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            form.save()
+            login(request, request.user)
+            return redirect('profile')
+    else:
+        form = PasswordChangeForm(request.user)
+
+    return render(request, "Main_Interface/profile.html", {'password_form': form})
+
+
+def ticket_page(request):
+    return render(request, "Main_Interface/ticket_page.html")
+
+
+def train_schedule(request):
+    return render(request, "Main_Interface/train_schedule.html")

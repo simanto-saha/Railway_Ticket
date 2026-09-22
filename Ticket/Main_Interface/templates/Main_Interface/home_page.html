@@ -1,7 +1,7 @@
 {% extends "Main_Interface/base.html" %}
 {% load static %}
 
-{% block title %}RailPremium — Your Journey Starts Here{% endblock %}
+{% block title %}RailwaySheba, Your Journey Starts Here{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -232,12 +232,12 @@
   <div class="wrap hero-grid">
 
     <div class="hero-copy">
-      <span class="hero-kicker"><i class="bi bi-train-front-fill"></i> Bangladesh Railway E-Ticketing</span>
+       
       <h1>Your Journey Starts Here</h1>
       <p class="lede">Book train tickets in minutes with real-time seat availability, secure payments, and an instant e-ticket — no counters, no queues.</p>
 
       <div class="hero-cta-row">
-        <a href="#" class="btn btn-accent btn-lg btn-icon-right">
+        <a href="{% url 'ticket_page' %}" class="btn btn-accent btn-lg btn-icon-right">
           Book Your Ticket <i class="bi bi-arrow-right"></i>
         </a>
         <span class="secure-note"><i class="bi bi-shield-check"></i> Bank-grade secure checkout</span>
@@ -315,7 +315,7 @@
 <section class="features">
   <div class="wrap">
     <div class="features-head">
-      <span class="eyebrow">Why RailPremium</span>
+      <span class="eyebrow">Why RailwaySheba</span>
       <h2>Everything a modern rail traveler needs, nothing they don't</h2>
     </div>
 

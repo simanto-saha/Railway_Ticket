@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{% block title %}RailPremium — Modern Railway Ticket Booking{% endblock %}</title>
+<title>{% block title %}RailwaySheba — Modern Railway Ticket Booking{% endblock %}</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,22 +15,23 @@
 
 <style>
   :root{
-    --ink:          #101f2e;
-    --ink-2:        #16293c;
-    --ink-3:        #1e3752;
+    --ink:          #0f2947;
+    --ink-2:        #14335a;
+    --ink-3:        #1c4373;
     --charcoal:     #3c4552;
     --charcoal-soft:#6b7480;
     --paper:        #ffffff;
     --mist:         #f5f6f8;
     --line:         #e6e9ed;
-    --accent:       #b6823f;
-    --accent-deep:  #93672f;
-    --accent-soft:  #f5ead9;
+    --accent:       #1fa15c;
+    --accent-deep:  #147a45;
+    --accent-light: #4fc785;
+    --accent-soft:  #e2f6e9;
     --radius-s:     10px;
     --radius-m:     16px;
     --radius-l:     26px;
-    --shadow-1:     0 2px 10px rgba(16,31,46,0.05);
-    --shadow-2:     0 18px 44px rgba(16,31,46,0.14);
+    --shadow-1:     0 2px 10px rgba(15,41,71,0.05);
+    --shadow-2:     0 18px 44px rgba(15,41,71,0.14);
     --maxw:         1240px;
   }
 
@@ -73,31 +74,32 @@
   }
   .btn:active{ transform:translateY(1px); }
   .btn-accent{
-    background:var(--accent);
+    background:linear-gradient(135deg, var(--accent-light), var(--accent));
     color:#fff;
-    box-shadow:0 10px 24px rgba(182,130,63,0.28);
+    box-shadow:0 10px 24px rgba(31,161,92,0.28);
   }
-  .btn-accent:hover{ background:var(--accent-deep); color:#fff; box-shadow:0 12px 28px rgba(182,130,63,0.34); }
+  .btn-accent:hover{ background:linear-gradient(135deg, var(--accent), var(--accent-deep)); color:#fff; box-shadow:0 12px 28px rgba(31,161,92,0.34); }
   .btn-accent:disabled{ opacity:0.7; cursor:not-allowed; }
   .btn-outline-ink{
     background:transparent;
-    border-color:rgba(16,31,46,0.16);
+    border-color:rgba(15,41,71,0.16);
     color:var(--ink);
   }
-  .btn-outline-ink:hover{ border-color:var(--ink); background:rgba(16,31,46,0.04); color:var(--ink); }
+  .btn-outline-ink:hover{ border-color:var(--ink); background:rgba(15,41,71,0.04); color:var(--ink); }
   .btn-ghost-light{
     background:transparent;
-    color:rgba(255,255,255,0.88);
-    border-color:rgba(255,255,255,0.28);
+    color:var(--ink);
+    border-color:rgba(15,41,71,0.18);
   }
-  .btn-ghost-light:hover{ background:rgba(255,255,255,0.08); color:#fff; border-color:rgba(255,255,255,0.5); }
+  .btn-ghost-light:hover{ background:rgba(15,41,71,0.05); color:var(--ink); border-color:var(--ink); }
   .btn-lg{ padding:0.95rem 2.1rem; font-size:1.02rem; }
   .btn-icon-right i{ transition:transform 0.18s ease; }
   .btn-icon-right:hover i{ transform:translateX(3px); }
 
   .site-nav{
     position:sticky; top:0; z-index:1030;
-    background:rgba(16,31,46,0.92);
+    background:#ffffff;
+    border-bottom:1px solid var(--line);
     backdrop-filter:blur(10px);
     -webkit-backdrop-filter:blur(10px);
   }
@@ -110,40 +112,113 @@
     font-family:'Fraunces',serif;
     font-weight:600;
     font-size:1.28rem;
-    color:#fff;
+    color:var(--ink);
   }
+  .brand-logo-wrap{
+    display:inline-flex;
+    align-items:flex-start;
+    width:52px; height:42px;
+    overflow:hidden;
+  }
+  .brand-logo{
+    width:52px; height:52px;
+    object-fit:cover;
+    object-position:top;
+  }
+  .brand-text{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:1.32rem;
+    letter-spacing:-0.01em;
+    white-space:nowrap;
+  }
+  .brand-text .txt-railway{ color:var(--ink); }
+  .brand-text .txt-sheba{ color:var(--accent); }
   .brand-mark{
     width:34px; height:34px;
     border-radius:9px;
-    background:linear-gradient(155deg, var(--accent), var(--accent-deep));
+    background:linear-gradient(155deg, var(--accent-light), var(--accent-deep));
     display:grid; place-items:center;
     color:#fff;
     font-size:1rem;
   }
   .nav-center{
     display:flex; align-items:center; gap:36px;
+    margin-left:auto; margin-right:28px;
   }
   .nav-center a{
-    color:rgba(255,255,255,0.72);
+    color:var(--charcoal-soft);
     font-size:0.96rem;
     font-weight:500;
     position:relative;
     padding:8px 0;
   }
-  .nav-center a.active{ color:#fff; }
+  .nav-center a.active{ color:var(--ink); }
   .nav-center a.active::after{
     content:"";
     position:absolute; left:0; right:0; bottom:-2px;
     height:2px; border-radius:2px;
-    background:var(--accent);
+    background:linear-gradient(90deg, var(--accent-light), var(--accent));
   }
   .nav-actions{ display:flex; align-items:center; gap:10px; }
+
+  .profile-menu{ position:relative; }
+  .profile-trigger{
+    display:flex; align-items:center; gap:9px;
+    border:0; background:transparent; color:var(--ink);
+    padding:4px 0 4px 8px; cursor:pointer;
+  }
+  .profile-avatar{
+    width:38px; height:38px; border-radius:50%;
+    display:grid; place-items:center;
+    background:linear-gradient(155deg, var(--accent-light), var(--accent-deep));
+    color:#fff;
+    font-weight:700; font-size:1rem;
+    box-shadow:0 4px 14px rgba(31,161,92,0.3);
+  }
+  .profile-trigger .profile-name{ font-size:0.9rem; font-weight:600; }
+  .profile-trigger i{ color:var(--charcoal-soft); font-size:0.8rem; }
+  .profile-dropdown{
+    position:absolute; top:calc(100% + 13px); right:0;
+    min-width:210px; padding:8px;
+    background:#fff; border:1px solid var(--line);
+    border-radius:var(--radius-s); box-shadow:var(--shadow-2);
+  }
+  .profile-dropdown::before{
+    content:""; position:absolute; top:-6px; right:17px;
+    width:11px; height:11px; background:#fff;
+    border-left:1px solid var(--line); border-top:1px solid var(--line);
+    transform:rotate(45deg);
+  }
+  .profile-dropdown .dropdown-heading{
+    padding:8px 10px 10px; border-bottom:1px solid var(--line);
+    color:var(--charcoal-soft); font-size:0.78rem;
+  }
+  .profile-dropdown a{
+    display:flex; align-items:center; gap:10px;
+    padding:10px; border-radius:7px; color:var(--ink);
+    font-size:0.88rem; font-weight:500;
+  }
+  .profile-dropdown a:hover{ background:var(--mist); color:var(--accent-deep); }
+  .profile-dropdown a i{ width:16px; color:var(--accent-deep); }
+  .profile-dropdown form{ margin:0; }
+  .profile-dropdown button{
+    display:flex; align-items:center; gap:10px; width:100%;
+    padding:10px; border:0; border-radius:7px; background:transparent;
+    color:#a34036; font:inherit; font-size:0.88rem; text-align:left; cursor:pointer;
+  }
+  .profile-dropdown button:hover{ background:#fff2f0; }
+  .profile-dropdown button i{ width:16px; }
+  @media (max-width:520px){
+    .profile-trigger .profile-name, .profile-trigger > i{ display:none; }
+    .profile-dropdown{ right:-8px; }
+  }
 
   .navbar-toggler-custom{
     display:none;
     background:transparent;
-    border:1px solid rgba(255,255,255,0.24);
-    color:#fff;
+    border:1px solid rgba(15,41,71,0.2);
+    color:var(--ink);
     border-radius:8px;
     padding:8px 11px;
   }
@@ -212,7 +287,7 @@
     outline:none;
     border-color:var(--accent);
     background:#fff;
-    box-shadow:0 0 0 4px rgba(182,130,63,0.12);
+    box-shadow:0 0 0 4px rgba(31,161,92,0.12);
   }
   .input-icon input:focus + i,
   .input-icon:focus-within i{ color:var(--accent); }
@@ -237,8 +312,9 @@
   .js-alert-box.show{ display:block; }
 
   .site-footer{
-    background:var(--ink);
-    color:rgba(255,255,255,0.6);
+    background:#ffffff;
+    color:var(--charcoal-soft);
+    border-top:1px solid var(--line);
     margin-top:120px;
   }
   .site-footer .wrap{
@@ -247,7 +323,7 @@
     flex-wrap:wrap; gap:14px;
     font-size:0.88rem;
   }
-  .site-footer .brand{ color:#fff; font-size:1.05rem; }
+  .site-footer .brand{ color:var(--ink); font-size:1.05rem; }
 </style>
 {% block extra_css %}{% endblock %}
 </head>
@@ -255,31 +331,58 @@
 
 <nav class="site-nav">
   <div class="wrap">
-    <a href="{% url 'home_page' %}" class="brand">
-      <span class="brand-mark"><i class="bi bi-train-front-fill"></i></span>
-      RailPremium
+    <a href="{% url 'home_page' %}" class="brand" aria-label="RailwaySheba home">
+      <span class="brand-logo-wrap">
+        <img src="{% static 'image/RailwaySheba.png' %}" alt="RailwaySheba" class="brand-logo">
+      </span>
+      <span class="brand-text"><span class="txt-railway">Railway</span><span class="txt-sheba">Sheba</span></span>
     </a>
 
     <div class="nav-center">
-      <a href="{% url 'home_page' %}" class="active">Home</a>
+      <a href="{% url 'home_page' %}" class="{% if request.resolver_match.url_name == 'home_page' %}active{% endif %}">Home</a>
+      {% if request.user.is_authenticated %}
+        <a href="{% url 'ticket_page' %}" class="{% if request.resolver_match.url_name == 'ticket_page' %}active{% endif %}">Book Ticket</a>
+      {% endif %}
+      <a href="{% url 'train_schedule' %}" class="{% if request.resolver_match.url_name == 'train_schedule' %}active{% endif %}">Train Schedule</a>
     </div>
 
     <div class="nav-actions">
       <button type="button" class="navbar-toggler-custom d-md-none" data-bs-toggle="collapse" data-bs-target="#navMobile" aria-label="Toggle menu">
         <i class="bi bi-list"></i>
       </button>
-      <button type="button" class="btn btn-ghost-light" data-bs-toggle="modal" data-bs-target="#loginModal">
-        <span>Login</span>
-      </button>
-      <button type="button" class="btn btn-accent" data-bs-toggle="modal" data-bs-target="#registerModal">
-        <span>Create Account</span>
-      </button>
+      {% if request.user.is_authenticated %}
+        <div class="profile-menu dropdown">
+          <button type="button" class="profile-trigger" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open profile menu">
+            <span class="profile-avatar">
+              {% if request.user.first_name %}{{ request.user.first_name|first|upper }}{% else %}{{ request.user.username|first|upper }}{% endif %}
+            </span>
+            <span class="profile-name">{{ request.user.first_name|default:request.user.username }}</span>
+            <i class="bi bi-chevron-down"></i>
+          </button>
+          <div class="dropdown-menu profile-dropdown">
+            <div class="dropdown-heading">Signed in as {{ request.user.email }}</div>
+            <a href="{% url 'profile' %}"><i class="bi bi-person"></i> Profile</a>
+            <a href="{% url 'change_password' %}"><i class="bi bi-shield-lock"></i> Change Password</a>
+            <form method="post" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit"><i class="bi bi-box-arrow-right"></i> Log out</button>
+            </form>
+          </div>
+        </div>
+      {% else %}
+        <button type="button" class="btn btn-ghost-light" data-bs-toggle="modal" data-bs-target="#loginModal">
+          <span>Login</span>
+        </button>
+        <button type="button" class="btn btn-accent" data-bs-toggle="modal" data-bs-target="#registerModal">
+          <span>Create Account</span>
+        </button>
+      {% endif %}
     </div>
   </div>
 
   <div class="collapse d-md-none" id="navMobile">
     <div class="wrap pb-3">
-      <a href="{% url 'home_page' %}" class="d-block text-white-50 py-2">Home</a>
+      <a href="{% url 'home_page' %}" class="d-block py-2" style="color:var(--charcoal-soft);">Home</a>
     </div>
   </div>
 </nav>
@@ -291,10 +394,12 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="brand d-flex align-items-center gap-2">
-      <span class="brand-mark"><i class="bi bi-train-front-fill"></i></span>
-      RailPremium
+      <span class="brand-logo-wrap">
+        <img src="{% static 'image/RailwaySheba.png' %}" alt="RailwaySheba" class="brand-logo">
+      </span>
+      <span class="brand-text"><span class="txt-railway">Railway</span><span class="txt-sheba">Sheba</span></span>
     </div>
-    <span>© {% now "Y" %} RailPremium. Modern railway ticket booking, made simple.</span>
+    <span>© {% now "Y" %} RailwaySheba. Modern railway ticket booking, made simple.</span>
   </div>
 </footer>
 

@@ -1,0 +1,87 @@
+{% extends "Main_Interface/base.html" %}
+
+{% block title %}My Profile {% endblock %}
+
+{% block extra_css %}
+<style>
+  .profile-page{ padding:72px 0 100px; background:var(--mist); min-height:560px; }
+  .profile-layout{ display:grid; grid-template-columns:0.8fr 1.2fr; gap:24px; align-items:start; }
+  .profile-panel{ background:#fff; border:1px solid var(--line); border-radius:var(--radius-m); box-shadow:var(--shadow-1); padding:30px; }
+  .profile-summary{ text-align:center; }
+  .profile-large-avatar{
+    width:86px; height:86px; margin:0 auto 18px; border-radius:50%;
+    display:grid; place-items:center; background:var(--accent); color:#fff;
+    font-family:'Fraunces',serif; font-size:2.2rem; box-shadow:0 12px 26px rgba(182,130,63,0.25);
+  }
+  .profile-summary h1{ font-size:1.7rem; }
+  .profile-summary p{ color:var(--charcoal-soft); margin:5px 0 0; font-size:0.9rem; }
+  .profile-summary .profile-links{ margin-top:25px; border-top:1px solid var(--line); padding-top:17px; }
+  .profile-links a{ display:flex; align-items:center; gap:10px; padding:10px 0; color:var(--ink); font-size:0.9rem; }
+  .profile-links a:hover{ color:var(--accent-deep); }
+  .profile-links i{ width:18px; color:var(--accent-deep); }
+  .profile-heading{ margin-bottom:22px; }
+  .profile-heading h2{ font-size:1.45rem; }
+  .profile-heading p{ color:var(--charcoal-soft); margin:5px 0 0; font-size:0.9rem; }
+  .detail-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .detail-item{ padding:14px; background:var(--mist); border-radius:var(--radius-s); }
+  .detail-item span{ display:block; color:var(--charcoal-soft); font-size:0.76rem; margin-bottom:4px; }
+  .detail-item strong{ color:var(--ink); font-size:0.92rem; font-weight:600; word-break:break-word; }
+  .password-form{ margin-top:34px; padding-top:28px; border-top:1px solid var(--line); }
+  .password-form .field-label{ margin-top:15px; }
+  .password-form input{ width:100%; padding:11px 13px; border:1.5px solid var(--line); border-radius:var(--radius-s); background:var(--mist); color:var(--ink); }
+  .password-form input:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 4px rgba(182,130,63,0.12); background:#fff; }
+  .password-form ul, .password-form .errorlist{ color:#a34036; font-size:0.82rem; padding-left:18px; margin:6px 0; }
+  @media (max-width:760px){ .profile-layout{ grid-template-columns:1fr; } }
+  @media (max-width:480px){ .detail-grid{ grid-template-columns:1fr; } .profile-panel{ padding:22px; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="profile-page">
+  <div class="wrap">
+    <div class="profile-layout">
+      <aside class="profile-panel profile-summary">
+        <div class="profile-large-avatar">
+          {% if request.user.first_name %}{{ request.user.first_name|first|upper }}{% else %}{{ request.user.username|first|upper }}{% endif %}
+        </div>
+        <h1>{{ request.user.first_name|default:request.user.username }}</h1>
+        <p>{{ request.user.email }}</p>
+        <div class="profile-links">
+          <a href="{% url 'ticket_page' %}"><i class="bi bi-ticket-perforated"></i> Book a ticket</a>
+          <a href="{% url 'change_password' %}"><i class="bi bi-shield-lock"></i> Change password</a>
+        </div>
+      </aside>
+
+      <section class="profile-panel">
+        <div class="profile-heading">
+          <h2>Personal details</h2>
+          <p>Your account information saved with RailwaySheba.</p>
+        </div>
+        <div class="detail-grid">
+          <div class="detail-item"><span>Full name</span><strong>{{ request.user.first_name|default:"Not provided" }}</strong></div>
+          <div class="detail-item"><span>Email address</span><strong>{{ request.user.email }}</strong></div>
+          <div class="detail-item"><span>Phone number</span><strong>{{ request.user.profile.phone_number }}</strong></div>
+          <div class="detail-item"><span>NID number</span><strong>{{ request.user.profile.nid }}</strong></div>
+        </div>
+
+        <div class="password-form">
+          <div class="profile-heading">
+            <h2>Change password</h2>
+            <p>Use a strong password you do not use elsewhere.</p>
+          </div>
+          <form method="post" action="{% url 'change_password' %}">
+            {% csrf_token %}
+            {{ password_form.non_field_errors }}
+            {% for field in password_form %}
+              <label class="field-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {{ field.errors }}
+            {% endfor %}
+            <button type="submit" class="btn btn-accent mt-3">Update password</button>
+          </form>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+{% endblock %}
