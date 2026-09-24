@@ -1,0 +1,247 @@
+{% extends 'Railway_Admin/superuser_base.html' %}
+{% block content %}
+<h1>Admin Dashboard</h1>
+
+<!-- Train Information -->
+<h2 style="margin-top:30px;">Train Information</h2>
+<button onclick="openCreateTrain()" style="background:#1a1a2e; color:#fff; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;">+ Add Train</button>
+<table style="width:100%; margin-top:10px; border-collapse:collapse; background:#fff;">
+    <tr style="background:#1a1a2e; color:#fff;">
+        <th style="padding:10px;">Train Number</th>
+        <th style="padding:10px;">Train Name</th>
+        <th style="padding:10px;">Total Seats</th>
+        <th style="padding:10px;">Actions</th>
+    </tr>
+    <tbody id="trainTableBody">
+    {% for train in trains %}
+    <tr id="train-row-{{ train.pk }}" style="border-bottom:1px solid #ddd;">
+        <td style="padding:10px;">{{ train.train_number }}</td>
+        <td style="padding:10px;">{{ train.train_name }}</td>
+        <td style="padding:10px;">{{ train.total_seats }}</td>
+        <td style="padding:10px;"><button type="button" onclick="editTrain({{ train.pk }})">Edit</button> <button type="button" onclick="deleteRow('/super-admin/train/{{ train.pk }}/delete/', 'train-row-{{ train.pk }}')">Delete</button></td>
+    </tr>
+    {% empty %}
+    <tr id="no-trains-row"><td colspan="4" style="padding:10px;">Kono train nai.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<!-- Train Schedule -->
+<h2 style="margin-top:30px;">Train Schedule</h2>
+<button onclick="openCreateSchedule()" style="background:#1a1a2e; color:#fff; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;">+ Add Schedule</button>
+<table style="width:100%; margin-top:10px; border-collapse:collapse; background:#fff;">
+    <tr style="background:#1a1a2e; color:#fff;">
+        <th style="padding:10px;">Train</th>
+        <th style="padding:10px;">Source</th>
+        <th style="padding:10px;">Destination</th>
+        <th style="padding:10px;">Departure</th>
+        <th style="padding:10px;">Arrival</th>
+        <th style="padding:10px;">Actions</th>
+    </tr>
+    <tbody>
+    {% for s in schedules %}
+    <tr id="schedule-row-{{ s.pk }}" style="border-bottom:1px solid #ddd;">
+        <td style="padding:10px;">{{ s.train.train_name }}</td>
+        <td style="padding:10px;">{{ s.source_station }}</td>
+        <td style="padding:10px;">{{ s.destination_station }}</td>
+        <td style="padding:10px;">{{ s.departure_time }}</td>
+        <td style="padding:10px;">{{ s.arrival_time }}</td>
+        <td style="padding:10px;"><button type="button" onclick="editSchedule({{ s.pk }})">Edit</button> <button type="button" onclick="deleteRow('/super-admin/schedule/{{ s.pk }}/delete/', 'schedule-row-{{ s.pk }}')">Delete</button></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" style="padding:10px;">Kono schedule nai.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<!-- Train Driver -->
+<h2 style="margin-top:30px;">Train Drivers</h2>
+<button onclick="openCreateDriver()" style="background:#1a1a2e; color:#fff; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;">+ Add Driver</button>
+<table style="width:100%; margin-top:10px; border-collapse:collapse; background:#fff;">
+    <tr style="background:#1a1a2e; color:#fff;">
+        <th style="padding:10px;">Driver Name</th>
+        <th style="padding:10px;">Train</th>
+        <th style="padding:10px;">License Number</th>
+        <th style="padding:10px;">Contact</th>
+        <th style="padding:10px;">Actions</th>
+    </tr>
+    <tbody>
+    {% for d in drivers %}
+    <tr id="driver-row-{{ d.pk }}" style="border-bottom:1px solid #ddd;">
+        <td style="padding:10px;">{{ d.driver_name }}</td>
+        <td style="padding:10px;">{{ d.train.train_name }}</td>
+        <td style="padding:10px;">{{ d.license_number }}</td>
+        <td style="padding:10px;">{{ d.contact_number }}</td>
+        <td style="padding:10px;"><button type="button" onclick="editDriver({{ d.pk }})">Edit</button> <button type="button" onclick="deleteRow('{% url 'driver_delete' d.pk %}', 'driver-row-{{ d.pk }}')">Delete</button></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5" style="padding:10px;">Kono driver nai.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<!-- Train Modal -->
+<div class="modal-overlay" id="trainModal">
+    <div class="modal-box">
+        <button class="close-btn" onclick="closeModal('trainModal')">&times;</button>
+        <h2 id="trainModalTitle">Add Train</h2>
+        <div class="error-text" id="trainError" style="display:none;"></div>
+        <form id="trainForm" onsubmit="submitForm(event, this.dataset.url || '{% url 'train_create' %}', 'trainError', 'trainModal', addTrainRow)">
+            {% csrf_token %}
+            <input type="text" name="train_number" placeholder="Train Number" required>
+            <input type="text" name="train_name" placeholder="Train Name" required>
+            <input type="number" name="total_seats" placeholder="Total Seats" required>
+            <button type="submit" class="submit-btn">Save</button>
+        </form>
+    </div>
+</div>
+
+<!-- Schedule Modal -->
+<div class="modal-overlay" id="scheduleModal">
+    <div class="modal-box">
+        <button class="close-btn" onclick="closeModal('scheduleModal')">&times;</button>
+        <h2 id="scheduleModalTitle">Add Schedule</h2>
+        <div class="error-text" id="scheduleError" style="display:none;"></div>
+        <form id="scheduleForm" onsubmit="submitForm(event, this.dataset.url || '{% url 'schedule_create' %}', 'scheduleError', 'scheduleModal', reloadDashboard)">
+            {% csrf_token %}
+            <select name="train" required style="width:100%; padding:10px; margin-bottom:12px;">
+                <option value="">-- Select Train --</option>
+                {% for train in trains %}
+                <option value="{{ train.pk }}">{{ train.train_name }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" name="source_station" placeholder="Source Station" required>
+            <input type="text" name="destination_station" placeholder="Destination Station" required>
+            <label style="font-size:12px;">Departure Time</label>
+            <input type="datetime-local" name="departure_time" required>
+            <label style="font-size:12px;">Arrival Time</label>
+            <input type="datetime-local" name="arrival_time" required>
+            <button type="submit" class="submit-btn">Save</button>
+        </form>
+    </div>
+</div>
+
+<!-- Driver Modal -->
+<div class="modal-overlay" id="driverModal">
+    <div class="modal-box">
+        <button class="close-btn" onclick="closeModal('driverModal')">&times;</button>
+        <h2 id="driverModalTitle">Add Driver</h2>
+        <div class="error-text" id="driverError" style="display:none;"></div>
+        <form id="driverForm" onsubmit="submitForm(event, this.dataset.url || '{% url 'driver_create' %}', 'driverError', 'driverModal', reloadDashboard)">
+            {% csrf_token %}
+            <select name="train" required style="width:100%; padding:10px; margin-bottom:12px;">
+                <option value="">-- Select Train --</option>
+                {% for train in trains %}
+                <option value="{{ train.pk }}">{{ train.train_name }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" name="driver_name" placeholder="Driver Name" required>
+            <input type="text" name="license_number" placeholder="License Number" required>
+            <input type="text" name="contact_number" placeholder="Contact Number" required>
+            <button type="submit" class="submit-btn">Save</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+function submitForm(e, url, errorId, modalId, onSuccess) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    const errorBox = document.getElementById(errorId);
+
+    errorBox.style.display = 'none';
+    fetch(url, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(res => res.json().then(data => ({ ok: res.ok, data })))
+        .then(data => {
+            if (data.ok && data.data.success) {
+                closeModal(modalId);
+                form.reset();
+                if (onSuccess) onSuccess(data.data);
+            } else {
+                errorBox.textContent = data.data.error || 'Could not save the information.';
+                errorBox.style.display = 'block';
+            }
+        })
+        .catch(() => {
+            errorBox.textContent = 'Request failed. Please try again.';
+            errorBox.style.display = 'block';
+        });
+}
+
+function addTrainRow(data) {
+    document.getElementById('no-trains-row')?.remove();
+    const row = document.createElement('tr');
+    row.id = `train-row-${data.id}`;
+    row.style.borderBottom = '1px solid #ddd';
+    [data.train_number, data.train_name, data.total_seats].forEach(value => {
+        const cell = document.createElement('td');
+        cell.style.padding = '10px';
+        cell.textContent = value;
+        row.appendChild(cell);
+    });
+    const actions = document.createElement('td');
+    actions.style.padding = '10px';
+    actions.innerHTML = `<button type="button" onclick="editTrain(${data.id})">Edit</button> <button type="button" onclick="deleteRow('/super-admin/train/${data.id}/delete/', 'train-row-${data.id}')">Delete</button>`;
+    row.appendChild(actions);
+    document.getElementById('trainTableBody').appendChild(row);
+}
+
+function editTrain(pk) {
+    fetch(`/super-admin/train/${pk}/`).then(res => res.json()).then(data => {
+        const form = document.getElementById('trainForm');
+        form.elements.train_number.value = data.train_number;
+        form.elements.train_name.value = data.train_name;
+        form.elements.total_seats.value = data.total_seats;
+        form.dataset.url = `/super-admin/train/${pk}/edit/`;
+        document.getElementById('trainModalTitle').textContent = 'Edit Train';
+        openModal('trainModal');
+    });
+}
+
+function editSchedule(pk) {
+    fetch(`/super-admin/schedule/${pk}/`).then(res => res.json()).then(data => {
+        const form = document.getElementById('scheduleForm');
+        form.elements.train.value = data.train;
+        form.elements.source_station.value = data.source_station;
+        form.elements.destination_station.value = data.destination_station;
+        form.elements.departure_time.value = data.departure_time;
+        form.elements.arrival_time.value = data.arrival_time;
+        form.dataset.url = `/super-admin/schedule/${pk}/edit/`;
+        document.getElementById('scheduleModalTitle').textContent = 'Edit Schedule';
+        openModal('scheduleModal');
+    });
+}
+
+function editDriver(pk) {
+    fetch(`/super-admin/driver/${pk}/`).then(res => res.json()).then(data => {
+        const form = document.getElementById('driverForm');
+        form.elements.train.value = data.train;
+        form.elements.driver_name.value = data.driver_name;
+        form.elements.license_number.value = data.license_number;
+        form.elements.contact_number.value = data.contact_number;
+        form.dataset.url = `/super-admin/driver/${pk}/edit/`;
+        document.getElementById('driverModalTitle').textContent = 'Edit Driver';
+        openModal('driverModal');
+    });
+}
+
+function reloadDashboard() { location.reload(); }
+
+function deleteRow(url, rowId) {
+    if (!confirm('Are you sure you want to delete this row?')) return;
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    fetch(url, { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) document.getElementById(rowId)?.remove();
+            else alert(data.error || 'Could not delete the row.');
+        })
+        .catch(() => alert('Request failed. Please try again.'));
+}
+</script>
+{% endblock %}

@@ -10,6 +10,7 @@ class AdminProfile(models.Model):
     email = models.EmailField(unique=True)
     designation = models.CharField(max_length=100)
     phone_number = models.CharField(max_length=15, unique=True)
+    one_time_password = models.BooleanField(default=False)
      
 
     def __str__(self):

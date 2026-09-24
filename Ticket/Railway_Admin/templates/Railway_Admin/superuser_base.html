@@ -16,7 +16,9 @@
             justify-content: space-between;
             align-items: center;
         }
-        nav .brand { font-size: 20px; font-weight: bold; }
+        nav .brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; font-size: 20px; font-weight: bold; }
+        nav .brand img { width: 38px; height: 38px; object-fit: contain; background: #fff; border-radius: 6px; }
+        nav .panel-name { margin-left: 12px; color: #b8b8c7; font-size: 13px; font-weight: normal; }
         nav a, nav button {
             color: #fff;
             text-decoration: none;
@@ -28,6 +30,14 @@
             font-size: 14px;
         }
         nav button:hover, nav a:hover { background: #d62839; }
+        .user-menu { position: relative; }
+        .user-trigger { background: transparent; padding: 8px 12px; }
+        .user-trigger:hover { background: #292945; }
+        .user-dropdown { display: none; position: absolute; right: 0; top: calc(100% + 8px); min-width: 170px; padding: 6px; background: #fff; border-radius: 6px; box-shadow: 0 5px 18px rgba(0,0,0,.2); z-index: 20; }
+        .user-menu.open .user-dropdown { display: block; }
+        .user-dropdown a, .user-dropdown button { display: block; width: 100%; padding: 10px 12px; color: #222; background: transparent; border-radius: 4px; text-align: left; }
+        .user-dropdown a:hover, .user-dropdown button:hover { color: #fff; background: #1a1a2e; }
+        .user-dropdown form { margin: 0; }
 
         .modal-overlay {
             display: none;
@@ -72,12 +82,32 @@
 </head>
 <body>
     <nav>
-        <div class="brand">Superuser Panel</div>
+        {% if user.is_authenticated and user.is_superuser %}
+            <a class="brand" href="{% url 'superuser_dashboard' %}">
+                <img src="{% static 'image/RailwaySheba.png' %}" alt="RailwaySheba logo">
+                <span>RailwaySheba</span><span class="panel-name">Superuser Panel</span>
+            </a>
+        {% else %}
+            <a class="brand" href="{% url 'admin_dashboard' %}">
+                <img src="{% static 'image/RailwaySheba.png' %}" alt="RailwaySheba logo">
+                <span>RailwaySheba</span><span class="panel-name">Admin Panel</span>
+            </a>
+        {% endif %}
         {% if user.is_authenticated %}
-            <form method="post" action="{% url 'superuser_logout' %}" style="margin:0;">
-                {% csrf_token %}
-                <button type="submit">Logout</button>
-            </form>
+            <div class="user-menu" id="userMenu">
+                <button type="button" class="user-trigger" onclick="toggleUserMenu()">{{ user.username }} &#9662;</button>
+                <div class="user-dropdown">
+                    {% if user.is_superuser %}
+                        <a href="{% url 'superuser_dashboard' %}">Profile</a>
+                    {% else %}
+                        <a href="{% url 'admin_profile' %}">Profile</a>
+                    {% endif %}
+                    <form method="post" action="{% url 'superuser_logout' %}">
+                        {% csrf_token %}
+                        <button type="submit">Logout</button>
+                    </form>
+                </div>
+            </div>
         {% else %}
             <button onclick="openLoginModal()">Login</button>
         {% endif %}
@@ -95,6 +125,7 @@
             <div class="error-text" id="loginError" style="display:none;"></div>
             <form id="loginForm">
                 {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
                 <input type="text" name="username" placeholder="Username" required>
                 <input type="password" name="password" placeholder="Password" required>
                 <button type="submit" class="submit-btn">Login</button>
@@ -103,11 +134,24 @@
     </div>
 
     <script>
+        function toggleUserMenu() {
+            document.getElementById('userMenu').classList.toggle('open');
+        }
+
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('userMenu');
+            if (menu && !menu.contains(event.target)) menu.classList.remove('open');
+        });
+
         function openLoginModal() {
             document.getElementById('loginModal').classList.add('active');
         }
         function closeLoginModal() {
             document.getElementById('loginModal').classList.remove('active');
+        }
+
+        if ({{ open_login|yesno:"true,false" }}) {
+            openLoginModal();
         }
 
         document.getElementById('loginForm')?.addEventListener('submit', function(e) {

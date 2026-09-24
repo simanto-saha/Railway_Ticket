@@ -108,8 +108,9 @@
 
   .visual-scene{
     position:absolute;
-    left:0; right:0; bottom:0;
+    left:0; right:0; bottom:132px;
     height:44%;
+    z-index:2;
   }
   .visual-scene .track{
     position:absolute; left:0; right:0; bottom:38px; height:40px;
@@ -157,9 +158,43 @@
     letter-spacing:0.02em;
   }
 
+  .panel-schedules{
+    position:absolute;
+    left:24px; right:24px; bottom:16px;
+    z-index:3;
+    padding:8px 12px;
+    background:rgba(15,41,71,0.9);
+    border:1px solid rgba(255,255,255,0.16);
+    border-radius:var(--radius-s);
+    backdrop-filter:blur(8px);
+  }
+  .panel-schedule-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:7px 0;
+    color:rgba(255,255,255,0.82);
+    font-size:.72rem;
+    border-bottom:1px solid rgba(255,255,255,0.12);
+  }
+  .panel-schedule-row:last-of-type{ border-bottom:0; }
+  .panel-schedule-route{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .panel-schedule-route span{ color:rgba(255,255,255,0.55); }
+  .panel-schedule-row time{ color:#ffe3ad; font-weight:700; white-space:nowrap; }
+  .panel-schedule-link{
+    display:block;
+    margin-top:7px;
+    color:var(--accent-light);
+    font-size:.72rem;
+    font-weight:700;
+    text-align:right;
+  }
+
   @media (max-width:940px){
     .hero-grid{ grid-template-columns:1fr; }
     .visual-panel{ aspect-ratio:16/10; order:-1; }
+    .visual-scene{ bottom:112px; }
     .trust-row{ margin-top:38px; }
   }
   @media (max-width:560px){
@@ -223,6 +258,7 @@
   @media (max-width:860px){
     .feature-grid{ grid-template-columns:1fr; }
   }
+
 </style>
 {% endblock %}
 
@@ -237,7 +273,11 @@
       <p class="lede">Book train tickets in minutes with real-time seat availability, secure payments, and an instant e-ticket — no counters, no queues.</p>
 
       <div class="hero-cta-row">
+        {% if request.user.is_authenticated %}
         <a href="{% url 'ticket_page' %}" class="btn btn-accent btn-lg btn-icon-right">
+        {% else %}
+        <a href="#" data-requires-login="true" class="btn btn-accent btn-lg btn-icon-right">
+        {% endif %}
           Book Your Ticket <i class="bi bi-arrow-right"></i>
         </a>
         <span class="secure-note"><i class="bi bi-shield-check"></i> Bank-grade secure checkout</span>
@@ -306,7 +346,19 @@
         </div>
       </div>
 
-      <span class="panel-caption">Dhaka → Chattogram · Departs 07:10</span>
+      {% if featured_schedules %}
+      <div class="panel-schedules">
+        {% for schedule in featured_schedules %}
+        <div class="panel-schedule-row">
+          <span class="panel-schedule-route">{{ schedule.source_station }} → {{ schedule.destination_station }} <span>({{ schedule.train.train_name }})</span></span>
+          <time>{{ schedule.departure_time|date:"h:i A" }}</time>
+        </div>
+        {% endfor %}
+        {% if has_more_schedules %}
+        <a class="panel-schedule-link" href="{% url 'train_schedule' %}">Full Train Schedule <i class="bi bi-arrow-right"></i></a>
+        {% endif %}
+      </div>
+      {% endif %}
     </div>
 
   </div>

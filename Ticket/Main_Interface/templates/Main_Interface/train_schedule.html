@@ -2,3 +2,85 @@
 {% load static %}
 
 {% block title %}RailwaySheba {% endblock %}
+
+{% block content %}
+<style>
+	.schedule-page { padding: 42px 0 80px; background: var(--mist); min-height: 600px; }
+	.schedule-heading { margin-bottom: 24px; }
+	.schedule-heading h1 { color: var(--ink); font-size: 2rem; margin-bottom: 6px; }
+	.schedule-heading p { color: var(--charcoal-soft); }
+	.schedule-section { margin-top: 28px; }
+	.schedule-section h2 { color: var(--ink); font-size: 1.25rem; margin-bottom: 12px; }
+	.schedule-table-wrap { overflow-x: auto; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-s); box-shadow: var(--shadow-1); }
+	.schedule-table { width: 100%; min-width: 620px; border-collapse: collapse; }
+	.schedule-table th { padding: 13px 15px; color: var(--paper); background: var(--ink); text-align: left; font-size: .85rem; }
+	.schedule-table td { padding: 13px 15px; color: var(--charcoal); border-bottom: 1px solid var(--line); }
+	.schedule-table tr:last-child td { border-bottom: 0; }
+	.empty-row { color: var(--charcoal-soft) !important; text-align: center; }
+</style>
+
+<section class="schedule-page">
+	<div class="container">
+		<div class="schedule-heading">
+			<h1>Train Schedule</h1>
+			<p>View available trains and their latest schedules.</p>
+		</div>
+
+		<div class="schedule-section">
+			<h2>Train Information</h2>
+			<div class="schedule-table-wrap">
+				<table class="schedule-table">
+					<thead>
+						<tr>
+							<th>Train Number</th>
+							<th>Train Name</th>
+							<th>Total Seats</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for train in trains %}
+						<tr>
+							<td>{{ train.train_number }}</td>
+							<td>{{ train.train_name }}</td>
+							<td>{{ train.total_seats }}</td>
+						</tr>
+						{% empty %}
+						<tr><td class="empty-row" colspan="3">No train information available.</td></tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<div class="schedule-section">
+			<h2>Train Schedule</h2>
+			<div class="schedule-table-wrap">
+				<table class="schedule-table">
+					<thead>
+						<tr>
+							<th>Train</th>
+							<th>Source</th>
+							<th>Destination</th>
+							<th>Departure</th>
+							<th>Arrival</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for schedule in schedules %}
+						<tr>
+							<td>{{ schedule.train.train_name }}</td>
+							<td>{{ schedule.source_station }}</td>
+							<td>{{ schedule.destination_station }}</td>
+							<td>{{ schedule.departure_time|date:"d M Y, h:i A" }}</td>
+							<td>{{ schedule.arrival_time|date:"d M Y, h:i A" }}</td>
+						</tr>
+						{% empty %}
+						<tr><td class="empty-row" colspan="5">No train schedules available.</td></tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</section>
+{% endblock %}

@@ -12,10 +12,15 @@ from django.utils import timezone
 from datetime import timedelta
 from django.urls import reverse
 from .models import Profile, VarificationCode
+from Railway_Admin.models import TrainInformation, TrainSchedule
 
 
 def home_page(request):
-    return render(request, "Main_Interface/home_page.html")
+    schedules = TrainSchedule.objects.select_related('train').order_by('departure_time')
+    return render(request, "Main_Interface/home_page.html", {
+        'featured_schedules': schedules[:3],
+        'has_more_schedules': schedules.count() > 3,
+    })
 
 
 def _varification_code():
@@ -192,4 +197,7 @@ def ticket_page(request):
 
 
 def train_schedule(request):
-    return render(request, "Main_Interface/train_schedule.html")
+    return render(request, "Main_Interface/train_schedule.html", {
+        'trains': TrainInformation.objects.all().order_by('train_number'),
+        'schedules': TrainSchedule.objects.select_related('train').order_by('departure_time'),
+    })

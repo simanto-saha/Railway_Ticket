@@ -1,9 +1,125 @@
-<!-- superuser_dashboard.html -->
 {% extends 'Railway_Admin/superuser_base.html' %}
-
-{% block title %}Dashboard{% endblock %}
-
 {% block content %}
-    <h1>Superuser Dashboard</h1>
-    <p>Welcome, {{ user.username }}</p>
+<h1>Superuser Dashboard</h1>
+<p>Welcome, {{ user.username }}</p>
+
+<button onclick="openCreateModal()" style="margin-top:15px; background:#1a1a2e; color:#fff; padding:10px 20px; border:none; border-radius:4px; cursor:pointer;">
+    + Add Admin
+</button>
+
+<table style="width:100%; margin-top:20px; border-collapse:collapse; background:#fff;">
+    <tr style="background:#1a1a2e; color:#fff;">
+        <th style="padding:10px;">Username</th>
+        <th style="padding:10px;">Full Name</th>
+        <th style="padding:10px;">Email</th>
+        <th style="padding:10px;">Designation</th>
+        <th style="padding:10px;">Phone</th>
+        <th style="padding:10px;">Actions</th>
+    </tr>
+    {% for profile in profiles %}
+    <tr id="row-{{ profile.pk }}" style="border-bottom:1px solid #ddd;">
+        <td style="padding:10px;">{{ profile.user.username }}</td>
+        <td style="padding:10px;">{{ profile.full_name }}</td>
+        <td style="padding:10px;">{{ profile.email }}</td>
+        <td style="padding:10px;">{{ profile.designation }}</td>
+        <td style="padding:10px;">{{ profile.phone_number }}</td>
+        <td style="padding:10px;">
+            <button onclick="openEditModal({{ profile.pk }})">Edit</button>
+            <button onclick="deleteProfile({{ profile.pk }})" style="color:#e63946;">Remove</button>
+        </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" style="padding:10px;">Kono admin profile nai.</td></tr>
+    {% endfor %}
+</table>
+
+<!-- Create/Edit Modal -->
+<div class="modal-overlay" id="profileModal">
+    <div class="modal-box">
+        <button class="close-btn" onclick="closeProfileModal()">&times;</button>
+        <h2 id="modalTitle">Add Admin</h2>
+        <div class="error-text" id="profileError" style="display:none;"></div>
+        <form id="profileForm">
+            {% csrf_token %}
+            <input type="hidden" name="profile_id" id="profile_id">
+            <input type="text" name="username" id="f_username" placeholder="Username" required>
+            <input type="text" name="full_name" id="f_full_name" placeholder="Full Name" required>
+            <input type="email" name="email" id="f_email" placeholder="Email" required>
+            <input type="text" name="designation" id="f_designation" placeholder="Designation" required>
+            <input type="text" name="phone_number" id="f_phone_number" placeholder="Phone Number" required>
+            <button type="submit" class="submit-btn">Save</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function openCreateModal() {
+    document.getElementById('modalTitle').textContent = 'Add Admin';
+    document.getElementById('profileForm').reset();
+    document.getElementById('profile_id').value = '';
+    document.getElementById('f_password')?.remove();
+    document.getElementById('profileError').style.display = 'none';
+    document.getElementById('profileModal').classList.add('active');
+}
+
+function openEditModal(pk) {
+    fetch(`/superuser/admin-profiles/${pk}/`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('modalTitle').textContent = 'Edit Admin';
+            document.getElementById('profile_id').value = data.id;
+            document.getElementById('f_username').value = data.username;
+            if (!document.getElementById('f_password')) {
+                const passwordInput = document.createElement('input');
+                passwordInput.type = 'password';
+                passwordInput.name = 'password';
+                passwordInput.id = 'f_password';
+                passwordInput.placeholder = 'New Password';
+                document.getElementById('f_username').after(passwordInput);
+            }
+            document.getElementById('f_password').value = '';
+            document.getElementById('f_full_name').value = data.full_name;
+            document.getElementById('f_email').value = data.email;
+            document.getElementById('f_designation').value = data.designation;
+            document.getElementById('f_phone_number').value = data.phone_number;
+            document.getElementById('profileError').style.display = 'none';
+            document.getElementById('profileModal').classList.add('active');
+        });
+}
+
+function closeProfileModal() {
+    document.getElementById('profileModal').classList.remove('active');
+}
+
+document.getElementById('profileForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const pk = document.getElementById('profile_id').value;
+    const url = pk ? `/superuser/admin-profiles/${pk}/edit/` : `/superuser/admin-profiles/create/`;
+    const formData = new FormData(this);
+    const errorBox = document.getElementById('profileError');
+
+    fetch(url, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                errorBox.textContent = data.error;
+                errorBox.style.display = 'block';
+            }
+        });
+});
+
+function deleteProfile(pk) {
+    if (!confirm('Sure remove korte chao?')) return;
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    fetch(`/superuser/admin-profiles/${pk}/delete/`, { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) document.getElementById(`row-${pk}`).remove();
+        });
+}
+</script>
 {% endblock %}

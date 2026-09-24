@@ -1,0 +1,71 @@
+{% extends 'Railway_Admin/superuser_base.html' %}
+{% block content %}
+<h1>My Profile</h1>
+
+<div class="error-text" id="profileError" style="display:none;"></div>
+<div style="color:#2a9d8f; font-size:13px; margin-bottom:10px; display:none;" id="profileSuccess"></div>
+
+<form id="profileForm" style="max-width:400px;">
+    {% csrf_token %}
+    <label style="font-size:12px;">Username</label>
+    <input type="text" value="{{ request.user.username }}" disabled style="background:#eee;">
+
+    <label style="font-size:12px;">Full Name</label>
+    <input type="text" name="full_name" value="{{ profile.full_name }}" required>
+
+    <label style="font-size:12px;">Email</label>
+    <input type="email" name="email" value="{{ profile.email }}" required>
+
+    <label style="font-size:12px;">Designation</label>
+    <input type="text" name="designation" value="{{ profile.designation }}" required>
+
+    <label style="font-size:12px;">Phone Number</label>
+    <input type="text" name="phone_number" value="{{ profile.phone_number }}" required>
+
+    <hr style="margin:15px 0;">
+    <p style="font-size:13px; color:#666; margin-bottom:10px;">Password change korte na chaile niche fields blank rakho</p>
+
+    <label style="font-size:12px;">Current Password</label>
+    <input type="password" name="current_password">
+
+    <label style="font-size:12px;">New Password</label>
+    <input type="password" name="new_password">
+
+    <label style="font-size:12px;">Confirm New Password</label>
+    <input type="password" name="confirm_password">
+
+    <button type="submit" class="submit-btn" style="margin-top:10px;">Save Changes</button>
+</form>
+
+<script>
+document.getElementById('profileForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const errorBox = document.getElementById('profileError');
+    const successBox = document.getElementById('profileSuccess');
+    errorBox.style.display = 'none';
+    successBox.style.display = 'none';
+
+    fetch("{% url 'admin_profile_update' %}", {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            if (data.password_changed) {
+                alert('Password changed. Please login again.');
+                window.location.href = data.redirect_url;
+            } else {
+                successBox.textContent = 'Profile updated successfully.';
+                successBox.style.display = 'block';
+            }
+        } else {
+            errorBox.textContent = data.error;
+            errorBox.style.display = 'block';
+        }
+    });
+});
+</script>
+{% endblock %}

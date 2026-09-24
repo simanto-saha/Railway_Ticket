@@ -579,6 +579,14 @@ document.addEventListener('DOMContentLoaded', function () {
     container.textContent = message;
   }
 
+  document.querySelectorAll('[data-requires-login]').forEach(function (trigger) {
+    trigger.addEventListener('click', function (e) {
+      e.preventDefault();
+      showAlert('loginAlert', 'Please login first.', 'warning');
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('loginModal')).show();
+    });
+  });
+
   function switchToModal(fromEl, toId) {
     var fromModal = bootstrap.Modal.getOrCreateInstance(fromEl);
     fromModal.hide();
