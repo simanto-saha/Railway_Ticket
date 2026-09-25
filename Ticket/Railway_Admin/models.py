@@ -34,7 +34,9 @@ class TrainSchedule(models.Model):
     arrival_time = models.DateTimeField()
     source_station = models.CharField(max_length=100)
     destination_station = models.CharField(max_length=100)
-    ticket_price = models.IntegerField(blank=True, null=True)
+    ac_ticket_price = models.IntegerField(blank=True, null=True)
+    singdha_ticket_price = models.IntegerField(blank=True, null=True)
+    s_chair_ticket_price = models.IntegerField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.train.train_name} - {self.source_station} to {self.destination_station}"

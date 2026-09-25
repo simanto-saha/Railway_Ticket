@@ -555,32 +555,47 @@
                             </div>
                         </div>
                         <div class="text-end">
-                            <div class="price-tag">৳{{ train.ticket_price }} <small>/ seat</small></div>
-                            <button class="btn btn-select-seat mt-2" type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#seatBox{{ train_id }}">
-                                <i class="bi bi-person-badge me-1"></i> Select Seat
-                            </button>
+                            <div class="price-tag">From ৳{{ train.starting_price }} <small>/ seat</small></div>
                         </div>
                     </div>
 
-                    <!-- Seat selection panel -->
-                    <div class="collapse" id="seatBox{{ train_id }}" data-schedule="{{ train.schedule_id }}">
+                    <!-- Class cards: SNIGDHA / S_CHAIR / AC_S -->
+                    <div class="class-cards-row">
+                        {% for klass in train.classes %}
+                        <div class="class-card">
+                            <div class="class-card-name">{{ klass.label }}</div>
+                            <div class="class-card-price">৳{{ klass.price }}</div>
+                            <div class="class-card-avail">{{ klass.available_seats }} / {{ klass.total_seats }} available</div>
+                            <button class="btn btn-select-seat btn-sm w-100" type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#seatBox{{ train_id }}_{{ klass.code }}">
+                                <i class="bi bi-person-badge me-1"></i> Select Seat
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Seat selection panel, one per class -->
+                    {% for klass in train.classes %}
+                    <div class="collapse" id="seatBox{{ train_id }}_{{ klass.code }}" data-schedule="{{ train.schedule_id }}">
                         <div class="seat-panel">
+                            <div class="seat-panel-heading">
+                                <i class="bi bi-award"></i> {{ klass.label }} <span class="seat-panel-price">৳{{ klass.price }} / seat</span>
+                            </div>
                             <div class="seat-layout">
                                 <!-- Left: coach picker + seat grid -->
                                 <div>
                                     <div class="coach-select-wrap">
-                                        <label for="coachSelect{{ train_id }}">Coach</label>
-                                        <select class="coach-select" id="coachSelect{{ train_id }}" data-train="{{ train_id }}">
-                                            {% for coach in train.coaches %}
+                                        <label for="coachSelect{{ train_id }}_{{ klass.code }}">Coach</label>
+                                        <select class="coach-select" id="coachSelect{{ train_id }}_{{ klass.code }}" data-train="{{ train_id }}" data-class="{{ klass.code }}">
+                                            {% for coach in klass.coaches %}
                                             <option value="{{ coach.letter }}">{{ coach.letter }} &middot; {{ coach.available }} available{% if coach.available != coach.total %} / {{ coach.total }}{% endif %}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
 
-                                    {% for coach in train.coaches %}
-                                    <div class="coach-seat-group" data-train="{{ train_id }}" data-coach="{{ coach.letter }}" data-seat-count="{{ coach.available }}">
+                                    {% for coach in klass.coaches %}
+                                    <div class="coach-seat-group" data-train="{{ train_id }}" data-class="{{ klass.code }}" data-coach="{{ coach.letter }}" data-seat-count="{{ coach.available }}">
                                         <div class="coach-label"><i class="bi bi-train-lightrail-front-fill"></i> Coach {{ coach.letter }}
                                             <span class="coach-available-badge">{{ coach.available }} available</span>
                                         </div>
@@ -589,8 +604,9 @@
                                             <button type="button"
                                                 class="seat-btn{% if seat in train.booked_seats %} seat-booked{% endif %}"
                                                 data-train="{{ train_id }}"
+                                                data-class="{{ klass.code }}"
                                                 data-schedule="{{ train.schedule_id }}"
-                                                data-price="{{ train.ticket_price }}"
+                                                data-price="{{ klass.price }}"
                                                 data-seat="{{ seat }}"
                                                 {% if seat in train.booked_seats %}disabled{% endif %}>
                                                 {{ seat }}
@@ -623,30 +639,36 @@
                                         <span class="jm-value">{{ train.departure_time|date:"d M, H:i" }}</span>
                                     </div>
                                     <div class="journey-mini-row">
+                                        <span class="jm-label">Class</span>
+                                        <span class="jm-value">{{ klass.label }}</span>
+                                    </div>
+                                    <div class="journey-mini-row">
                                         <span class="jm-label">Price / Seat</span>
-                                        <span class="jm-value">৳{{ train.ticket_price }}</span>
+                                        <span class="jm-value">৳{{ klass.price }}</span>
                                     </div>
 
                                     <hr class="sidebar-divider">
 
                                     <div class="sidebar-title"><i class="bi bi-ticket-perforated"></i> Your Selection</div>
-                                    <div class="selected-seats-list" id="selectedSeats{{ train_id }}">
+                                    <p class="seat-limit-hint">Maximum 4 seats can be booked at a time.</p>
+                                    <div class="selected-seats-list" id="selectedSeats{{ train_id }}_{{ klass.code }}">
                                         <span class="empty-hint">No seats selected yet</span>
                                     </div>
                                     <div class="summary-total-row">
                                         <span class="label">Total Price</span>
-                                        <span class="value" id="totalPrice{{ train_id }}">৳0</span>
+                                        <span class="value" id="totalPrice{{ train_id }}_{{ klass.code }}">৳0</span>
                                     </div>
                                     <button class="btn btn-confirm w-100" type="button"
-                                        id="confirmBtn{{ train_id }}"
+                                        id="confirmBtn{{ train_id }}_{{ klass.code }}"
                                         disabled
-                                        onclick="bookTrain({{ train_id }}, {{ train.schedule_id }}, '{{ train.train_number }}')">
+                                        onclick="bookTrain('{{ train_id }}', '{{ klass.code }}', {{ train.schedule_id }}, '{{ train.train_number }}')">
                                         <i class="bi bi-check2-circle me-1"></i> Confirm Booking
                                     </button>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>

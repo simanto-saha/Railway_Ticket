@@ -199,9 +199,121 @@ def get_coach_letter(index):
         first = (index // 26) - 1
         second = index % 26
         return string.ascii_uppercase[first] + string.ascii_uppercase[second]
-    
 
-SEATS_PER_COACH = 60  
+
+# Bangladesh Railway style ticket classes. A schedule's total seats are split
+# across these three classes — S_CHAIR always gets the largest share, matching
+# how BR trains are actually composed (mostly Shovon Chair, with a handful of
+# AC/Snigdha coaches). price_multiplier scales the schedule's base ticket_price.
+CLASS_CONFIG = [
+    {"code": "AC_S", "label": "AC Seat", "price_field": "ac_ticket_price", "share": 0.10, "seats_per_coach": 44},
+    {"code": "SNIGDHA", "label": "Snigdha (AC Chair)", "price_field": "singdha_ticket_price", "share": 0.20, "seats_per_coach": 50},
+    {"code": "S_CHAIR", "label": "Shovon Chair", "price_field": "s_chair_ticket_price", "share": 0.70, "seats_per_coach": 60},
+]
+
+
+def _build_classes(total_seats, schedule, booked_seats):
+    """Build the AC_S / SNIGDHA / S_CHAIR breakdown (coaches + seats) for one schedule."""
+    class_seat_counts = _split_seats_by_class(total_seats)
+    coach_index = 0
+    classes_data = []
+
+    for cfg in CLASS_CONFIG:
+        class_total = class_seat_counts[cfg["code"]]
+        price = getattr(schedule, cfg["price_field"]) or 0
+        coaches = []
+        seat_num = 1
+        class_available = 0
+
+        while seat_num <= class_total:
+            coach_letter = get_coach_letter(coach_index)
+            coach_seats = []
+            for _ in range(cfg["seats_per_coach"]):
+                if seat_num > class_total:
+                    break
+                coach_seats.append(f"{coach_letter}{seat_num}")
+                seat_num += 1
+
+            coach_available = sum(1 for s in coach_seats if s not in booked_seats)
+            class_available += coach_available
+
+            coaches.append({
+                "letter": coach_letter,
+                "seats": coach_seats,
+                "total": len(coach_seats),
+                "available": coach_available,
+            })
+            coach_index += 1
+
+        classes_data.append({
+            "code": cfg["code"],
+            "label": cfg["label"],
+            "price": price,
+            "total_seats": class_total,
+            "available_seats": class_available,
+            "coaches": coaches,
+        })
+
+    return classes_data
+
+
+def _split_seats_by_class(total_seats):
+    """Return {class_code: seat_count} where the shares sum back to total_seats exactly."""
+    counts = {}
+    remaining = total_seats
+    for i, cfg in enumerate(CLASS_CONFIG):
+        if i == len(CLASS_CONFIG) - 1:
+            count = remaining  # last class absorbs any rounding remainder
+        else:
+            count = round(total_seats * cfg["share"])
+            remaining -= count
+        counts[cfg["code"]] = max(count, 0)
+    return counts
+
+
+def _build_classes(total_seats, base_price, booked_seats):
+    """Build the SNIGDHA / S_CHAIR / AC_S breakdown (with coaches + seats) for one schedule."""
+    class_seat_counts = _split_seats_by_class(total_seats)
+    coach_index = 0  # shared across classes so coach letters never repeat on a schedule
+    classes_data = []
+
+    for cfg in CLASS_CONFIG:
+        class_total = class_seat_counts[cfg["code"]]
+        coaches = []
+        seat_num = 1
+        class_available = 0
+
+        while seat_num <= class_total:
+            coach_letter = get_coach_letter(coach_index)
+            coach_seats = []
+            for _ in range(cfg["seats_per_coach"]):
+                if seat_num > class_total:
+                    break
+                coach_seats.append(f"{coach_letter}{seat_num}")
+                seat_num += 1
+
+            coach_available = sum(1 for s in coach_seats if s not in booked_seats)
+            class_available += coach_available
+
+            coaches.append({
+                "letter": coach_letter,
+                "seats": coach_seats,
+                "total": len(coach_seats),
+                "available": coach_available,
+            })
+            coach_index += 1
+
+        classes_data.append({
+            "code": cfg["code"],
+            "label": cfg["label"],
+            "price": round((base_price or 0) * cfg["price_multiplier"]),
+            "total_seats": class_total,
+            "available_seats": class_available,
+            "coaches": coaches,
+        })
+
+    return classes_data
+
 
 @login_required
 def ticket_page(request):
@@ -222,28 +334,8 @@ def ticket_page(request):
             ).values_list("seat_number", flat=True)
         )
 
-        coaches = []
-        seat_num = 1
-        coach_index = 0
-
-        while seat_num <= total_seats:
-            coach_letter = get_coach_letter(coach_index)
-            coach_seats = []
-            for _ in range(SEATS_PER_COACH):
-                if seat_num > total_seats:
-                    break
-                coach_seats.append(f"{coach_letter}{seat_num}")
-                seat_num += 1
-
-            available_count = sum(1 for s in coach_seats if s not in booked_seats)
-
-            coaches.append({
-                "letter": coach_letter,
-                "seats": coach_seats,
-                "total": len(coach_seats),
-                "available": available_count,
-            })
-            coach_index += 1
+        classes = _build_classes(total_seats, sched, booked_seats) 
+        starting_price = min((c["price"] for c in classes), default=0)
 
         train_list.append({
             "schedule_id": sched.id,
@@ -253,8 +345,8 @@ def ticket_page(request):
             "arrival_time": sched.arrival_time,
             "source_station": sched.source_station,
             "destination_station": sched.destination_station,
-            "ticket_price": sched.ticket_price or 0,
-            "coaches": coaches,
+            "starting_price": starting_price,
+            "classes": classes,
             "booked_seats": booked_seats,
         })
 
