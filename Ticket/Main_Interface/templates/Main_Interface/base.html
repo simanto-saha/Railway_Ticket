@@ -350,7 +350,7 @@
       <button type="button" class="navbar-toggler-custom d-md-none" data-bs-toggle="collapse" data-bs-target="#navMobile" aria-label="Toggle menu">
         <i class="bi bi-list"></i>
       </button>
-      {% if request.user.is_authenticated %}
+      {% if request.user.is_authenticated and not request.user.is_superuser %}
         <div class="profile-menu dropdown">
           <button type="button" class="profile-trigger" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open profile menu">
             <span class="profile-avatar">
