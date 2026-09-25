@@ -1,4 +1,5 @@
 import random
+import string
 from django.shortcuts import redirect, render
 from django.http import JsonResponse
 from django.contrib.auth.models import User
@@ -12,7 +13,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.urls import reverse
 from .models import Profile, VarificationCode
-from Railway_Admin.models import TrainInformation, TrainSchedule
+from Railway_Admin.models import TrainInformation, TrainSchedule, TrainTicket
 
 
 def home_page(request):
@@ -191,9 +192,64 @@ def change_password(request):
 
     return render(request, "Main_Interface/profile.html", {'password_form': form})
 
+def get_coach_letter(index):
+    if index < 26:
+        return string.ascii_uppercase[index]
+    else:
+        first = (index // 26) - 1
+        second = index % 26
+        return string.ascii_uppercase[first] + string.ascii_uppercase[second]
+    
 
+SEATS_PER_COACH = 60  
+
+@login_required
 def ticket_page(request):
-    return render(request, "Main_Interface/ticket_page.html")
+    if not request.user.is_authenticated:
+        return redirect("login_view")
+
+    schedules = TrainSchedule.objects.select_related("train").all()
+    train_list = []
+
+    for sched in schedules:
+        total_seats = sched.train.total_seats
+        coaches = {}
+        seat_num = 1
+        coach_index = 0
+
+        while seat_num <= total_seats:
+            coach_letter = get_coach_letter(coach_index)
+            coach_seats = []
+            for _ in range(SEATS_PER_COACH):
+                if seat_num > total_seats:
+                    break
+                coach_seats.append(f"{coach_letter}{seat_num}")
+                seat_num += 1
+            coaches[coach_letter] = coach_seats
+            coach_index += 1
+
+        # Seats that are already booked for this schedule, so the page can render
+        # them as unavailable immediately instead of waiting for a WebSocket event.
+        booked_seats = set(
+            TrainTicket.objects.filter(
+                train_schedule=sched, status="booked"
+            ).values_list("seat_number", flat=True)
+        )
+
+        train_list.append({
+            "schedule_id": sched.id,
+            "train_name": sched.train.train_name,
+            "train_number": sched.train.train_number,
+            "departure_time": sched.departure_time,
+            "arrival_time": sched.arrival_time,
+            "source_station": sched.source_station,
+            "destination_station": sched.destination_station,
+            "ticket_price": sched.ticket_price or 0,
+            "seats": coaches,
+            "booked_seats": booked_seats,
+        })
+
+    return render(request, "Main_Interface/ticket_page.html", {"train_list": train_list})
 
 
 def train_schedule(request):
@@ -201,3 +257,61 @@ def train_schedule(request):
         'trains': TrainInformation.objects.all().order_by('train_number'),
         'schedules': TrainSchedule.objects.select_related('train').order_by('departure_time'),
     })
+
+
+import redis
+from django.conf import settings
+from django.db import transaction
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
+
+redis_client = redis.Redis.from_url(settings.REDIS_URL)
+LOCK_TIMEOUT = 10  # seconds
+
+@login_required
+def book_seat(request, schedule_id):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method."}, status=405)
+
+    seat_number = request.POST.get("seat_number")
+    if not seat_number:
+        return JsonResponse({"success": False, "message": "seat_number required."})
+
+    lock_key = f"lock:schedule:{schedule_id}:seat:{seat_number}"
+    lock = redis_client.lock(lock_key, timeout=LOCK_TIMEOUT)
+
+    if not lock.acquire(blocking=True, blocking_timeout=3):
+        return JsonResponse({"success": False, "message": "Seat is being booked by someone else. Try again."})
+
+    try:
+        schedule = TrainSchedule.objects.get(id=schedule_id)
+
+        already_taken = TrainTicket.objects.filter(
+            train_schedule=schedule, seat_number=seat_number, status="booked"
+        ).exists()
+        if already_taken:
+            return JsonResponse({"success": False, "message": "Seat already booked."})
+
+        with transaction.atomic():
+            ticket = TrainTicket.objects.create(
+                train_schedule=schedule,
+                passenger_name=request.user.get_full_name() or request.user.username,
+                passenger_phone_number=request.user.profile.phone_number,
+                seat_number=seat_number,
+                status="booked",
+            )
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"schedule_{schedule_id}",
+            {"type": "seat_update", "seat_number": seat_number, "status": "booked"},
+        )
+
+        return JsonResponse({
+            "success": True,
+            "message": "Seat booked successfully.",
+            "confirmation_number": ticket.confirmation_number,
+        })
+    finally:
+        lock.release()

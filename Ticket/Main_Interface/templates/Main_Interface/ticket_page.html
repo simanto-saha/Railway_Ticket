@@ -1,6 +1,856 @@
 {% extends "Main_Interface/base.html" %}
 {% load static %}
 
-{% block title %}RailwaySheba {% endblock %}
+{% block title %}RailwaySheba - Book Ticket{% endblock %}
 
- 
+{% block extra_css %}
+<style>
+    /* Uses the site's design tokens from base.html: --ink, --accent, --mist, --line, Fraunces/Inter */
+
+    .rs-page{ padding: 48px 0 32px; }
+
+    /* ---- Search Hero ---- */
+    .rs-search-hero {
+        background: linear-gradient(155deg, var(--ink-3), var(--ink) 70%);
+        border-radius: var(--radius-l);
+        padding: 2.5rem 2rem;
+        color: #fff;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-2);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .rs-search-hero::after{
+        content:"";
+        position:absolute; right:-60px; top:-60px;
+        width:220px; height:220px; border-radius:50%;
+        background: radial-gradient(circle, rgba(79,199,133,0.28), transparent 70%);
+    }
+
+    .rs-search-hero h2 {
+        font-family:'Fraunces',serif;
+        font-weight: 600;
+        font-size: 1.9rem;
+        color: #fff;
+        margin-bottom: .3rem;
+        position: relative;
+    }
+
+    .rs-search-hero p.subtitle {
+        opacity: .78;
+        margin-bottom: 1.75rem;
+        font-size: .96rem;
+        position: relative;
+    }
+
+    .rs-search-card {
+        background: #fff;
+        border-radius: var(--radius-m);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-2);
+        position: relative;
+    }
+
+    .rs-search-card .form-label {
+        color: var(--ink);
+        font-size: .8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        margin-bottom: 7px;
+    }
+
+    .rs-search-card .form-select,
+    .rs-search-card .form-control {
+        border-radius: var(--radius-s);
+        padding: .65rem .9rem;
+        border: 1.5px solid var(--line);
+        background: var(--mist);
+        font-size: .95rem;
+        color: var(--ink);
+        transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+
+    .rs-search-card .form-select:focus,
+    .rs-search-card .form-control:focus {
+        outline: none;
+        border-color: var(--accent);
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(31,161,92,0.12);
+    }
+
+    /* ---- Train Result Cards ---- */
+    .rs-results-heading{
+        font-family:'Fraunces',serif;
+        color: var(--ink);
+        font-weight: 600;
+        margin-bottom: 1.1rem;
+        font-size: 1.15rem;
+    }
+    .rs-results-heading .count-badge{
+        display:inline-flex; align-items:center;
+        background: var(--accent-soft);
+        color: var(--accent-deep);
+        border-radius: 999px;
+        font-family:'Inter',sans-serif;
+        font-size: .78rem;
+        font-weight: 700;
+        padding: .2rem .65rem;
+        margin-right: .5rem;
+    }
+
+    .train-card {
+        border-radius: var(--radius-m);
+        background: #fff;
+        transition: box-shadow .2s ease, transform .2s ease;
+        overflow: hidden;
+        border: 1px solid var(--line) !important;
+        box-shadow: var(--shadow-1);
+    }
+
+    .train-card:hover {
+        box-shadow: var(--shadow-2);
+        transform: translateY(-2px);
+    }
+
+    .train-name {
+        font-family:'Fraunces',serif;
+        font-weight: 600;
+        font-size: 1.2rem;
+        color: var(--ink);
+    }
+
+    .train-number-badge {
+        font-family:'Inter',sans-serif;
+        font-size: .72rem;
+        font-weight: 700;
+        background: var(--mist);
+        color: var(--charcoal-soft);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: .2rem .6rem;
+        margin-left: .5rem;
+        vertical-align: middle;
+    }
+
+    .route-line {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        font-weight: 600;
+        color: var(--ink-2);
+        margin: .5rem 0;
+        font-size: .98rem;
+    }
+
+    .route-line i {
+        color: var(--accent);
+    }
+
+    .time-info {
+        font-size: .85rem;
+        color: var(--charcoal-soft);
+    }
+
+    .time-info i {
+        width: 16px;
+        color: var(--accent);
+        opacity: .8;
+    }
+
+    .price-tag {
+        font-family:'Fraunces',serif;
+        font-size: 1.35rem;
+        font-weight: 600;
+        color: var(--accent-deep);
+    }
+
+    .price-tag small {
+        font-family:'Inter',sans-serif;
+        font-size: .68rem;
+        font-weight: 500;
+        color: var(--charcoal-soft);
+    }
+
+    .btn-select-seat {
+        border-radius: 999px;
+        font-weight: 600;
+        padding: .55rem 1.2rem;
+        font-size: .9rem;
+        background: var(--ink);
+        color: #fff;
+        border: none;
+        transition: background .18s ease, transform .18s ease;
+    }
+    .btn-select-seat:hover{ background: var(--ink-3); color:#fff; transform: translateY(-1px); }
+
+    /* ---- Seat Panel ---- */
+    .seat-panel {
+        background: var(--mist);
+        border-radius: var(--radius-m);
+        margin-top: 1.1rem;
+        padding: 1.4rem;
+        border: 1px dashed var(--line);
+    }
+
+    .coach-label {
+        font-weight: 700;
+        color: var(--ink);
+        font-size: .88rem;
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+        margin-bottom: .6rem;
+    }
+
+    .coach-label i {
+        color: var(--accent-deep);
+    }
+
+    .seat-btn {
+        width: 46px;
+        height: 40px;
+        border-radius: 9px;
+        font-size: .8rem;
+        font-weight: 600;
+        border: 1.5px solid var(--line);
+        color: var(--charcoal);
+        background: #fff;
+        transition: all .15s ease;
+    }
+
+    .seat-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent-deep);
+    }
+
+    .seat-btn.seat-selected {
+        background: linear-gradient(135deg, var(--accent-light), var(--accent));
+        border-color: var(--accent);
+        color: #fff;
+        box-shadow: 0 6px 14px rgba(31,161,92,0.28);
+    }
+
+    .seat-btn.seat-booked {
+        background: #fdeceb;
+        border-color: #e6a19b;
+        color: #b3261e;
+        cursor: not-allowed;
+        opacity: .85;
+    }
+    .seat-btn.seat-booked:hover {
+        border-color: #e6a19b;
+        color: #b3261e;
+    }
+    .seat-btn:disabled {
+        pointer-events: none;
+    }
+
+    .seat-legend {
+        font-size: .78rem;
+        color: var(--charcoal-soft);
+        display: flex;
+        gap: 1rem;
+        margin-top: .9rem;
+        flex-wrap: wrap;
+    }
+
+    .seat-legend .dot {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 4px;
+        margin-right: .3rem;
+        vertical-align: middle;
+    }
+
+    .dot-available { background: #fff; border: 1.5px solid var(--line); }
+    .dot-selected { background: linear-gradient(135deg, var(--accent-light), var(--accent)); }
+    .dot-booked { background: #fdeceb; border: 1.5px solid #e6a19b; }
+
+    /* ---- Booking Summary Sidebar ---- */
+    .seat-layout {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 1.5rem;
+        align-items: start;
+    }
+    @media (max-width: 860px) {
+        .seat-layout { grid-template-columns: 1fr; }
+    }
+
+    .coach-select-wrap {
+        margin-bottom: 1.2rem;
+        display: flex;
+        align-items: center;
+        gap: .7rem;
+        flex-wrap: wrap;
+    }
+    .coach-select-wrap label {
+        font-size: .78rem;
+        font-weight: 700;
+        color: var(--ink);
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+    .coach-select {
+        border-radius: var(--radius-s);
+        border: 1.5px solid var(--line);
+        background: #fff;
+        padding: .55rem 2rem .55rem .9rem;
+        font-size: .9rem;
+        font-weight: 600;
+        color: var(--ink);
+        min-width: 210px;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7480' stroke-width='1.6' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right .9rem center;
+    }
+    .coach-select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 4px rgba(31,161,92,0.12);
+    }
+
+    .coach-seat-group { display: none; }
+    .coach-seat-group.active { display: block; }
+
+    .summary-sidebar {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-m);
+        padding: 1.3rem;
+        position: sticky;
+        top: 96px;
+    }
+    .summary-sidebar .sidebar-title {
+        font-family: 'Fraunces', serif;
+        font-weight: 600;
+        color: var(--ink);
+        font-size: 1rem;
+        margin-bottom: .9rem;
+        display: flex;
+        align-items: center;
+        gap: .45rem;
+    }
+    .summary-sidebar .sidebar-title i { color: var(--accent-deep); }
+
+    .journey-mini-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: .75rem;
+        font-size: .84rem;
+        padding: .4rem 0;
+        border-bottom: 1px dashed var(--line);
+    }
+    .journey-mini-row:last-child { border-bottom: none; }
+    .journey-mini-row .jm-label {
+        color: var(--charcoal-soft);
+        white-space: nowrap;
+    }
+    .journey-mini-row .jm-value {
+        color: var(--ink);
+        font-weight: 600;
+        text-align: right;
+    }
+
+    .sidebar-divider {
+        border: none;
+        border-top: 1px solid var(--line);
+        margin: 1.2rem 0;
+    }
+
+    .selected-seats-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .4rem;
+        min-height: 34px;
+        margin-bottom: 1rem;
+    }
+    .selected-seats-list .empty-hint {
+        color: var(--charcoal-soft);
+        font-size: .85rem;
+    }
+    .seat-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        background: var(--accent-soft);
+        color: var(--accent-deep);
+        border-radius: 999px;
+        padding: .3rem .5rem .3rem .75rem;
+        font-size: .8rem;
+        font-weight: 700;
+    }
+    .seat-chip .chip-remove {
+        border: none;
+        background: rgba(20,122,69,0.15);
+        color: var(--accent-deep);
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        font-size: .65rem;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+    }
+    .seat-chip .chip-remove:hover { background: rgba(20,122,69,0.3); }
+
+    .summary-total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px dashed var(--line);
+        padding-top: .9rem;
+        margin-bottom: 1.1rem;
+    }
+    .summary-total-row .label {
+        font-size: .78rem;
+        color: var(--charcoal-soft);
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+    .summary-total-row .value {
+        font-family: 'Fraunces', serif;
+        font-weight: 600;
+        color: var(--accent-deep);
+        font-size: 1.35rem;
+    }
+
+    .btn-confirm {
+        border-radius: 999px;
+        font-weight: 600;
+        padding: .65rem 1.6rem;
+        background: linear-gradient(135deg, var(--accent-light), var(--accent));
+        border: none;
+        color: #fff;
+        box-shadow: 0 10px 24px rgba(31,161,92,0.28);
+        transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+
+    .btn-confirm:hover {
+        background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+        color: #fff;
+        box-shadow: 0 12px 28px rgba(31,161,92,0.34);
+    }
+
+    .btn-confirm:disabled {
+        background: #c7ccd3;
+        box-shadow: none;
+        cursor: not-allowed;
+    }
+
+    /* ---- Empty / No results ---- */
+    .rs-empty-state {
+        text-align: center;
+        padding: 3.5rem 1rem;
+        background: #fff;
+        border-radius: var(--radius-l);
+        border: 1px dashed var(--line);
+        color: var(--charcoal-soft);
+    }
+
+    .rs-empty-state i {
+        font-size: 2.5rem;
+        color: var(--accent-light);
+        margin-bottom: .75rem;
+        display: block;
+    }
+
+    .rs-empty-state h5{
+        font-family:'Fraunces',serif;
+        color: var(--ink);
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wrap rs-page">
+
+    <!-- Search Hero -->
+    <div class="rs-search-hero">
+        <h2><i class="bi bi-train-front-fill me-2"></i>Book Your Train Ticket</h2>
+        <p class="subtitle">Search routes across Bangladesh and reserve your seat in seconds</p>
+
+        <div class="rs-search-card">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">From</label>
+                    <select name="source" class="form-select" required>
+                        <option value="">Select Station</option>
+                        <option value="Dhaka" {% if request.GET.source == "Dhaka" %}selected{% endif %}>Dhaka</option>
+                        <option value="Chittagong" {% if request.GET.source == "Chittagong" %}selected{% endif %}>Chittagong</option>
+                        <option value="Rajshahi" {% if request.GET.source == "Rajshahi" %}selected{% endif %}>Rajshahi</option>
+                        <option value="Sylhet" {% if request.GET.source == "Sylhet" %}selected{% endif %}>Sylhet</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">To</label>
+                    <select name="destination" class="form-select" required>
+                        <option value="">Select Station</option>
+                        <option value="Dhaka" {% if request.GET.destination == "Dhaka" %}selected{% endif %}>Dhaka</option>
+                        <option value="Chittagong" {% if request.GET.destination == "Chittagong" %}selected{% endif %}>Chittagong</option>
+                        <option value="Rajshahi" {% if request.GET.destination == "Rajshahi" %}selected{% endif %}>Rajshahi</option>
+                        <option value="Sylhet" {% if request.GET.destination == "Sylhet" %}selected{% endif %}>Sylhet</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Date of Journey</label>
+                    <input type="date" name="date" class="form-control" value="{{ request.GET.date }}" required>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-accent btn-lg w-100">
+                        <i class="bi bi-search me-1"></i> <span>Search Trains</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Search Results -->
+    {% if train_list %}
+    <div class="rs-results-heading">
+        <span class="count-badge">{{ train_list|length }}</span>train{{ train_list|length|pluralize }} found
+    </div>
+
+    <div class="row g-3">
+        {% for train in train_list %}
+        {% with train_id=forloop.counter %}
+        <div class="col-12">
+            <div class="card train-card shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                        <div>
+                            <div class="train-name">
+                                {{ train.train_name }}
+                                <span class="train-number-badge">#{{ train.train_number }}</span>
+                            </div>
+                            <div class="route-line">
+                                <span>{{ train.source_station }}</span>
+                                <i class="bi bi-arrow-right"></i>
+                                <span>{{ train.destination_station }}</span>
+                            </div>
+                            <div class="time-info">
+                                <i class="bi bi-box-arrow-right"></i> Departure: {{ train.departure_time|date:"d M, Y H:i" }}
+                                &nbsp;|&nbsp;
+                                <i class="bi bi-box-arrow-in-left"></i> Arrival: {{ train.arrival_time|date:"d M, Y H:i" }}
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="price-tag">৳{{ train.ticket_price }} <small>/ seat</small></div>
+                            <button class="btn btn-select-seat mt-2" type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#seatBox{{ train_id }}">
+                                <i class="bi bi-person-badge me-1"></i> Select Seat
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Seat selection panel -->
+                    <div class="collapse" id="seatBox{{ train_id }}" data-schedule="{{ train.schedule_id }}">
+                        <div class="seat-panel">
+                            <div class="seat-layout">
+                                <!-- Left: coach picker + seat grid -->
+                                <div>
+                                    <div class="coach-select-wrap">
+                                        <label for="coachSelect{{ train_id }}">Coach</label>
+                                        <select class="coach-select" id="coachSelect{{ train_id }}" data-train="{{ train_id }}">
+                                            {% for coach, seats in train.seats.items %}
+                                            <option value="{{ coach }}">{{ coach }} &middot; {{ seats|length }} seats</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    {% for coach, seats in train.seats.items %}
+                                    <div class="coach-seat-group" data-train="{{ train_id }}" data-coach="{{ coach }}" data-seat-count="{{ seats|length }}">
+                                        <div class="coach-label"><i class="bi bi-train-lightrail-front-fill"></i> Coach {{ coach }}</div>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            {% for seat in seats %}
+                                            <button type="button"
+                                                class="seat-btn{% if seat in train.booked_seats %} seat-booked{% endif %}"
+                                                data-train="{{ train_id }}"
+                                                data-schedule="{{ train.schedule_id }}"
+                                                data-price="{{ train.ticket_price }}"
+                                                data-seat="{{ seat }}"
+                                                {% if seat in train.booked_seats %}disabled{% endif %}>
+                                                {{ seat }}
+                                            </button>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+
+                                    <div class="seat-legend">
+                                        <span><span class="dot dot-available"></span>Available (click to select)</span>
+                                        <span><span class="dot dot-selected"></span>Selected (double-click to remove)</span>
+                                        <span><span class="dot dot-booked"></span>Already booked</span>
+                                    </div>
+                                </div>
+
+                                <!-- Right: live selection summary -->
+                                <div class="summary-sidebar">
+                                    <div class="sidebar-title"><i class="bi bi-signpost-2"></i> Journey Details</div>
+                                    <div class="journey-mini-row">
+                                        <span class="jm-label">Train</span>
+                                        <span class="jm-value">{{ train.train_name }} (#{{ train.train_number }})</span>
+                                    </div>
+                                    <div class="journey-mini-row">
+                                        <span class="jm-label">Route</span>
+                                        <span class="jm-value">{{ train.source_station }} → {{ train.destination_station }}</span>
+                                    </div>
+                                    <div class="journey-mini-row">
+                                        <span class="jm-label">Departure</span>
+                                        <span class="jm-value">{{ train.departure_time|date:"d M, H:i" }}</span>
+                                    </div>
+                                    <div class="journey-mini-row">
+                                        <span class="jm-label">Price / Seat</span>
+                                        <span class="jm-value">৳{{ train.ticket_price }}</span>
+                                    </div>
+
+                                    <hr class="sidebar-divider">
+
+                                    <div class="sidebar-title"><i class="bi bi-ticket-perforated"></i> Your Selection</div>
+                                    <div class="selected-seats-list" id="selectedSeats{{ train_id }}">
+                                        <span class="empty-hint">No seats selected yet</span>
+                                    </div>
+                                    <div class="summary-total-row">
+                                        <span class="label">Total Price</span>
+                                        <span class="value" id="totalPrice{{ train_id }}">৳0</span>
+                                    </div>
+                                    <button class="btn btn-confirm w-100" type="button"
+                                        id="confirmBtn{{ train_id }}"
+                                        disabled
+                                        onclick="bookTrain({{ train_id }}, {{ train.schedule_id }}, '{{ train.train_number }}')">
+                                        <i class="bi bi-check2-circle me-1"></i> Confirm Booking
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+    </div>
+
+    {% elif request.GET.source %}
+    <div class="rs-empty-state">
+        <i class="bi bi-emoji-frown"></i>
+        <h5 class="fw-semibold mb-1">No trains found</h5>
+        <p class="mb-0">Try a different route or date.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+const selectedSeatsMap = {}; // { trainId: { seatName: price } }
+
+// ---------- Init: pick the coach with the most seats as default per train ----------
+document.querySelectorAll('.coach-select').forEach(select => {
+    const trainId = select.dataset.train;
+    const groups = document.querySelectorAll('.coach-seat-group[data-train="' + trainId + '"]');
+
+    let bestCoach = null, bestCount = -1;
+    groups.forEach(g => {
+        const count = parseInt(g.dataset.seatCount, 10) || 0;
+        if (count > bestCount) { bestCount = count; bestCoach = g.dataset.coach; }
+    });
+
+    if (bestCoach) {
+        select.value = bestCoach;
+        groups.forEach(g => g.classList.toggle('active', g.dataset.coach === bestCoach));
+    }
+
+    select.addEventListener('change', () => {
+        const chosen = select.value;
+        groups.forEach(g => g.classList.toggle('active', g.dataset.coach === chosen));
+    });
+});
+
+// ---------- Seat interaction: single click selects, double click deselects ----------
+document.querySelectorAll('.seat-btn').forEach(btn => {
+    btn.addEventListener('click', () => selectSeat(btn));
+    btn.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        deselectSeat(btn);
+    });
+});
+
+function selectSeat(btn) {
+    if (btn.disabled || btn.classList.contains('seat-booked')) return;
+
+    const trainId = btn.dataset.train;
+    const seat = btn.dataset.seat;
+    const price = parseFloat(btn.dataset.price);
+
+    if (!selectedSeatsMap[trainId]) selectedSeatsMap[trainId] = {};
+    if (selectedSeatsMap[trainId][seat]) return; // already selected, single click does nothing more
+
+    selectedSeatsMap[trainId][seat] = price;
+    btn.classList.add('seat-selected');
+    updateSummary(trainId);
+}
+
+function deselectSeat(btn) {
+    const trainId = btn.dataset.train;
+    const seat = btn.dataset.seat;
+
+    if (!selectedSeatsMap[trainId] || !selectedSeatsMap[trainId][seat]) return;
+
+    delete selectedSeatsMap[trainId][seat];
+    btn.classList.remove('seat-selected');
+    updateSummary(trainId);
+}
+
+function updateSummary(trainId) {
+    const seatMap = selectedSeatsMap[trainId] || {};
+    const seats = Object.keys(seatMap);
+    const total = Object.values(seatMap).reduce((a, b) => a + b, 0);
+
+    // Rebuild the right-side chip list
+    const listEl = document.getElementById('selectedSeats' + trainId);
+    listEl.innerHTML = '';
+    if (seats.length === 0) {
+        listEl.innerHTML = '<span class="empty-hint">No seats selected yet</span>';
+    } else {
+        seats.forEach(seat => {
+            const chip = document.createElement('span');
+            chip.className = 'seat-chip';
+            chip.innerHTML = seat + ' <button type="button" class="chip-remove" aria-label="Remove ' + seat + '">&times;</button>';
+            chip.querySelector('.chip-remove').addEventListener('click', () => {
+                const seatBtn = document.querySelector('.seat-btn[data-train="' + trainId + '"][data-seat="' + seat + '"]');
+                if (seatBtn) deselectSeat(seatBtn);
+            });
+            listEl.appendChild(chip);
+        });
+    }
+
+    document.getElementById('totalPrice' + trainId).innerText = '৳' + total;
+
+    const confirmBtn = document.getElementById('confirmBtn' + trainId);
+    if (confirmBtn) confirmBtn.disabled = seats.length === 0;
+}
+
+// ---------- Live seat availability via WebSocket (with auto-reconnect) ----------
+function connectSeatSocket(scheduleId, attempt = 0) {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const socket = new WebSocket(`${protocol}//${window.location.host}/ws/schedule/${scheduleId}/`);
+
+    socket.onopen = () => {
+        attempt = 0; // reset backoff once a connection succeeds
+    };
+
+    socket.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        const btn = document.querySelector(
+            `.seat-btn[data-schedule="${scheduleId}"][data-seat="${data.seat_number}"]`
+        );
+        if (!btn || data.status !== 'booked') return;
+
+        const trainId = btn.dataset.train;
+        const seat = btn.dataset.seat;
+
+        // If this seat was selected by the current user, drop it — someone else took it first
+        if (selectedSeatsMap[trainId] && selectedSeatsMap[trainId][seat]) {
+            delete selectedSeatsMap[trainId][seat];
+            updateSummary(trainId);
+        }
+
+        btn.classList.remove('seat-selected');
+        btn.classList.add('seat-booked');
+        btn.disabled = true;
+    };
+
+    socket.onerror = () => console.error('Seat socket error for schedule ' + scheduleId);
+
+    // The server side (Channels/Redis) can drop an idle connection — reconnect with backoff
+    // instead of leaving the user stuck without live seat updates until they refresh.
+    socket.onclose = (e) => {
+        if (e.code === 1000) return; // normal, intentional close — don't reconnect
+        const delay = Math.min(1000 * 2 ** attempt, 15000); // 1s, 2s, 4s ... capped at 15s
+        setTimeout(() => connectSeatSocket(scheduleId, attempt + 1), delay);
+    };
+
+    return socket;
+}
+
+// Open one live socket per train card shown on the page
+document.querySelectorAll('.collapse[data-schedule]').forEach(box => {
+    connectSeatSocket(box.dataset.schedule);
+});
+
+// ---------- Confirm booking: POST each selected seat to the server ----------
+function bookTrain(trainId, scheduleId, trainNumber) {
+    const seats = Object.keys(selectedSeatsMap[trainId] || {});
+    if (seats.length === 0) {
+        alert('Please select at least one seat.');
+        return;
+    }
+
+    const confirmBtn = document.getElementById('confirmBtn' + trainId);
+    const originalLabel = confirmBtn ? confirmBtn.innerHTML : '';
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Booking...';
+    }
+
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    const requests = seats.map(seat =>
+        fetch(`/book-seat/${scheduleId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken,
+            },
+            body: `seat_number=${encodeURIComponent(seat)}`,
+        })
+        .then(r => r.json())
+        .then(data => ({ seat, ...data }))
+        .catch(() => ({ seat, success: false, message: 'Network error while booking ' + seat }))
+    );
+
+    Promise.all(requests).then(results => {
+        const booked = results.filter(r => r.success);
+        const failed = results.filter(r => !r.success);
+
+        booked.forEach(r => {
+            const btn = document.querySelector(
+                `.seat-btn[data-train="${trainId}"][data-seat="${r.seat}"]`
+            );
+            if (btn) {
+                btn.classList.remove('seat-selected');
+                btn.classList.add('seat-booked');
+                btn.disabled = true;
+            }
+            if (selectedSeatsMap[trainId]) delete selectedSeatsMap[trainId][r.seat];
+        });
+
+        updateSummary(trainId);
+
+        if (confirmBtn) {
+            confirmBtn.innerHTML = originalLabel;
+            confirmBtn.disabled = Object.keys(selectedSeatsMap[trainId] || {}).length === 0;
+        }
+
+        if (booked.length) {
+            const confirmations = booked.map(r => `${r.seat}: ${r.confirmation_number || 'confirmed'}`).join('\n');
+            alert(`Train ${trainNumber} — Booked seats:\n${confirmations}`);
+        }
+        if (failed.length) {
+            const failMsgs = failed.map(r => `${r.seat}: ${r.message || 'could not be booked'}`).join('\n');
+            alert(`Some seats could not be booked:\n${failMsgs}`);
+        }
+    });
+}
+</script>
+{% endblock %}

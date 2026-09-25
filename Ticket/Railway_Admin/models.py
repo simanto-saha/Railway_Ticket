@@ -34,6 +34,7 @@ class TrainSchedule(models.Model):
     arrival_time = models.DateTimeField()
     source_station = models.CharField(max_length=100)
     destination_station = models.CharField(max_length=100)
+    ticket_price = models.IntegerField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.train.train_name} - {self.source_station} to {self.destination_station}"
@@ -59,7 +60,7 @@ class TrainTicket(models.Model):
     train_schedule = models.ForeignKey(TrainSchedule, on_delete=models.CASCADE)
     passenger_name = models.CharField(max_length=100)
     passenger_phone_number = models.CharField(max_length=15)
-    seat_number = models.PositiveIntegerField()
+    seat_number = models.CharField(max_length=10)
     booking_time = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=10, choices=StatusChoices, default='booked')
     confirmation_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
