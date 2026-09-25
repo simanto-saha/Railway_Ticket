@@ -173,6 +173,41 @@
         color: var(--charcoal-soft);
     }
 
+    /* ---- Class Cards (ticket-class selector, image-style) ---- */
+    .class-cards-row{
+        display:flex; gap:.9rem; margin-top:1.2rem; flex-wrap:wrap;
+    }
+    .class-card{
+        flex:1; min-width:150px;
+        border:1.5px solid var(--line);
+        border-radius: var(--radius-m);
+        padding:1rem 1.1rem;
+        background:#fff;
+        cursor:pointer;
+        transition: all .18s ease;
+    }
+    .class-card:hover{ border-color: var(--accent); transform: translateY(-1px); }
+    .class-card.active{
+        background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+        border-color: var(--accent-deep);
+        color:#fff;
+        box-shadow: 0 10px 24px rgba(31,161,92,0.28);
+    }
+    .class-card.active .class-card-price,
+    .class-card.active .class-card-avail{ color:#fff; opacity:.92; }
+    .class-card-name{
+        font-weight:700; font-size:.82rem;
+        text-transform:uppercase; letter-spacing:.03em;
+    }
+    .class-card-price{
+        font-family:'Fraunces',serif; font-weight:600;
+        font-size:1.35rem; margin:.3rem 0;
+    }
+    .class-card-avail{
+        font-size:.78rem; color:var(--charcoal-soft); margin-bottom:.7rem;
+    }
+    .class-card .btn-select-seat{ pointer-events:none; } /* card itself handles the click */
+
     .btn-select-seat {
         border-radius: 999px;
         font-weight: 600;
@@ -183,7 +218,9 @@
         border: none;
         transition: background .18s ease, transform .18s ease;
     }
-    .btn-select-seat:hover{ background: var(--ink-3); color:#fff; transform: translateY(-1px); }
+    .class-card.active .btn-select-seat{
+        background: rgba(255,255,255,0.22);
+    }
 
     /* ---- Seat Panel ---- */
     .seat-panel {
@@ -192,6 +229,23 @@
         margin-top: 1.1rem;
         padding: 1.4rem;
         border: 1px dashed var(--line);
+    }
+
+    .seat-panel-heading{
+        font-family:'Fraunces',serif;
+        font-weight:600;
+        font-size:1rem;
+        color: var(--ink);
+        margin-bottom: 1rem;
+        display:flex; align-items:center; gap:.5rem;
+    }
+    .seat-panel-heading i{ color: var(--accent-deep); }
+    .seat-panel-price{
+        margin-left:auto;
+        font-family:'Inter',sans-serif;
+        font-size:.85rem;
+        font-weight:700;
+        color: var(--accent-deep);
     }
 
     .coach-label {
@@ -220,7 +274,7 @@
     }
 
     .seat-btn {
-        width: 46px;
+        width: 58px;
         height: 40px;
         border-radius: 9px;
         font-size: .8rem;
@@ -279,6 +333,42 @@
     .dot-available { background: #fff; border: 1.5px solid var(--line); }
     .dot-selected { background: linear-gradient(135deg, var(--accent-light), var(--accent)); }
     .dot-booked { background: #fdeceb; border: 1.5px solid #e6a19b; }
+
+    /* ---- Real train-style seat layout: left block + aisle + right block ---- */
+    .seat-coach-layout{
+        display:flex;
+        flex-direction:column;
+        gap:.55rem;
+    }
+    .seat-row{
+        display:flex;
+        align-items:center;
+        gap:10px;
+    }
+    .seat-block{
+        display:flex;
+        gap:.4rem;
+    }
+    .seat-aisle{
+        width:26px;
+        flex-shrink:0;
+        align-self:stretch;
+        position:relative;
+    }
+    .seat-aisle::after{
+        content:"";
+        position:absolute;
+        left:50%;
+        top:0;
+        bottom:0;
+        width:1px;
+        transform:translateX(-50%);
+        background:repeating-linear-gradient(
+            to bottom,
+            var(--line) 0 5px,
+            transparent 5px 10px
+        );
+    }
 
     /* ---- Booking Summary Sidebar ---- */
     .seat-layout {
@@ -479,6 +569,10 @@
         color: var(--ink);
         font-weight: 600;
     }
+
+    /* One panel visible at a time per train, controlled purely by the .active class */
+    .seat-panel-box{ display:none; }
+    .seat-panel-box.active{ display:block; }
 </style>
 {% endblock %}
 
@@ -559,116 +653,116 @@
                         </div>
                     </div>
 
-                    <!-- Class cards: SNIGDHA / S_CHAIR / AC_S -->
-                    <div class="class-cards-row">
+                    <!-- Class cards: AC_S / SNIGDHA / S_CHAIR — click a card to open ONLY its own seat panel -->
+                    <div class="class-cards-row" data-train="{{ train_id }}">
                         {% for klass in train.classes %}
-                        <div class="class-card">
+                        <div class="class-card{% if forloop.first %} active{% endif %}"
+                             data-panel-target="seatBox{{ train_id }}_{{ klass.code }}"
+                             onclick="setActiveClass(this, '{{ train_id }}')">
                             <div class="class-card-name">{{ klass.label }}</div>
                             <div class="class-card-price">৳{{ klass.price }}</div>
                             <div class="class-card-avail">{{ klass.available_seats }} / {{ klass.total_seats }} available</div>
-                            <button class="btn btn-select-seat btn-sm w-100" type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#seatBox{{ train_id }}_{{ klass.code }}">
-                                <i class="bi bi-person-badge me-1"></i> Select Seat
+                            <button class="btn btn-select-seat btn-sm w-100" type="button" tabindex="-1">
+                                <i class="bi bi-person-badge me-1"></i> Book Now
                             </button>
                         </div>
                         {% endfor %}
                     </div>
 
-                    <!-- Seat selection panel, one per class -->
-                    {% for klass in train.classes %}
-                    <div class="collapse" id="seatBox{{ train_id }}_{{ klass.code }}" data-schedule="{{ train.schedule_id }}">
-                        <div class="seat-panel">
-                            <div class="seat-panel-heading">
-                                <i class="bi bi-award"></i> {{ klass.label }} <span class="seat-panel-price">৳{{ klass.price }} / seat</span>
-                            </div>
-                            <div class="seat-layout">
-                                <!-- Left: coach picker + seat grid -->
-                                <div>
-                                    <div class="coach-select-wrap">
-                                        <label for="coachSelect{{ train_id }}_{{ klass.code }}">Coach</label>
-                                        <select class="coach-select" id="coachSelect{{ train_id }}_{{ klass.code }}" data-train="{{ train_id }}" data-class="{{ klass.code }}">
-                                            {% for coach in klass.coaches %}
-                                            <option value="{{ coach.letter }}">{{ coach.letter }} &middot; {{ coach.available }} available{% if coach.available != coach.total %} / {{ coach.total }}{% endif %}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-
-                                    {% for coach in klass.coaches %}
-                                    <div class="coach-seat-group" data-train="{{ train_id }}" data-class="{{ klass.code }}" data-coach="{{ coach.letter }}" data-seat-count="{{ coach.available }}">
-                                        <div class="coach-label"><i class="bi bi-train-lightrail-front-fill"></i> Coach {{ coach.letter }}
-                                            <span class="coach-available-badge">{{ coach.available }} available</span>
-                                        </div>
-                                        <div class="d-flex flex-wrap gap-2">
-                                            {% for seat in coach.seats %}
-                                            <button type="button"
-                                                class="seat-btn{% if seat in train.booked_seats %} seat-booked{% endif %}"
-                                                data-train="{{ train_id }}"
-                                                data-class="{{ klass.code }}"
-                                                data-schedule="{{ train.schedule_id }}"
-                                                data-price="{{ klass.price }}"
-                                                data-seat="{{ seat }}"
-                                                {% if seat in train.booked_seats %}disabled{% endif %}>
-                                                {{ seat }}
-                                            </button>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-
-                                    <div class="seat-legend">
-                                        <span><span class="dot dot-available"></span>Available (click to select)</span>
-                                        <span><span class="dot dot-selected"></span>Selected (double-click to remove)</span>
-                                        <span><span class="dot dot-booked"></span>Already booked</span>
-                                    </div>
+                    <!-- Seat selection panels, one per class — only one visible at a time (controlled by JS) -->
+                    <div class="seat-panels-wrap" data-train="{{ train_id }}">
+                        {% for klass in train.classes %}
+                        <div class="seat-panel-box{% if forloop.first %} active{% endif %}" id="seatBox{{ train_id }}_{{ klass.code }}" data-schedule="{{ train.schedule_id }}">
+                            <div class="seat-panel">
+                                <div class="seat-panel-heading">
+                                    <i class="bi bi-award"></i> {{ klass.label }} <span class="seat-panel-price">৳{{ klass.price }} / seat</span>
                                 </div>
+                                <div class="seat-layout">
+                                    <!-- Left: coach picker + seat grid -->
+                                    <div>
+                                        <div class="coach-select-wrap">
+                                            <label for="coachSelect{{ train_id }}_{{ klass.code }}">Coach</label>
+                                            <select class="coach-select" id="coachSelect{{ train_id }}_{{ klass.code }}" data-train="{{ train_id }}" data-class="{{ klass.code }}">
+                                                {% for coach in klass.coaches %}
+                                                <option value="{{ coach.letter }}">{{ coach.letter }} &middot; {{ coach.available }} available{% if coach.available != coach.total %} / {{ coach.total }}{% endif %}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
 
-                                <!-- Right: live selection summary -->
-                                <div class="summary-sidebar">
-                                    <div class="sidebar-title"><i class="bi bi-signpost-2"></i> Journey Details</div>
-                                    <div class="journey-mini-row">
-                                        <span class="jm-label">Train</span>
-                                        <span class="jm-value">{{ train.train_name }} (#{{ train.train_number }})</span>
-                                    </div>
-                                    <div class="journey-mini-row">
-                                        <span class="jm-label">Route</span>
-                                        <span class="jm-value">{{ train.source_station }} → {{ train.destination_station }}</span>
-                                    </div>
-                                    <div class="journey-mini-row">
-                                        <span class="jm-label">Departure</span>
-                                        <span class="jm-value">{{ train.departure_time|date:"d M, H:i" }}</span>
-                                    </div>
-                                    <div class="journey-mini-row">
-                                        <span class="jm-label">Class</span>
-                                        <span class="jm-value">{{ klass.label }}</span>
-                                    </div>
-                                    <div class="journey-mini-row">
-                                        <span class="jm-label">Price / Seat</span>
-                                        <span class="jm-value">৳{{ klass.price }}</span>
+                                        {% for coach in klass.coaches %}
+                                        <div class="coach-seat-group" data-train="{{ train_id }}" data-class="{{ klass.code }}" data-coach="{{ coach.letter }}" data-seat-count="{{ coach.available }}">
+
+                                            <div class="d-flex flex-wrap gap-2">
+                                                {% for seat in coach.seats %}
+                                                <button type="button"
+                                                    class="seat-btn{% if seat in train.booked_seats %} seat-booked{% endif %}"
+                                                    data-train="{{ train_id }}"
+                                                    data-class="{{ klass.code }}"
+                                                    data-schedule="{{ train.schedule_id }}"
+                                                    data-price="{{ klass.price }}"
+                                                    data-seat="{{ seat }}"
+                                                    {% if seat in train.booked_seats %}disabled{% endif %}>
+                                                    {{ seat }}
+                                                </button>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+
+                                        <div class="seat-legend">
+                                            <span><span class="dot dot-available"></span>Available (click to select)</span>
+                                            <span><span class="dot dot-selected"></span>Selected (double-click to remove)</span>
+                                            <span><span class="dot dot-booked"></span>Already booked</span>
+                                        </div>
                                     </div>
 
-                                    <hr class="sidebar-divider">
+                                    <!-- Right: live selection summary -->
+                                    <div class="summary-sidebar">
+                                        <div class="sidebar-title"><i class="bi bi-signpost-2"></i> Journey Details</div>
+                                        <div class="journey-mini-row">
+                                            <span class="jm-label">Train</span>
+                                            <span class="jm-value">{{ train.train_name }} (#{{ train.train_number }})</span>
+                                        </div>
+                                        <div class="journey-mini-row">
+                                            <span class="jm-label">Route</span>
+                                            <span class="jm-value">{{ train.source_station }} → {{ train.destination_station }}</span>
+                                        </div>
+                                        <div class="journey-mini-row">
+                                            <span class="jm-label">Departure</span>
+                                            <span class="jm-value">{{ train.departure_time|date:"d M, H:i" }}</span>
+                                        </div>
+                                        <div class="journey-mini-row">
+                                            <span class="jm-label">Class</span>
+                                            <span class="jm-value">{{ klass.label }}</span>
+                                        </div>
+                                        <div class="journey-mini-row">
+                                            <span class="jm-label">Price / Seat</span>
+                                            <span class="jm-value">৳{{ klass.price }}</span>
+                                        </div>
 
-                                    <div class="sidebar-title"><i class="bi bi-ticket-perforated"></i> Your Selection</div>
-                                    <p class="seat-limit-hint">Maximum 4 seats can be booked at a time.</p>
-                                    <div class="selected-seats-list" id="selectedSeats{{ train_id }}_{{ klass.code }}">
-                                        <span class="empty-hint">No seats selected yet</span>
+                                        <hr class="sidebar-divider">
+
+                                        <div class="sidebar-title"><i class="bi bi-ticket-perforated"></i> Your Selection</div>
+                                        <p class="seat-limit-hint">Maximum 4 seats can be booked at a time.</p>
+                                        <div class="selected-seats-list" id="selectedSeats{{ train_id }}_{{ klass.code }}">
+                                            <span class="empty-hint">No seats selected yet</span>
+                                        </div>
+                                        <div class="summary-total-row">
+                                            <span class="label">Total Price</span>
+                                            <span class="value" id="totalPrice{{ train_id }}_{{ klass.code }}">৳0</span>
+                                        </div>
+                                        <button class="btn btn-confirm w-100" type="button"
+                                            id="confirmBtn{{ train_id }}_{{ klass.code }}"
+                                            disabled
+                                            onclick="bookTrain('{{ train_id }}_{{ klass.code }}', {{ train.schedule_id }}, '{{ train.train_number }}')">
+                                            <i class="bi bi-check2-circle me-1"></i> Confirm Booking
+                                        </button>
                                     </div>
-                                    <div class="summary-total-row">
-                                        <span class="label">Total Price</span>
-                                        <span class="value" id="totalPrice{{ train_id }}_{{ klass.code }}">৳0</span>
-                                    </div>
-                                    <button class="btn btn-confirm w-100" type="button"
-                                        id="confirmBtn{{ train_id }}_{{ klass.code }}"
-                                        disabled
-                                        onclick="bookTrain('{{ train_id }}', '{{ klass.code }}', {{ train.schedule_id }}, '{{ train.train_number }}')">
-                                        <i class="bi bi-check2-circle me-1"></i> Confirm Booking
-                                    </button>
                                 </div>
                             </div>
                         </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                 </div>
             </div>
         </div>
@@ -687,12 +781,83 @@
 </div>
 
 <script>
-const selectedSeatsMap = {}; // { trainId: { seatName: price } }
+const selectedSeatsMap = {}; // { "trainId_classCode": { seatName: price } }
 
-// ---------- Init: pick the coach with the most AVAILABLE seats as default per train ----------
+// ---------- Class card selector: click a card => activate its own card+panel, deactivate the rest ----------
+function setActiveClass(card, trainId) {
+    card.closest('.class-cards-row').querySelectorAll('.class-card')
+        .forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+
+    const targetId = card.dataset.panelTarget;
+    const panelsWrap = document.querySelector('.seat-panels-wrap[data-train="' + trainId + '"]');
+    if (!panelsWrap) return;
+    panelsWrap.querySelectorAll('.seat-panel-box').forEach(box => {
+        box.classList.toggle('active', box.id === targetId);
+    });
+}
+
+// ---------- Seat interaction: single click selects, double click deselects ----------
+document.querySelectorAll('.seat-btn').forEach(btn => {
+    btn.addEventListener('click', () => selectSeat(btn));
+    btn.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        deselectSeat(btn);
+    });
+});
+
+// ---------- Rebuild each coach's flat seat list into real train-style rows ----------
+// AC_S / SNIGDHA -> 2 + 2 (aisle) per row. S_CHAIR -> 3 + 2 per row (Shovon Chair style).
+// Moves the existing <button> nodes (does not clone them), so click/dblclick listeners stay attached.
+function buildTrainSeatLayout() {
+    document.querySelectorAll('.coach-seat-group').forEach(group => {
+        const classCode = group.dataset.class;
+        const oldWrap = group.querySelector(':scope > .d-flex.flex-wrap.gap-2');
+        if (!oldWrap) return;
+
+        const seatButtons = Array.from(oldWrap.children);
+        const groupSizes = classCode === 'S_CHAIR' ? [3, 2] : [2, 2];
+        const rowSize = groupSizes[0] + groupSizes[1];
+
+        const layout = document.createElement('div');
+        layout.className = 'seat-coach-layout';
+
+        for (let i = 0; i < seatButtons.length; i += rowSize) {
+            const rowSeats = seatButtons.slice(i, i + rowSize);
+            const row = document.createElement('div');
+            row.className = 'seat-row';
+
+            const leftBlock = document.createElement('div');
+            leftBlock.className = 'seat-block';
+            const rightBlock = document.createElement('div');
+            rightBlock.className = 'seat-block';
+
+            rowSeats.forEach((btn, idx) => {
+                (idx < groupSizes[0] ? leftBlock : rightBlock).appendChild(btn);
+            });
+
+            const aisle = document.createElement('div');
+            aisle.className = 'seat-aisle';
+
+            row.appendChild(leftBlock);
+            row.appendChild(aisle);
+            row.appendChild(rightBlock);
+            layout.appendChild(row);
+        }
+
+        oldWrap.replaceWith(layout);
+    });
+}
+
+buildTrainSeatLayout();
+
+// ---------- Init: pick the coach with the most AVAILABLE seats as default per (train, class) ----------
 document.querySelectorAll('.coach-select').forEach(select => {
     const trainId = select.dataset.train;
-    const groups = document.querySelectorAll('.coach-seat-group[data-train="' + trainId + '"]');
+    const classCode = select.dataset.class;
+    const groups = document.querySelectorAll(
+        '.coach-seat-group[data-train="' + trainId + '"][data-class="' + classCode + '"]'
+    );
 
     let bestCoach = null, bestCount = -1;
     groups.forEach(g => {
@@ -711,48 +876,40 @@ document.querySelectorAll('.coach-select').forEach(select => {
     });
 });
 
-// ---------- Seat interaction: single click selects, double click deselects ----------
-document.querySelectorAll('.seat-btn').forEach(btn => {
-    btn.addEventListener('click', () => selectSeat(btn));
-    btn.addEventListener('dblclick', (e) => {
-        e.preventDefault();
-        deselectSeat(btn);
-    });
-});
-
 function selectSeat(btn) {
     if (btn.disabled || btn.classList.contains('seat-booked')) return;
 
-    const trainId = btn.dataset.train;
+    const key = btn.dataset.train + '_' + btn.dataset.class;
     const seat = btn.dataset.seat;
     const price = parseFloat(btn.dataset.price);
 
-    if (!selectedSeatsMap[trainId]) selectedSeatsMap[trainId] = {};
-    if (selectedSeatsMap[trainId][seat]) return; // already selected, single click does nothing more
+    if (!selectedSeatsMap[key]) selectedSeatsMap[key] = {};
+    if (selectedSeatsMap[key][seat]) return; // already selected, single click does nothing more
 
-    selectedSeatsMap[trainId][seat] = price;
+    selectedSeatsMap[key][seat] = price;
     btn.classList.add('seat-selected');
-    updateSummary(trainId);
+    updateSummary(key);
 }
 
 function deselectSeat(btn) {
-    const trainId = btn.dataset.train;
+    const key = btn.dataset.train + '_' + btn.dataset.class;
     const seat = btn.dataset.seat;
 
-    if (!selectedSeatsMap[trainId] || !selectedSeatsMap[trainId][seat]) return;
+    if (!selectedSeatsMap[key] || !selectedSeatsMap[key][seat]) return;
 
-    delete selectedSeatsMap[trainId][seat];
+    delete selectedSeatsMap[key][seat];
     btn.classList.remove('seat-selected');
-    updateSummary(trainId);
+    updateSummary(key);
 }
 
-function updateSummary(trainId) {
-    const seatMap = selectedSeatsMap[trainId] || {};
+function updateSummary(key) {
+    const seatMap = selectedSeatsMap[key] || {};
     const seats = Object.keys(seatMap);
     const total = Object.values(seatMap).reduce((a, b) => a + b, 0);
 
     // Rebuild the right-side chip list
-    const listEl = document.getElementById('selectedSeats' + trainId);
+    const listEl = document.getElementById('selectedSeats' + key);
+    if (!listEl) return;
     listEl.innerHTML = '';
     if (seats.length === 0) {
         listEl.innerHTML = '<span class="empty-hint">No seats selected yet</span>';
@@ -762,16 +919,19 @@ function updateSummary(trainId) {
             chip.className = 'seat-chip';
             chip.innerHTML = seat + ' <button type="button" class="chip-remove" aria-label="Remove ' + seat + '">&times;</button>';
             chip.querySelector('.chip-remove').addEventListener('click', () => {
-                const seatBtn = document.querySelector('.seat-btn[data-train="' + trainId + '"][data-seat="' + seat + '"]');
+                const [trainId, classCode] = key.split('_');
+                const seatBtn = document.querySelector(
+                    '.seat-btn[data-train="' + trainId + '"][data-class="' + classCode + '"][data-seat="' + seat + '"]'
+                );
                 if (seatBtn) deselectSeat(seatBtn);
             });
             listEl.appendChild(chip);
         });
     }
 
-    document.getElementById('totalPrice' + trainId).innerText = '৳' + total;
+    document.getElementById('totalPrice' + key).innerText = '৳' + total;
 
-    const confirmBtn = document.getElementById('confirmBtn' + trainId);
+    const confirmBtn = document.getElementById('confirmBtn' + key);
     if (confirmBtn) confirmBtn.disabled = seats.length === 0;
 }
 
@@ -791,13 +951,13 @@ function connectSeatSocket(scheduleId, attempt = 0) {
         );
         if (!btn || data.status !== 'booked') return;
 
-        const trainId = btn.dataset.train;
+        const key = btn.dataset.train + '_' + btn.dataset.class;
         const seat = btn.dataset.seat;
 
         // If this seat was selected by the current user, drop it — someone else took it first
-        if (selectedSeatsMap[trainId] && selectedSeatsMap[trainId][seat]) {
-            delete selectedSeatsMap[trainId][seat];
-            updateSummary(trainId);
+        if (selectedSeatsMap[key] && selectedSeatsMap[key][seat]) {
+            delete selectedSeatsMap[key][seat];
+            updateSummary(key);
         }
 
         btn.classList.remove('seat-selected');
@@ -819,19 +979,20 @@ function connectSeatSocket(scheduleId, attempt = 0) {
 }
 
 // Open one live socket per train card shown on the page
-document.querySelectorAll('.collapse[data-schedule]').forEach(box => {
+document.querySelectorAll('.seat-panel-box[data-schedule]').forEach(box => {
     connectSeatSocket(box.dataset.schedule);
 });
 
 // ---------- Confirm booking: POST each selected seat to the server ----------
-function bookTrain(trainId, scheduleId, trainNumber) {
-    const seats = Object.keys(selectedSeatsMap[trainId] || {});
+function bookTrain(key, scheduleId, trainNumber) {
+    const seats = Object.keys(selectedSeatsMap[key] || {});
     if (seats.length === 0) {
         alert('Please select at least one seat.');
         return;
     }
 
-    const confirmBtn = document.getElementById('confirmBtn' + trainId);
+    const [trainId, classCode] = key.split('_');
+    const confirmBtn = document.getElementById('confirmBtn' + key);
     const originalLabel = confirmBtn ? confirmBtn.innerHTML : '';
     if (confirmBtn) {
         confirmBtn.disabled = true;
@@ -860,21 +1021,21 @@ function bookTrain(trainId, scheduleId, trainNumber) {
 
         booked.forEach(r => {
             const btn = document.querySelector(
-                `.seat-btn[data-train="${trainId}"][data-seat="${r.seat}"]`
+                `.seat-btn[data-train="${trainId}"][data-class="${classCode}"][data-seat="${r.seat}"]`
             );
             if (btn) {
                 btn.classList.remove('seat-selected');
                 btn.classList.add('seat-booked');
                 btn.disabled = true;
             }
-            if (selectedSeatsMap[trainId]) delete selectedSeatsMap[trainId][r.seat];
+            if (selectedSeatsMap[key]) delete selectedSeatsMap[key][r.seat];
         });
 
-        updateSummary(trainId);
+        updateSummary(key);
 
         if (confirmBtn) {
             confirmBtn.innerHTML = originalLabel;
-            confirmBtn.disabled = Object.keys(selectedSeatsMap[trainId] || {}).length === 0;
+            confirmBtn.disabled = Object.keys(selectedSeatsMap[key] || {}).length === 0;
         }
 
         if (booked.length) {
