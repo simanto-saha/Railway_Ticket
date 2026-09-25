@@ -213,7 +213,16 @@ def ticket_page(request):
 
     for sched in schedules:
         total_seats = sched.train.total_seats
-        coaches = {}
+
+        # Seats that are already booked for this schedule, so the page can render
+        # them as unavailable immediately instead of waiting for a WebSocket event.
+        booked_seats = set(
+            TrainTicket.objects.filter(
+                train_schedule=sched, status="booked"
+            ).values_list("seat_number", flat=True)
+        )
+
+        coaches = []
         seat_num = 1
         coach_index = 0
 
@@ -225,16 +234,16 @@ def ticket_page(request):
                     break
                 coach_seats.append(f"{coach_letter}{seat_num}")
                 seat_num += 1
-            coaches[coach_letter] = coach_seats
-            coach_index += 1
 
-        # Seats that are already booked for this schedule, so the page can render
-        # them as unavailable immediately instead of waiting for a WebSocket event.
-        booked_seats = set(
-            TrainTicket.objects.filter(
-                train_schedule=sched, status="booked"
-            ).values_list("seat_number", flat=True)
-        )
+            available_count = sum(1 for s in coach_seats if s not in booked_seats)
+
+            coaches.append({
+                "letter": coach_letter,
+                "seats": coach_seats,
+                "total": len(coach_seats),
+                "available": available_count,
+            })
+            coach_index += 1
 
         train_list.append({
             "schedule_id": sched.id,
@@ -245,7 +254,7 @@ def ticket_page(request):
             "source_station": sched.source_station,
             "destination_station": sched.destination_station,
             "ticket_price": sched.ticket_price or 0,
-            "seats": coaches,
+            "coaches": coaches,
             "booked_seats": booked_seats,
         })
 

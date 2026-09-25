@@ -208,6 +208,17 @@
         color: var(--accent-deep);
     }
 
+    .coach-available-badge {
+        margin-left: auto;
+        background: var(--accent-soft);
+        color: var(--accent-deep);
+        border-radius: 999px;
+        font-family: 'Inter', sans-serif;
+        font-size: .72rem;
+        font-weight: 700;
+        padding: .15rem .6rem;
+    }
+
     .seat-btn {
         width: 46px;
         height: 40px;
@@ -562,17 +573,19 @@
                                     <div class="coach-select-wrap">
                                         <label for="coachSelect{{ train_id }}">Coach</label>
                                         <select class="coach-select" id="coachSelect{{ train_id }}" data-train="{{ train_id }}">
-                                            {% for coach, seats in train.seats.items %}
-                                            <option value="{{ coach }}">{{ coach }} &middot; {{ seats|length }} seats</option>
+                                            {% for coach in train.coaches %}
+                                            <option value="{{ coach.letter }}">{{ coach.letter }} &middot; {{ coach.available }} available{% if coach.available != coach.total %} / {{ coach.total }}{% endif %}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
 
-                                    {% for coach, seats in train.seats.items %}
-                                    <div class="coach-seat-group" data-train="{{ train_id }}" data-coach="{{ coach }}" data-seat-count="{{ seats|length }}">
-                                        <div class="coach-label"><i class="bi bi-train-lightrail-front-fill"></i> Coach {{ coach }}</div>
+                                    {% for coach in train.coaches %}
+                                    <div class="coach-seat-group" data-train="{{ train_id }}" data-coach="{{ coach.letter }}" data-seat-count="{{ coach.available }}">
+                                        <div class="coach-label"><i class="bi bi-train-lightrail-front-fill"></i> Coach {{ coach.letter }}
+                                            <span class="coach-available-badge">{{ coach.available }} available</span>
+                                        </div>
                                         <div class="d-flex flex-wrap gap-2">
-                                            {% for seat in seats %}
+                                            {% for seat in coach.seats %}
                                             <button type="button"
                                                 class="seat-btn{% if seat in train.booked_seats %} seat-booked{% endif %}"
                                                 data-train="{{ train_id }}"
@@ -654,14 +667,14 @@
 <script>
 const selectedSeatsMap = {}; // { trainId: { seatName: price } }
 
-// ---------- Init: pick the coach with the most seats as default per train ----------
+// ---------- Init: pick the coach with the most AVAILABLE seats as default per train ----------
 document.querySelectorAll('.coach-select').forEach(select => {
     const trainId = select.dataset.train;
     const groups = document.querySelectorAll('.coach-seat-group[data-train="' + trainId + '"]');
 
     let bestCoach = null, bestCount = -1;
     groups.forEach(g => {
-        const count = parseInt(g.dataset.seatCount, 10) || 0;
+        const count = parseInt(g.dataset.seatCount, 10) || 0; // available seat count
         if (count > bestCount) { bestCount = count; bestCoach = g.dataset.coach; }
     });
 
