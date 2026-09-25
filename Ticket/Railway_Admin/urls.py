@@ -28,6 +28,7 @@ urlpatterns = [
     path('super-admin/profile/edit/', views.admin_profile_edit, name='admin_profile_edit'),
     path('super-admin/profile/password-change/', views.admin_password_change, name='admin_password_change'),
     path('super-admin/ticket/create/', views.admin_profile_update, name='admin_profile_update'),
+    path('super-admin/schedule/<int:pk>/delete/', views.schedule_delete, name='schedule_delete'),
 
     path('super-admin-login/', views.superuser_login, name='superuser_login'),
     path('superuser-logout/', views.superuser_logout, name='superuser_logout'),

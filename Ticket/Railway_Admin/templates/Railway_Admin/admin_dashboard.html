@@ -1,84 +1,114 @@
 {% extends 'Railway_Admin/superuser_base.html' %}
 {% block content %}
+<style>
+    .dash-wrap { font-family: 'Segoe UI', sans-serif; color: #1a1a2e; }
+    .dash-section { margin-top: 32px; background: #fff; border-radius: 10px; padding: 20px 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+    .dash-section h2 { margin: 0 0 16px; font-size: 18px; display:flex; align-items:center; justify-content:space-between; }
+    .btn-primary { background: #1a1a2e; color:#fff; padding:9px 18px; border:none; border-radius:6px; cursor:pointer; font-size:14px; transition: background .2s; }
+    .btn-primary:hover { background:#33334d; }
+    .data-table { width:100%; border-collapse:collapse; margin-top:14px; font-size:14px; }
+    .data-table th { background:#f4f5fa; color:#1a1a2e; text-align:left; padding:12px; font-weight:600; border-bottom:2px solid #e2e2ea; }
+    .data-table td { padding:12px; border-bottom:1px solid #eee; }
+    .data-table tr:hover td { background:#fafafe; }
+    .row-actions button { background:none; border:1px solid #ccc; border-radius:5px; padding:4px 10px; margin-right:6px; cursor:pointer; font-size:12px; }
+    .row-actions button:hover { border-color:#1a1a2e; }
+    .empty-row td { text-align:center; color:#888; padding:16px; }
+    .price-badge { display:inline-block; background:#eef0fa; color:#1a1a2e; padding:2px 8px; border-radius:4px; font-size:12px; margin-right:4px; }
+
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; z-index:999; }
+    .modal-overlay.active { display:flex; }
+    .modal-box { background:#fff; border-radius:10px; padding:24px 28px; width:400px; max-width:90%; position:relative; max-height:90vh; overflow-y:auto; }
+    .modal-box h2 { margin-top:0; }
+    .modal-box input, .modal-box select { width:100%; padding:10px; margin-bottom:12px; border:1px solid #ddd; border-radius:6px; font-size:14px; box-sizing:border-box; }
+    .modal-box label { font-size:12px; color:#666; }
+    .close-btn { position:absolute; top:14px; right:16px; background:none; border:none; font-size:20px; cursor:pointer; color:#888; }
+    .submit-btn { width:100%; background:#1a1a2e; color:#fff; padding:11px; border:none; border-radius:6px; cursor:pointer; font-size:14px; margin-top:4px; }
+    .submit-btn:hover { background:#33334d; }
+    .error-text { color:#c0392b; font-size:13px; margin-bottom:10px; }
+    .price-row { display:flex; gap:8px; }
+    .price-row input { width:33%; }
+</style>
+
+<div class="dash-wrap">
 <h1>Admin Dashboard</h1>
 
 <!-- Train Information -->
-<h2 style="margin-top:30px;">Train Information</h2>
-<button onclick="openCreateTrain()" style="background:#1a1a2e; color:#fff; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;">+ Add Train</button>
-<table style="width:100%; margin-top:10px; border-collapse:collapse; background:#fff;">
-    <tr style="background:#1a1a2e; color:#fff;">
-        <th style="padding:10px;">Train Number</th>
-        <th style="padding:10px;">Train Name</th>
-        <th style="padding:10px;">Total Seats</th>
-        <th style="padding:10px;">Actions</th>
-    </tr>
-    <tbody id="trainTableBody">
-    {% for train in trains %}
-    <tr id="train-row-{{ train.pk }}" style="border-bottom:1px solid #ddd;">
-        <td style="padding:10px;">{{ train.train_number }}</td>
-        <td style="padding:10px;">{{ train.train_name }}</td>
-        <td style="padding:10px;">{{ train.total_seats }}</td>
-        <td style="padding:10px;"><button type="button" onclick="editTrain({{ train.pk }})">Edit</button> <button type="button" onclick="deleteRow('/super-admin/train/{{ train.pk }}/delete/', 'train-row-{{ train.pk }}')">Delete</button></td>
-    </tr>
-    {% empty %}
-    <tr id="no-trains-row"><td colspan="4" style="padding:10px;">Kono train nai.</td></tr>
-    {% endfor %}
-    </tbody>
-</table>
+<div class="dash-section">
+    <h2>Train Information <button class="btn-primary" onclick="openCreateTrain()">+ Add Train</button></h2>
+    <table class="data-table">
+        <tr><th>Train Number</th><th>Train Name</th><th>Total Seats</th><th>Actions</th></tr>
+        <tbody id="trainTableBody">
+        {% for train in trains %}
+        <tr id="train-row-{{ train.pk }}">
+            <td>{{ train.train_number }}</td>
+            <td>{{ train.train_name }}</td>
+            <td>{{ train.total_seats }}</td>
+            <td class="row-actions">
+                <button type="button" onclick="editTrain({{ train.pk }})">Edit</button>
+                <button type="button" onclick="deleteRow('/super-admin/train/{{ train.pk }}/delete/', 'train-row-{{ train.pk }}')">Delete</button>
+            </td>
+        </tr>
+        {% empty %}
+        <tr id="no-trains-row" class="empty-row"><td colspan="4">Kono train nai.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
 
 <!-- Train Schedule -->
-<h2 style="margin-top:30px;">Train Schedule</h2>
-<button onclick="openCreateSchedule()" style="background:#1a1a2e; color:#fff; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;">+ Add Schedule</button>
-<table style="width:100%; margin-top:10px; border-collapse:collapse; background:#fff;">
-    <tr style="background:#1a1a2e; color:#fff;">
-        <th style="padding:10px;">Train</th>
-        <th style="padding:10px;">Source</th>
-        <th style="padding:10px;">Destination</th>
-        <th style="padding:10px;">Departure</th>
-        <th style="padding:10px;">Arrival</th>
-        <th style="padding:10px;">Actions</th>
-    </tr>
-    <tbody>
-    {% for s in schedules %}
-    <tr id="schedule-row-{{ s.pk }}" style="border-bottom:1px solid #ddd;">
-        <td style="padding:10px;">{{ s.train.train_name }}</td>
-        <td style="padding:10px;">{{ s.source_station }}</td>
-        <td style="padding:10px;">{{ s.destination_station }}</td>
-        <td style="padding:10px;">{{ s.departure_time }}</td>
-        <td style="padding:10px;">{{ s.arrival_time }}</td>
-        <td style="padding:10px;"><button type="button" onclick="editSchedule({{ s.pk }})">Edit</button> <button type="button" onclick="deleteRow('/super-admin/schedule/{{ s.pk }}/delete/', 'schedule-row-{{ s.pk }}')">Delete</button></td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="6" style="padding:10px;">Kono schedule nai.</td></tr>
-    {% endfor %}
-    </tbody>
-</table>
+<div class="dash-section">
+    <h2>Train Schedule <button class="btn-primary" onclick="openCreateSchedule()">+ Add Schedule</button></h2>
+    <table class="data-table">
+        <tr><th>Train</th><th>Source</th><th>Destination</th><th>Departure</th><th>Arrival</th><th>Prices</th><th>Actions</th></tr>
+        <tbody>
+        {% for s in schedules %}
+        <tr id="schedule-row-{{ s.pk }}">
+            <td>{{ s.train.train_name }}</td>
+            <td>{{ s.source_station }}</td>
+            <td>{{ s.destination_station }}</td>
+            <td>{{ s.departure_time }}</td>
+            <td>{{ s.arrival_time }}</td>
+            <td>
+                <span class="price-badge">AC ৳{{ s.ac_ticket_price|default:"-" }}</span>
+                <span class="price-badge">Snigdha ৳{{ s.singdha_ticket_price|default:"-" }}</span>
+                <span class="price-badge">S.Chair ৳{{ s.s_chair_ticket_price|default:"-" }}</span>
+            </td>
+            <td class="row-actions">
+                <button type="button" onclick="editSchedule({{ s.pk }})">Edit</button>
+                <button type="button" onclick="deleteRow('/super-admin/schedule/{{ s.pk }}/delete/', 'schedule-row-{{ s.pk }}')">Delete</button>
+            </td>
+        </tr>
+        {% empty %}
+        <tr class="empty-row"><td colspan="7">Kono schedule nai.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
 
-<!-- Train Driver -->
-<h2 style="margin-top:30px;">Train Drivers</h2>
-<button onclick="openCreateDriver()" style="background:#1a1a2e; color:#fff; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;">+ Add Driver</button>
-<table style="width:100%; margin-top:10px; border-collapse:collapse; background:#fff;">
-    <tr style="background:#1a1a2e; color:#fff;">
-        <th style="padding:10px;">Driver Name</th>
-        <th style="padding:10px;">Train</th>
-        <th style="padding:10px;">License Number</th>
-        <th style="padding:10px;">Contact</th>
-        <th style="padding:10px;">Actions</th>
-    </tr>
-    <tbody>
-    {% for d in drivers %}
-    <tr id="driver-row-{{ d.pk }}" style="border-bottom:1px solid #ddd;">
-        <td style="padding:10px;">{{ d.driver_name }}</td>
-        <td style="padding:10px;">{{ d.train.train_name }}</td>
-        <td style="padding:10px;">{{ d.license_number }}</td>
-        <td style="padding:10px;">{{ d.contact_number }}</td>
-        <td style="padding:10px;"><button type="button" onclick="editDriver({{ d.pk }})">Edit</button> <button type="button" onclick="deleteRow('{% url 'driver_delete' d.pk %}', 'driver-row-{{ d.pk }}')">Delete</button></td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="5" style="padding:10px;">Kono driver nai.</td></tr>
-    {% endfor %}
-    </tbody>
-</table>
+<!-- Train Drivers -->
+<div class="dash-section">
+    <h2>Train Drivers <button class="btn-primary" onclick="openCreateDriver()">+ Add Driver</button></h2>
+    <table class="data-table">
+        <tr><th>Driver Name</th><th>Train</th><th>License Number</th><th>Contact</th><th>Actions</th></tr>
+        <tbody>
+        {% for d in drivers %}
+        <tr id="driver-row-{{ d.pk }}">
+            <td>{{ d.driver_name }}</td>
+            <td>{{ d.train.train_name }}</td>
+            <td>{{ d.license_number }}</td>
+            <td>{{ d.contact_number }}</td>
+            <td class="row-actions">
+                <button type="button" onclick="editDriver({{ d.pk }})">Edit</button>
+                <button type="button" onclick="deleteRow('{% url 'driver_delete' d.pk %}', 'driver-row-{{ d.pk }}')">Delete</button>
+            </td>
+        </tr>
+        {% empty %}
+        <tr class="empty-row"><td colspan="5">Kono driver nai.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+</div>
 
 <!-- Train Modal -->
 <div class="modal-overlay" id="trainModal">
@@ -104,7 +134,7 @@
         <div class="error-text" id="scheduleError" style="display:none;"></div>
         <form id="scheduleForm" onsubmit="submitForm(event, this.dataset.url || '{% url 'schedule_create' %}', 'scheduleError', 'scheduleModal', reloadDashboard)">
             {% csrf_token %}
-            <select name="train" required style="width:100%; padding:10px; margin-bottom:12px;">
+            <select name="train" required>
                 <option value="">-- Select Train --</option>
                 {% for train in trains %}
                 <option value="{{ train.pk }}">{{ train.train_name }}</option>
@@ -112,10 +142,16 @@
             </select>
             <input type="text" name="source_station" placeholder="Source Station" required>
             <input type="text" name="destination_station" placeholder="Destination Station" required>
-            <label style="font-size:12px;">Departure Time</label>
+            <label>Departure Time</label>
             <input type="datetime-local" name="departure_time" required>
-            <label style="font-size:12px;">Arrival Time</label>
+            <label>Arrival Time</label>
             <input type="datetime-local" name="arrival_time" required>
+            <label>Ticket Prices (৳)</label>
+            <div class="price-row">
+                <input type="number" name="ac_ticket_price" placeholder="AC">
+                <input type="number" name="singdha_ticket_price" placeholder="Snigdha">
+                <input type="number" name="s_chair_ticket_price" placeholder="S. Chair">
+            </div>
             <button type="submit" class="submit-btn">Save</button>
         </form>
     </div>
@@ -129,7 +165,7 @@
         <div class="error-text" id="driverError" style="display:none;"></div>
         <form id="driverForm" onsubmit="submitForm(event, this.dataset.url || '{% url 'driver_create' %}', 'driverError', 'driverModal', reloadDashboard)">
             {% csrf_token %}
-            <select name="train" required style="width:100%; padding:10px; margin-bottom:12px;">
+            <select name="train" required>
                 <option value="">-- Select Train --</option>
                 {% for train in trains %}
                 <option value="{{ train.pk }}">{{ train.train_name }}</option>
@@ -152,7 +188,6 @@ function submitForm(e, url, errorId, modalId, onSuccess) {
     const form = e.target;
     const formData = new FormData(form);
     const errorBox = document.getElementById(errorId);
-
     errorBox.style.display = 'none';
     fetch(url, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(res => res.json().then(data => ({ ok: res.ok, data })))
@@ -176,15 +211,13 @@ function addTrainRow(data) {
     document.getElementById('no-trains-row')?.remove();
     const row = document.createElement('tr');
     row.id = `train-row-${data.id}`;
-    row.style.borderBottom = '1px solid #ddd';
     [data.train_number, data.train_name, data.total_seats].forEach(value => {
         const cell = document.createElement('td');
-        cell.style.padding = '10px';
         cell.textContent = value;
         row.appendChild(cell);
     });
     const actions = document.createElement('td');
-    actions.style.padding = '10px';
+    actions.className = 'row-actions';
     actions.innerHTML = `<button type="button" onclick="editTrain(${data.id})">Edit</button> <button type="button" onclick="deleteRow('/super-admin/train/${data.id}/delete/', 'train-row-${data.id}')">Delete</button>`;
     row.appendChild(actions);
     document.getElementById('trainTableBody').appendChild(row);
@@ -210,6 +243,9 @@ function editSchedule(pk) {
         form.elements.destination_station.value = data.destination_station;
         form.elements.departure_time.value = data.departure_time;
         form.elements.arrival_time.value = data.arrival_time;
+        form.elements.ac_ticket_price.value = data.ac_ticket_price ?? '';
+        form.elements.singdha_ticket_price.value = data.singdha_ticket_price ?? '';
+        form.elements.s_chair_ticket_price.value = data.s_chair_ticket_price ?? '';
         form.dataset.url = `/super-admin/schedule/${pk}/edit/`;
         document.getElementById('scheduleModalTitle').textContent = 'Edit Schedule';
         openModal('scheduleModal');
@@ -242,6 +278,33 @@ function deleteRow(url, rowId) {
             else alert(data.error || 'Could not delete the row.');
         })
         .catch(() => alert('Request failed. Please try again.'));
+}
+
+function openCreateTrain() {
+    const form = document.getElementById('trainForm');
+    form.reset();
+    delete form.dataset.url;
+    document.getElementById('trainModalTitle').textContent = 'Add Train';
+    document.getElementById('trainError').style.display = 'none';
+    openModal('trainModal');
+}
+
+function openCreateSchedule() {
+    const form = document.getElementById('scheduleForm');
+    form.reset();
+    delete form.dataset.url;
+    document.getElementById('scheduleModalTitle').textContent = 'Add Schedule';
+    document.getElementById('scheduleError').style.display = 'none';
+    openModal('scheduleModal');
+}
+
+function openCreateDriver() {
+    const form = document.getElementById('driverForm');
+    form.reset();
+    delete form.dataset.url;
+    document.getElementById('driverModalTitle').textContent = 'Add Driver';
+    document.getElementById('driverError').style.display = 'none';
+    openModal('driverModal');
 }
 </script>
 {% endblock %}

@@ -287,12 +287,19 @@ def schedule_create(request):
         if timezone.is_naive(arrival_time):
             arrival_time = timezone.make_aware(arrival_time)
 
+        def parse_price(field):
+            val = request.POST.get(field, '').strip()
+            return int(val) if val else None
+
         TrainSchedule.objects.create(
             train_id=request.POST.get('train'),
             departure_time=departure_time,
             arrival_time=arrival_time,
             source_station=request.POST.get('source_station'),
             destination_station=request.POST.get('destination_station'),
+            ac_ticket_price=parse_price('ac_ticket_price'),
+            singdha_ticket_price=parse_price('singdha_ticket_price'),
+            s_chair_ticket_price=parse_price('s_chair_ticket_price'),
         )
         return JsonResponse({'success': True})
 
