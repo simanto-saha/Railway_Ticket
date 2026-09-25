@@ -268,20 +268,49 @@ def _build_classes(total_seats, schedule, booked_seats):
 
     return classes_data
 
+from datetime import datetime
+
 
 @login_required
 def ticket_page(request):
-    if not request.user.is_authenticated:
-        return redirect("login_view")
+    source = request.GET.get('source', '').strip()
+    destination = request.GET.get('destination', '').strip()
+    date_str = request.GET.get('date', '').strip()
+
+    stations = sorted(set(
+        TrainSchedule.objects.values_list('source_station', flat=True)
+    ) | set(
+        TrainSchedule.objects.values_list('destination_station', flat=True)
+    ))
 
     schedules = TrainSchedule.objects.select_related("train").all()
-    train_list = []
+    search_error = None
+    searched = bool(source or destination or date_str)
 
+    if searched:
+        if not (source and destination and date_str):
+            search_error = 'Source, destination and date are required.'
+            schedules = TrainSchedule.objects.none()
+        else:
+            try:
+                journey_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            except ValueError:
+                journey_date = None
+
+            if journey_date:
+                schedules = schedules.filter(
+                    source_station__iexact=source,
+                    destination_station__iexact=destination,
+                    departure_time__date=journey_date,
+                ).order_by('departure_time')
+            else:
+                search_error = 'Invalid date.'
+                schedules = TrainSchedule.objects.none()
+
+    train_list = []
     for sched in schedules:
         total_seats = sched.train.total_seats
 
-        # Seats that are already booked for this schedule, so the page can render
-        # them as unavailable immediately instead of waiting for a WebSocket event.
         booked_seats = set(
             TrainTicket.objects.filter(
                 train_schedule=sched, status="booked"
@@ -304,7 +333,12 @@ def ticket_page(request):
             "booked_seats": booked_seats,
         })
 
-    return render(request, "Main_Interface/ticket_page.html", {"train_list": train_list})
+    return render(request, "Main_Interface/ticket_page.html", {
+        "train_list": train_list,
+        "stations": stations,
+        "searched": searched,
+        "search_error": search_error,
+    })
 
 
 def train_schedule(request):

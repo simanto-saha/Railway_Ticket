@@ -590,20 +590,18 @@
                     <label class="form-label fw-semibold">From</label>
                     <select name="source" class="form-select" required>
                         <option value="">Select Station</option>
-                        <option value="Dhaka" {% if request.GET.source == "Dhaka" %}selected{% endif %}>Dhaka</option>
-                        <option value="Chittagong" {% if request.GET.source == "Chittagong" %}selected{% endif %}>Chittagong</option>
-                        <option value="Rajshahi" {% if request.GET.source == "Rajshahi" %}selected{% endif %}>Rajshahi</option>
-                        <option value="Sylhet" {% if request.GET.source == "Sylhet" %}selected{% endif %}>Sylhet</option>
+                        {% for st in stations %}
+                        <option value="{{ st }}" {% if request.GET.source == st %}selected{% endif %}>{{ st }}</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">To</label>
                     <select name="destination" class="form-select" required>
                         <option value="">Select Station</option>
-                        <option value="Dhaka" {% if request.GET.destination == "Dhaka" %}selected{% endif %}>Dhaka</option>
-                        <option value="Chittagong" {% if request.GET.destination == "Chittagong" %}selected{% endif %}>Chittagong</option>
-                        <option value="Rajshahi" {% if request.GET.destination == "Rajshahi" %}selected{% endif %}>Rajshahi</option>
-                        <option value="Sylhet" {% if request.GET.destination == "Sylhet" %}selected{% endif %}>Sylhet</option>
+                        {% for st in stations %}
+                        <option value="{{ st }}" {% if request.GET.destination == st %}selected{% endif %}>{{ st }}</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -620,7 +618,13 @@
     </div>
 
     <!-- Search Results -->
-    {% if train_list %}
+     
+     {% if search_error %}
+    <div class="rs-empty-state">
+        <i class="bi bi-exclamation-circle"></i>
+        <h5 class="fw-semibold mb-1">{{ search_error }}</h5>
+    </div>
+    {% elif train_list %}
     <div class="rs-results-heading">
         <span class="count-badge">{{ train_list|length }}</span>train{{ train_list|length|pluralize }} found
     </div>
@@ -770,7 +774,7 @@
         {% endfor %}
     </div>
 
-    {% elif request.GET.source %}
+    {% elif searched %}
     <div class="rs-empty-state">
         <i class="bi bi-emoji-frown"></i>
         <h5 class="fw-semibold mb-1">No trains found</h5>
