@@ -283,14 +283,15 @@ def ticket_page(request):
         TrainSchedule.objects.values_list('destination_station', flat=True)
     ))
 
-    schedules = TrainSchedule.objects.select_related("train").all()
     search_error = None
     searched = bool(source or destination or date_str)
+
+    # Nothing is searched yet -> stays empty, no trains are queried or shown.
+    schedules = TrainSchedule.objects.none()
 
     if searched:
         if not (source and destination and date_str):
             search_error = 'Source, destination and date are required.'
-            schedules = TrainSchedule.objects.none()
         else:
             try:
                 journey_date = datetime.strptime(date_str, '%Y-%m-%d').date()
@@ -298,14 +299,13 @@ def ticket_page(request):
                 journey_date = None
 
             if journey_date:
-                schedules = schedules.filter(
+                schedules = TrainSchedule.objects.select_related("train").filter(
                     source_station__iexact=source,
                     destination_station__iexact=destination,
                     departure_time__date=journey_date,
                 ).order_by('departure_time')
             else:
                 search_error = 'Invalid date.'
-                schedules = TrainSchedule.objects.none()
 
     train_list = []
     for sched in schedules:

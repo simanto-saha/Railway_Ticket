@@ -4,34 +4,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{% block title %}RailwaySheba — Modern Railway Ticket Booking{% endblock %}</title>
+<title>{% block title %}RailwaySheba — Official Ticket Booking Portal{% endblock %}</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 <style>
   :root{
-    --ink:          #0f2947;
-    --ink-2:        #14335a;
-    --ink-3:        #1c4373;
-    --charcoal:     #3c4552;
-    --charcoal-soft:#6b7480;
+    /* Official government palette */
+    --flag-green:   #006a4e;
+    --flag-green-2: #00543e;
+    --flag-green-3: #007a58;
+    --flag-red:     #f42a41;
+    --flag-red-2:   #cc1f34;
+    --gold:         #b8860b;
+    --gold-light:   #d4af37;
+
+    --ink:          #12241d;
+    --charcoal:     #3c4a44;
+    --charcoal-soft:#6b7770;
     --paper:        #ffffff;
-    --mist:         #f5f6f8;
-    --line:         #e6e9ed;
-    --accent:       #1fa15c;
-    --accent-deep:  #147a45;
-    --accent-light: #4fc785;
-    --accent-soft:  #e2f6e9;
-    --radius-s:     10px;
-    --radius-m:     16px;
-    --radius-l:     26px;
-    --shadow-1:     0 2px 10px rgba(15,41,71,0.05);
-    --shadow-2:     0 18px 44px rgba(15,41,71,0.14);
+    --mist:         #f4f7f5;
+    --line:         #d8e2dd;
+
+    --radius-s:     6px;
+    --radius-m:     10px;
+    --radius-l:     14px;
+    --shadow-1:     0 2px 8px rgba(0,60,40,0.08);
+    --shadow-2:     0 16px 40px rgba(0,40,25,0.18);
     --maxw:         1240px;
   }
 
@@ -46,9 +50,9 @@
     line-height:1.6;
   }
   h1,h2,h3,h4,.font-display{
-    font-family:'Fraunces',serif;
-    font-weight:600;
-    letter-spacing:-0.015em;
+    font-family:'Merriweather',serif;
+    font-weight:700;
+    letter-spacing:-0.01em;
     color:var(--ink);
     margin:0;
   }
@@ -56,7 +60,7 @@
   img{ max-width:100%; display:block; }
 
   :focus-visible{
-    outline:2px solid var(--accent);
+    outline:2px solid var(--flag-green);
     outline-offset:3px;
   }
   @media (prefers-reduced-motion: reduce){
@@ -65,119 +69,155 @@
 
   .wrap{ max-width:var(--maxw); margin:0 auto; padding:0 32px; }
 
+  /* ===== Government identity strip ===== */
+  .gov-strip{
+    background:var(--ink);
+    color:#dfe8e4;
+    font-size:0.78rem;
+    letter-spacing:0.02em;
+  }
+  .gov-strip .wrap{
+    display:flex; align-items:center; justify-content:space-between;
+    height:34px;
+  }
+  .gov-strip .gov-left{ display:flex; align-items:center; gap:8px; }
+  .gov-strip .gov-left i{ color:var(--gold-light); }
+  .gov-strip .gov-right a{ color:#dfe8e4; margin-left:16px; }
+  .gov-strip .gov-right a:hover{ color:#fff; text-decoration:underline; }
+  @media (max-width:700px){
+    .gov-strip .gov-right{ display:none; }
+  }
+
+  /* ===== Tricolour accent rule ===== */
+  .tri-rule{ height:4px; background:linear-gradient(90deg, var(--flag-green) 0 66%, var(--flag-red) 66% 100%); }
+
   .btn{
-    border-radius:999px;
+    border-radius:4px;
     font-weight:600;
-    padding:0.7rem 1.5rem;
+    font-size:0.86rem;
+    padding:0.45rem 1.05rem;
     transition:transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
     border:1px solid transparent;
   }
   .btn:active{ transform:translateY(1px); }
   .btn-accent{
-    background:linear-gradient(135deg, var(--accent-light), var(--accent));
+    background:var(--flag-green);
     color:#fff;
-    box-shadow:0 10px 24px rgba(31,161,92,0.28);
+    box-shadow:0 8px 20px rgba(0,106,78,0.28);
+    border-color:var(--flag-green-2);
   }
-  .btn-accent:hover{ background:linear-gradient(135deg, var(--accent), var(--accent-deep)); color:#fff; box-shadow:0 12px 28px rgba(31,161,92,0.34); }
+  .btn-accent:hover{ background:var(--flag-green-2); color:#fff; box-shadow:0 10px 24px rgba(0,106,78,0.34); }
   .btn-accent:disabled{ opacity:0.7; cursor:not-allowed; }
   .btn-outline-ink{
     background:transparent;
-    border-color:rgba(15,41,71,0.16);
+    border-color:rgba(18,36,29,0.22);
     color:var(--ink);
   }
-  .btn-outline-ink:hover{ border-color:var(--ink); background:rgba(15,41,71,0.04); color:var(--ink); }
+  .btn-outline-ink:hover{ border-color:var(--ink); background:rgba(18,36,29,0.05); color:var(--ink); }
   .btn-ghost-light{
     background:transparent;
     color:var(--ink);
-    border-color:rgba(15,41,71,0.18);
+    border-color:rgba(18,36,29,0.24);
   }
-  .btn-ghost-light:hover{ background:rgba(15,41,71,0.05); color:var(--ink); border-color:var(--ink); }
+  .btn-ghost-light:hover{ background:rgba(18,36,29,0.06); color:var(--ink); border-color:var(--ink); }
   .btn-lg{ padding:0.95rem 2.1rem; font-size:1.02rem; }
   .btn-icon-right i{ transition:transform 0.18s ease; }
   .btn-icon-right:hover i{ transform:translateX(3px); }
 
-  .site-nav{
-    position:sticky; top:0; z-index:1030;
+  /* ===== Main header (emblem + name) ===== */
+  .site-header{
     background:#ffffff;
     border-bottom:1px solid var(--line);
-    backdrop-filter:blur(10px);
-    -webkit-backdrop-filter:blur(10px);
   }
-  .site-nav .wrap{
+  .site-header .wrap{
     display:flex; align-items:center; justify-content:space-between;
-    height:76px;
+    padding:2px 32px;
+    gap:20px;
   }
   .brand{
-    display:flex; align-items:center; gap:11px;
-    font-family:'Fraunces',serif;
-    font-weight:600;
-    font-size:1.28rem;
-    color:var(--ink);
+    display:flex; align-items:center; gap:14px;
   }
   .brand-logo-wrap{
     display:inline-flex;
-    align-items:flex-start;
-    width:52px; height:42px;
+    align-items:center; justify-content:center;
+    width:58px; height:58px;
+    border-radius:50%;
+    background:var(--mist);
+    border:2px solid var(--flag-green);
     overflow:hidden;
+    flex-shrink:0;
   }
   .brand-logo{
-    width:52px; height:52px;
+    width:46px; height:46px;
     object-fit:cover;
-    object-position:top;
+  }
+  .brand-text-block{ display:flex; flex-direction:column; line-height:1.28; }
+  .brand-kicker{
+    font-family:'Inter',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    font-size:0.78rem;
+    font-weight:600;
+    color:var(--flag-green);
+    letter-spacing:0.01em;
   }
   .brand-text{
-    font-family:'Fraunces',serif;
-    font-weight:700;
-    font-size:1.32rem;
+    font-family:'Merriweather',serif;
+    font-weight:900;
+    font-size:1.5rem;
     letter-spacing:-0.01em;
     white-space:nowrap;
   }
   .brand-text .txt-railway{ color:var(--ink); }
-  .brand-text .txt-sheba{ color:var(--accent); }
-  .brand-mark{
-    width:34px; height:34px;
-    border-radius:9px;
-    background:linear-gradient(155deg, var(--accent-light), var(--accent-deep));
-    display:grid; place-items:center;
-    color:#fff;
-    font-size:1rem;
+  .brand-text .txt-sheba{ color:var(--flag-red); }
+  .brand-sub{
+    font-size:0.76rem;
+    color:var(--charcoal-soft);
+    margin-top:1px;
+  }
+
+  /* ===== Nav bar (official menu strip) ===== */
+  .site-nav{
+    position:sticky; top:0; z-index:1030;
+    background:var(--flag-green);
+    border-bottom:3px solid var(--flag-red);
+  }
+  .site-nav .wrap{
+    display:flex; align-items:center; justify-content:space-between;
+    height:58px;
   }
   .nav-center{
-    display:flex; align-items:center; gap:36px;
-    margin-left:auto; margin-right:28px;
+    display:flex; align-items:center; gap:4px;
   }
   .nav-center a{
-    color:var(--charcoal-soft);
-    font-size:0.96rem;
-    font-weight:500;
+    color:rgba(255,255,255,0.92);
+    font-size:0.94rem;
+    font-weight:600;
     position:relative;
-    padding:8px 0;
+    padding:10px 18px;
+    border-radius:3px;
+    transition:background 0.15s ease, color 0.15s ease;
   }
-  .nav-center a.active{ color:var(--ink); }
-  .nav-center a.active::after{
-    content:"";
-    position:absolute; left:0; right:0; bottom:-2px;
-    height:2px; border-radius:2px;
-    background:linear-gradient(90deg, var(--accent-light), var(--accent));
-  }
+  .nav-center a:hover{ background:rgba(255,255,255,0.12); color:#fff; }
+  .nav-center a.active{ background:var(--flag-green-2); color:#fff; }
   .nav-actions{ display:flex; align-items:center; gap:10px; }
 
   .profile-menu{ position:relative; }
   .profile-trigger{
     display:flex; align-items:center; gap:9px;
-    border:0; background:transparent; color:var(--ink);
+    border:0; background:transparent; color:#fff;
     padding:4px 0 4px 8px; cursor:pointer;
   }
   .profile-avatar{
-    width:38px; height:38px; border-radius:50%;
+    width:36px; height:36px; border-radius:50%;
     display:grid; place-items:center;
-    background:linear-gradient(155deg, var(--accent-light), var(--accent-deep));
-    color:#fff;
-    font-weight:700; font-size:1rem;
-    box-shadow:0 4px 14px rgba(31,161,92,0.3);
+    background:#fff;
+    color:var(--flag-green);
+    font-weight:800; font-size:0.95rem;
+    box-shadow:0 4px 12px rgba(0,0,0,0.2);
   }
   .profile-trigger .profile-name{ font-size:0.9rem; font-weight:600; }
-  .profile-trigger i{ color:var(--charcoal-soft); font-size:0.8rem; }
+  .profile-trigger i{ color:rgba(255,255,255,0.85); font-size:0.8rem; }
   .profile-dropdown{
     position:absolute; top:calc(100% + 13px); right:0;
     min-width:210px; padding:8px;
@@ -199,13 +239,13 @@
     padding:10px; border-radius:7px; color:var(--ink);
     font-size:0.88rem; font-weight:500;
   }
-  .profile-dropdown a:hover{ background:var(--mist); color:var(--accent-deep); }
-  .profile-dropdown a i{ width:16px; color:var(--accent-deep); }
+  .profile-dropdown a:hover{ background:var(--mist); color:var(--flag-green); }
+  .profile-dropdown a i{ width:16px; color:var(--flag-green); }
   .profile-dropdown form{ margin:0; }
   .profile-dropdown button{
     display:flex; align-items:center; gap:10px; width:100%;
     padding:10px; border:0; border-radius:7px; background:transparent;
-    color:#a34036; font:inherit; font-size:0.88rem; text-align:left; cursor:pointer;
+    color:var(--flag-red-2); font:inherit; font-size:0.88rem; text-align:left; cursor:pointer;
   }
   .profile-dropdown button:hover{ background:#fff2f0; }
   .profile-dropdown button i{ width:16px; }
@@ -217,9 +257,9 @@
   .navbar-toggler-custom{
     display:none;
     background:transparent;
-    border:1px solid rgba(15,41,71,0.2);
-    color:var(--ink);
-    border-radius:8px;
+    border:1px solid rgba(255,255,255,0.4);
+    color:#fff;
+    border-radius:6px;
     padding:8px 11px;
   }
 
@@ -228,11 +268,16 @@
     .navbar-toggler-custom{ display:inline-flex; }
     .nav-actions .btn span{ display:none; }
     .nav-actions .btn{ padding:0.6rem 0.9rem; }
+    .brand-text{ font-size:1.24rem; }
+  }
+  @media (max-width:520px){
+    .brand-sub{ display:none; }
   }
 
   .modal-content{
     border:none;
-    border-radius:var(--radius-l);
+    border-top:4px solid var(--flag-green);
+    border-radius:var(--radius-m);
     box-shadow:var(--shadow-2);
     overflow:hidden;
   }
@@ -241,22 +286,24 @@
   }
   .auth-modal-head .badge-kicker{
     display:inline-flex; align-items:center; gap:8px;
-    color:var(--accent-deep);
-    background:var(--accent-soft);
+    color:var(--flag-green);
+    background:#e6f3ee;
     padding:6px 13px;
-    border-radius:999px;
+    border-radius:3px;
     font-size:0.8rem;
-    font-weight:600;
+    font-weight:700;
     margin-bottom:16px;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
   }
-  .auth-modal-head h3{ font-size:1.55rem; margin-bottom:6px; }
+  .auth-modal-head h3{ font-size:1.5rem; margin-bottom:6px; }
   .auth-modal-head p{ color:var(--charcoal-soft); font-size:0.94rem; margin-bottom:0; }
   .modal-body{ padding:26px 34px 34px; }
   .btn-close{ margin:20px 20px 0 0; }
 
   .field-label{
     font-size:0.85rem;
-    font-weight:600;
+    font-weight:700;
     color:var(--ink);
     margin-bottom:7px;
     display:block;
@@ -285,12 +332,12 @@
   }
   .input-icon input:focus{
     outline:none;
-    border-color:var(--accent);
+    border-color:var(--flag-green);
     background:#fff;
-    box-shadow:0 0 0 4px rgba(31,161,92,0.12);
+    box-shadow:0 0 0 4px rgba(0,106,78,0.12);
   }
   .input-icon input:focus + i,
-  .input-icon:focus-within i{ color:var(--accent); }
+  .input-icon:focus-within i{ color:var(--flag-green); }
   .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   @media (max-width:520px){ .field-row{ grid-template-columns:1fr; } }
 
@@ -299,45 +346,96 @@
     margin:-4px 0 20px;
     font-size:0.86rem;
   }
-  .form-meta-row a{ color:var(--accent-deep); font-weight:600; }
+  .form-meta-row a{ color:var(--flag-green); font-weight:600; }
   .form-switch-text{
     text-align:center;
     margin-top:18px;
     font-size:0.9rem;
     color:var(--charcoal-soft);
   }
-  .form-switch-text a{ color:var(--accent-deep); font-weight:600; cursor:pointer; }
+  .form-switch-text a{ color:var(--flag-green); font-weight:600; cursor:pointer; }
 
   .js-alert-box{ display:none; margin-bottom:16px; }
   .js-alert-box.show{ display:block; }
 
+  /* ===== Official footer ===== */
   .site-footer{
-    background:#ffffff;
-    color:var(--charcoal-soft);
-    border-top:1px solid var(--line);
+    background:var(--ink);
+    color:#c9d6cf;
     margin-top:120px;
   }
+  .site-footer .tri-rule{ height:4px; }
   .site-footer .wrap{
-    padding:42px 32px;
-    display:flex; align-items:center; justify-content:space-between;
-    flex-wrap:wrap; gap:14px;
-    font-size:0.88rem;
+    padding:36px 32px 20px;
+    display:flex; align-items:flex-start; justify-content:space-between;
+    flex-wrap:wrap; gap:24px;
   }
-  .site-footer .brand{ color:var(--ink); font-size:1.05rem; }
+  .site-footer .brand{ color:#fff; }
+  .site-footer .brand-text .txt-railway{ color:#fff; }
+  .site-footer .footer-note{
+    font-size:0.84rem;
+    color:#9fb2a8;
+    max-width:340px;
+    margin-top:8px;
+  }
+  .footer-links{
+    display:flex; gap:48px; flex-wrap:wrap;
+  }
+  .footer-links h6{
+    color:#fff;
+    font-family:'Inter',sans-serif;
+    font-size:0.82rem;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    margin-bottom:12px;
+  }
+  .footer-links ul{ list-style:none; padding:0; margin:0; }
+  .footer-links li{ margin-bottom:8px; }
+  .footer-links a{ color:#c9d6cf; font-size:0.86rem; }
+  .footer-links a:hover{ color:#fff; text-decoration:underline; }
+  .site-footer .bottom-bar{
+    border-top:1px solid rgba(255,255,255,0.12);
+    text-align:center;
+    padding:16px 32px;
+    font-size:0.8rem;
+    color:#8fa298;
+  }
 </style>
 {% block extra_css %}{% endblock %}
 </head>
 <body>
 
-<nav class="site-nav">
+<!-- ============ Government identity strip ============ -->
+<div class="gov-strip">
+  <div class="wrap">
+    <div class="gov-left"><i class="bi bi-bank2"></i> Official Railway Ticket Booking Service</div>
+    <div class="gov-right">
+      <a href="#">Screen Reader</a>
+      <a href="#">Sitemap</a>
+      <a href="#">Help</a>
+    </div>
+  </div>
+</div>
+<div class="tri-rule"></div>
+
+<!-- ============ Header: emblem + service name ============ -->
+<header class="site-header">
   <div class="wrap">
     <a href="{% url 'home_page' %}" class="brand" aria-label="RailwaySheba home">
       <span class="brand-logo-wrap">
         <img src="{% static 'image/RailwaySheba.png' %}" alt="RailwaySheba" class="brand-logo">
       </span>
-      <span class="brand-text"><span class="txt-railway">Railway</span><span class="txt-sheba">Sheba</span></span>
+      <span class="brand-text-block">
+        <span class="brand-text"><span class="txt-railway">Railway</span><span class="txt-sheba">Sheba</span></span>
+      </span>
     </a>
+  </div>
+</header>
 
+<!-- ============ Nav ============ -->
+<nav class="site-nav">
+  <div class="wrap">
     <div class="nav-center">
       <a href="{% url 'home_page' %}" class="{% if request.resolver_match.url_name == 'home_page' %}active{% endif %}">Home</a>
       {% if request.user.is_authenticated %}
@@ -370,19 +468,19 @@
           </div>
         </div>
       {% else %}
-        <button type="button" class="btn btn-ghost-light" data-bs-toggle="modal" data-bs-target="#loginModal">
+        <button type="button" class="btn btn-ghost-light" style="color:#fff;border-color:rgba(255,255,255,0.5);" data-bs-toggle="modal" data-bs-target="#loginModal">
           <span>Login</span>
         </button>
-        <button type="button" class="btn btn-accent" data-bs-toggle="modal" data-bs-target="#registerModal">
+        <button type="button" class="btn btn-accent" style="background:#fff;color:var(--flag-green);box-shadow:none;" data-bs-toggle="modal" data-bs-target="#registerModal">
           <span>Create Account</span>
         </button>
       {% endif %}
     </div>
   </div>
 
-  <div class="collapse d-md-none" id="navMobile">
+  <div class="collapse d-md-none" id="navMobile" style="background:var(--flag-green-2);">
     <div class="wrap pb-3">
-      <a href="{% url 'home_page' %}" class="d-block py-2" style="color:var(--charcoal-soft);">Home</a>
+      <a href="{% url 'home_page' %}" class="d-block py-2" style="color:#fff;">Home</a>
     </div>
   </div>
 </nav>
@@ -391,16 +489,42 @@
   {% block content %}{% endblock %}
 </main>
 
+<!-- ============ Official footer ============ -->
 <footer class="site-footer">
+  <div class="tri-rule"></div>
   <div class="wrap">
-    <div class="brand d-flex align-items-center gap-2">
-      <span class="brand-logo-wrap">
-        <img src="{% static 'image/RailwaySheba.png' %}" alt="RailwaySheba" class="brand-logo">
-      </span>
-      <span class="brand-text"><span class="txt-railway">Railway</span><span class="txt-sheba">Sheba</span></span>
+    <div>
+      <div class="brand d-flex align-items-center gap-2">
+        <span class="brand-logo-wrap" style="border-color:#fff;">
+          <img src="{% static 'image/RailwaySheba.png' %}" alt="RailwaySheba" class="brand-logo">
+        </span>
+        <span class="brand-text-block">
+          <span class="brand-text"><span class="txt-railway">Railway</span><span class="txt-sheba">Sheba</span></span>
+        </span>
+      </div>
+      <p class="footer-note">An official e-service for real-time train schedule lookup and online ticket booking.</p>
     </div>
-    <span>© {% now "Y" %} RailwaySheba. Modern railway ticket booking, made simple.</span>
+
+    <div class="footer-links">
+      <div>
+        <h6>Services</h6>
+        <ul>
+          <li><a href="{% url 'home_page' %}">Home</a></li>
+          <li><a href="{% url 'train_schedule' %}">Train Schedule</a></li>
+          {% if request.user.is_authenticated %}<li><a href="{% url 'ticket_page' %}">Book Ticket</a></li>{% endif %}
+        </ul>
+      </div>
+      <div>
+        <h6>Help</h6>
+        <ul>
+          <li><a href="#">Contact Support</a></li>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+        </ul>
+      </div>
+    </div>
   </div>
+  <div class="bottom-bar">© {% now "Y" %} RailwaySheba. All rights reserved.</div>
 </footer>
 
 <!-- ================= LOGIN MODAL ================= -->

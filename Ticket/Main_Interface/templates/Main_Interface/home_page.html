@@ -19,12 +19,14 @@
 
   .hero-kicker{
     display:inline-flex; align-items:center; gap:8px;
-    background:var(--accent-soft);
-    color:var(--accent-deep);
-    font-size:0.82rem;
-    font-weight:600;
+    background:#e6f3ee;
+    color:var(--flag-green);
+    font-size:0.8rem;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
     padding:7px 15px;
-    border-radius:999px;
+    border-radius:3px;
     margin-bottom:22px;
   }
   .hero h1{
@@ -49,7 +51,7 @@
     font-size:0.88rem;
     color:var(--charcoal-soft);
   }
-  .secure-note i{ color:var(--accent-deep); }
+  .secure-note i{ color:var(--flag-green); }
 
   .trust-row{
     display:flex;
@@ -65,7 +67,7 @@
   }
   .trust-item i{
     font-size:1.15rem;
-    color:var(--accent-deep);
+    color:var(--flag-green);
     margin-top:2px;
   }
   .trust-item strong{
@@ -87,16 +89,17 @@
     border-radius:var(--radius-l);
     overflow:hidden;
     background:
-      radial-gradient(560px 420px at 78% 8%, rgba(182,130,63,0.28), transparent 62%),
-      linear-gradient(155deg, #0d1826 0%, #16283c 55%, #0e1c2c 100%);
+      radial-gradient(560px 420px at 78% 8%, rgba(184,134,11,0.28), transparent 62%),
+      linear-gradient(155deg, #0b1f16 0%, #0f2d20 55%, #0a1a12 100%);
     box-shadow:var(--shadow-2);
+    border-top:4px solid var(--gold);
   }
   .visual-panel .glow{
     position:absolute;
     top:-60px; right:-60px;
     width:280px; height:280px;
     border-radius:50%;
-    background:radial-gradient(circle, rgba(255,224,178,0.22), transparent 70%);
+    background:radial-gradient(circle, rgba(212,175,55,0.22), transparent 70%);
     filter:blur(4px);
   }
   .visual-panel .route-path{
@@ -128,9 +131,9 @@
   }
   .visual-scene .rail{
     position:absolute; left:0; right:0; bottom:20px; height:2px;
-    background:rgba(214,175,120,0.55);
+    background:rgba(212,175,55,0.55);
   }
-  .visual-scene .rail.rail-2{ bottom:14px; background:rgba(214,175,120,0.32); }
+  .visual-scene .rail.rail-2{ bottom:14px; background:rgba(212,175,55,0.32); }
 
   .train-lane{
     position:absolute; left:0; right:0; bottom:34px; height:60px;
@@ -141,6 +144,9 @@
     width:230px;
     animation: glide 11s linear infinite;
     will-change:transform;
+  }
+  .train.train-2{
+    animation-delay:-5.5s;
   }
   @keyframes glide{
     from{ transform:translateX(-260px); }
@@ -163,8 +169,8 @@
     left:24px; right:24px; bottom:16px;
     z-index:3;
     padding:8px 12px;
-    background:rgba(15,41,71,0.9);
-    border:1px solid rgba(255,255,255,0.16);
+    background:rgba(11,31,22,0.92);
+    border:1px solid rgba(212,175,55,0.28);
     border-radius:var(--radius-s);
     backdrop-filter:blur(8px);
   }
@@ -181,11 +187,11 @@
   .panel-schedule-row:last-of-type{ border-bottom:0; }
   .panel-schedule-route{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .panel-schedule-route span{ color:rgba(255,255,255,0.55); }
-  .panel-schedule-row time{ color:#ffe3ad; font-weight:700; white-space:nowrap; }
+  .panel-schedule-row time{ color:#e7c66b; font-weight:700; white-space:nowrap; }
   .panel-schedule-link{
     display:block;
     margin-top:7px;
-    color:var(--accent-light);
+    color:#7fd6ac;
     font-size:.72rem;
     font-weight:700;
     text-align:right;
@@ -211,9 +217,11 @@
     margin-bottom:44px;
   }
   .features-head .eyebrow{
-    color:var(--accent-deep);
-    font-weight:600;
-    font-size:0.86rem;
+    color:var(--flag-green);
+    font-weight:700;
+    font-size:0.84rem;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
     margin-bottom:12px;
     display:block;
   }
@@ -228,6 +236,7 @@
   .feature-card{
     background:var(--mist);
     border-radius:var(--radius-m);
+    border-top:3px solid var(--flag-green);
     padding:30px 28px;
     transition:transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   }
@@ -238,9 +247,9 @@
   }
   .feature-icon{
     width:46px; height:46px;
-    border-radius:12px;
-    background:var(--accent-soft);
-    color:var(--accent-deep);
+    border-radius:8px;
+    background:#e6f3ee;
+    color:var(--flag-green);
     display:grid; place-items:center;
     font-size:1.15rem;
     margin-bottom:18px;
@@ -268,7 +277,7 @@
   <div class="wrap hero-grid">
 
     <div class="hero-copy">
-       
+      <span class="hero-kicker"><i class="bi bi-patch-check"></i> Official Booking Service</span>
       <h1>Your Journey Starts Here</h1>
       <p class="lede">Book train tickets in minutes with real-time seat availability, secure payments, and an instant e-ticket — no counters, no queues.</p>
 
@@ -304,9 +313,9 @@
 
       <div class="route-path">
         <svg viewBox="0 0 320 140" fill="none">
-          <circle cx="26" cy="24" r="5" fill="#e9c98f"/>
-          <path d="M26 24 C 110 10, 150 70, 200 60 S 300 30, 300 90" stroke="rgba(255,255,255,0.28)" stroke-width="2" stroke-dasharray="2 8" stroke-linecap="round"/>
-          <circle cx="300" cy="90" r="5" fill="#e9c98f"/>
+          <circle cx="26" cy="24" r="5" fill="#d4af37"/>
+          <path d="M26 24 C 110 10, 150 70, 200 60 S 300 30, 300 90" stroke="rgba(212,175,55,0.35)" stroke-width="2" stroke-dasharray="2 8" stroke-linecap="round"/>
+          <circle cx="300" cy="90" r="5" fill="#d4af37"/>
         </svg>
       </div>
 
@@ -318,24 +327,49 @@
           <div class="rail"></div>
         </div>
         <div class="train-lane">
-          <div class="train">
+          <div class="train train-1">
             <svg viewBox="0 0 230 62" fill="none">
               <ellipse cx="115" cy="56" rx="112" ry="4.5" fill="#000" opacity="0.3"/>
               <path d="M14 46 C14 30 22 22 40 20 L188 20 C204 20 214 28 214 42 L214 46 C214 49 211 52 208 52 L20 52 C16 52 14 49 14 46 Z" fill="#f4f1ea"/>
               <path d="M14 46 C14 30 22 22 40 20 L60 20 L60 46 Z" fill="#eadfc9"/>
-              <rect x="32" y="26" width="150" height="12" rx="3" fill="#16293c"/>
-              <rect x="34" y="27.5" width="20" height="9" rx="1.5" fill="#3a5878"/>
-              <rect x="58" y="27.5" width="20" height="9" rx="1.5" fill="#3a5878"/>
-              <rect x="82" y="27.5" width="20" height="9" rx="1.5" fill="#3a5878"/>
-              <rect x="106" y="27.5" width="20" height="9" rx="1.5" fill="#3a5878"/>
-              <rect x="130" y="27.5" width="46" height="9" rx="1.5" fill="#3a5878"/>
-              <rect x="14" y="41" width="200" height="3" fill="#b6823f"/>
-              <circle class="headlight" cx="211" cy="44" r="3.4" fill="#ffe3ad"/>
-              <circle cx="46" cy="54" r="8" fill="#101f2e"/>
-              <circle cx="82" cy="54" r="8" fill="#101f2e"/>
-              <circle cx="118" cy="54" r="8" fill="#101f2e"/>
-              <circle cx="154" cy="54" r="8" fill="#101f2e"/>
-              <circle cx="190" cy="54" r="8" fill="#101f2e"/>
+              <rect x="32" y="26" width="150" height="12" rx="3" fill="#0d2318"/>
+              <rect x="34" y="27.5" width="20" height="9" rx="1.5" fill="#1d4a35"/>
+              <rect x="58" y="27.5" width="20" height="9" rx="1.5" fill="#1d4a35"/>
+              <rect x="82" y="27.5" width="20" height="9" rx="1.5" fill="#1d4a35"/>
+              <rect x="106" y="27.5" width="20" height="9" rx="1.5" fill="#1d4a35"/>
+              <rect x="130" y="27.5" width="46" height="9" rx="1.5" fill="#1d4a35"/>
+              <rect x="14" y="41" width="200" height="3" fill="#b8860b"/>
+              <circle class="headlight" cx="211" cy="44" r="3.4" fill="#e7c66b"/>
+              <circle cx="46" cy="54" r="8" fill="#0a1a12"/>
+              <circle cx="82" cy="54" r="8" fill="#0a1a12"/>
+              <circle cx="118" cy="54" r="8" fill="#0a1a12"/>
+              <circle cx="154" cy="54" r="8" fill="#0a1a12"/>
+              <circle cx="190" cy="54" r="8" fill="#0a1a12"/>
+              <circle cx="46" cy="54" r="2.6" fill="#5b6b7a"/>
+              <circle cx="82" cy="54" r="2.6" fill="#5b6b7a"/>
+              <circle cx="118" cy="54" r="2.6" fill="#5b6b7a"/>
+              <circle cx="154" cy="54" r="2.6" fill="#5b6b7a"/>
+              <circle cx="190" cy="54" r="2.6" fill="#5b6b7a"/>
+            </svg>
+          </div>
+          <div class="train train-2">
+            <svg viewBox="0 0 230 62" fill="none">
+              <ellipse cx="115" cy="56" rx="112" ry="4.5" fill="#000" opacity="0.3"/>
+              <path d="M14 46 C14 30 22 22 40 20 L188 20 C204 20 214 28 214 42 L214 46 C214 49 211 52 208 52 L20 52 C16 52 14 49 14 46 Z" fill="#f4f1ea"/>
+              <path d="M14 46 C14 30 22 22 40 20 L60 20 L60 46 Z" fill="#eadfc9"/>
+              <rect x="32" y="26" width="150" height="12" rx="3" fill="#0d2318"/>
+              <rect x="34" y="27.5" width="20" height="9" rx="1.5" fill="#1d4a35"/>
+              <rect x="58" y="27.5" width="20" height="9" rx="1.5" fill="#1d4a35"/>
+              <rect x="82" y="27.5" width="20" height="9" rx="1.5" fill="#1d4a35"/>
+              <rect x="106" y="27.5" width="20" height="9" rx="1.5" fill="#1d4a35"/>
+              <rect x="130" y="27.5" width="46" height="9" rx="1.5" fill="#1d4a35"/>
+              <rect x="14" y="41" width="200" height="3" fill="#b8860b"/>
+              <circle class="headlight" cx="211" cy="44" r="3.4" fill="#e7c66b"/>
+              <circle cx="46" cy="54" r="8" fill="#0a1a12"/>
+              <circle cx="82" cy="54" r="8" fill="#0a1a12"/>
+              <circle cx="118" cy="54" r="8" fill="#0a1a12"/>
+              <circle cx="154" cy="54" r="8" fill="#0a1a12"/>
+              <circle cx="190" cy="54" r="8" fill="#0a1a12"/>
               <circle cx="46" cy="54" r="2.6" fill="#5b6b7a"/>
               <circle cx="82" cy="54" r="2.6" fill="#5b6b7a"/>
               <circle cx="118" cy="54" r="2.6" fill="#5b6b7a"/>

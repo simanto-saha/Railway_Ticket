@@ -5,13 +5,13 @@
 
 {% block extra_css %}
 <style>
-    /* Uses the site's design tokens from base.html: --ink, --accent, --mist, --line, Fraunces/Inter */
+    /* Uses the site's design tokens from base.html: --ink, --flag-green, --mist, --line, Merriweather/Inter */
 
     .rs-page{ padding: 48px 0 32px; }
 
     /* ---- Search Hero ---- */
     .rs-search-hero {
-        background: linear-gradient(155deg, var(--ink-3), var(--ink) 70%);
+        background: linear-gradient(155deg, #0b1f16 0%, #0f2d20 55%, #0a1a12 100%);
         border-radius: var(--radius-l);
         padding: 2.5rem 2rem;
         color: #fff;
@@ -19,18 +19,19 @@
         box-shadow: var(--shadow-2);
         position: relative;
         overflow: hidden;
+        border-top: 4px solid var(--gold);
     }
 
     .rs-search-hero::after{
         content:"";
         position:absolute; right:-60px; top:-60px;
         width:220px; height:220px; border-radius:50%;
-        background: radial-gradient(circle, rgba(79,199,133,0.28), transparent 70%);
+        background: radial-gradient(circle, rgba(212,175,55,0.25), transparent 70%);
     }
 
     .rs-search-hero h2 {
-        font-family:'Fraunces',serif;
-        font-weight: 600;
+        font-family:'Merriweather',serif;
+        font-weight: 700;
         font-size: 1.9rem;
         color: #fff;
         margin-bottom: .3rem;
@@ -75,23 +76,23 @@
     .rs-search-card .form-select:focus,
     .rs-search-card .form-control:focus {
         outline: none;
-        border-color: var(--accent);
+        border-color: var(--flag-green);
         background: #fff;
-        box-shadow: 0 0 0 4px rgba(31,161,92,0.12);
+        box-shadow: 0 0 0 4px rgba(0,106,78,0.12);
     }
 
     /* ---- Train Result Cards ---- */
     .rs-results-heading{
-        font-family:'Fraunces',serif;
+        font-family:'Merriweather',serif;
         color: var(--ink);
-        font-weight: 600;
+        font-weight: 700;
         margin-bottom: 1.1rem;
         font-size: 1.15rem;
     }
     .rs-results-heading .count-badge{
         display:inline-flex; align-items:center;
-        background: var(--accent-soft);
-        color: var(--accent-deep);
+        background: #e6f3ee;
+        color: var(--flag-green);
         border-radius: 999px;
         font-family:'Inter',sans-serif;
         font-size: .78rem;
@@ -107,6 +108,13 @@
         overflow: hidden;
         border: 1px solid var(--line) !important;
         box-shadow: var(--shadow-1);
+        position: relative;
+    }
+    .train-card::before{
+        content:"";
+        position:absolute; top:0; left:0;
+        width:4px; height:100%;
+        background: var(--flag-green);
     }
 
     .train-card:hover {
@@ -115,8 +123,8 @@
     }
 
     .train-name {
-        font-family:'Fraunces',serif;
-        font-weight: 600;
+        font-family:'Merriweather',serif;
+        font-weight: 700;
         font-size: 1.2rem;
         color: var(--ink);
     }
@@ -139,13 +147,13 @@
         align-items: center;
         gap: .5rem;
         font-weight: 600;
-        color: var(--ink-2);
+        color: var(--ink);
         margin: .5rem 0;
         font-size: .98rem;
     }
 
     .route-line i {
-        color: var(--accent);
+        color: var(--flag-green);
     }
 
     .time-info {
@@ -155,15 +163,15 @@
 
     .time-info i {
         width: 16px;
-        color: var(--accent);
+        color: var(--flag-green);
         opacity: .8;
     }
 
     .price-tag {
-        font-family:'Fraunces',serif;
+        font-family:'Merriweather',serif;
         font-size: 1.35rem;
-        font-weight: 600;
-        color: var(--accent-deep);
+        font-weight: 700;
+        color: var(--flag-green);
     }
 
     .price-tag small {
@@ -173,7 +181,7 @@
         color: var(--charcoal-soft);
     }
 
-    /* ---- Class Cards (ticket-class selector, image-style) ---- */
+    /* ---- Class Cards (ticket-class selector) ---- */
     .class-cards-row{
         display:flex; gap:.9rem; margin-top:1.2rem; flex-wrap:wrap;
     }
@@ -186,12 +194,12 @@
         cursor:pointer;
         transition: all .18s ease;
     }
-    .class-card:hover{ border-color: var(--accent); transform: translateY(-1px); }
+    .class-card:hover{ border-color: var(--flag-green); transform: translateY(-1px); }
     .class-card.active{
-        background: linear-gradient(135deg, var(--accent), var(--accent-deep));
-        border-color: var(--accent-deep);
+        background: linear-gradient(135deg, var(--flag-green-3), var(--flag-green-2));
+        border-color: var(--flag-green-2);
         color:#fff;
-        box-shadow: 0 10px 24px rgba(31,161,92,0.28);
+        box-shadow: 0 10px 24px rgba(0,106,78,0.28);
     }
     .class-card.active .class-card-price,
     .class-card.active .class-card-avail{ color:#fff; opacity:.92; }
@@ -200,7 +208,7 @@
         text-transform:uppercase; letter-spacing:.03em;
     }
     .class-card-price{
-        font-family:'Fraunces',serif; font-weight:600;
+        font-family:'Merriweather',serif; font-weight:700;
         font-size:1.35rem; margin:.3rem 0;
     }
     .class-card-avail{
@@ -209,7 +217,7 @@
     .class-card .btn-select-seat{ pointer-events:none; } /* card itself handles the click */
 
     .btn-select-seat {
-        border-radius: 999px;
+        border-radius: 4px;
         font-weight: 600;
         padding: .55rem 1.2rem;
         font-size: .9rem;
@@ -232,20 +240,20 @@
     }
 
     .seat-panel-heading{
-        font-family:'Fraunces',serif;
-        font-weight:600;
+        font-family:'Merriweather',serif;
+        font-weight:700;
         font-size:1rem;
         color: var(--ink);
         margin-bottom: 1rem;
         display:flex; align-items:center; gap:.5rem;
     }
-    .seat-panel-heading i{ color: var(--accent-deep); }
+    .seat-panel-heading i{ color: var(--flag-green); }
     .seat-panel-price{
         margin-left:auto;
         font-family:'Inter',sans-serif;
         font-size:.85rem;
         font-weight:700;
-        color: var(--accent-deep);
+        color: var(--flag-green);
     }
 
     .coach-label {
@@ -259,13 +267,13 @@
     }
 
     .coach-label i {
-        color: var(--accent-deep);
+        color: var(--flag-green);
     }
 
     .coach-available-badge {
         margin-left: auto;
-        background: var(--accent-soft);
-        color: var(--accent-deep);
+        background: #e6f3ee;
+        color: var(--flag-green);
         border-radius: 999px;
         font-family: 'Inter', sans-serif;
         font-size: .72rem;
@@ -286,27 +294,27 @@
     }
 
     .seat-btn:hover {
-        border-color: var(--accent);
-        color: var(--accent-deep);
+        border-color: var(--flag-green);
+        color: var(--flag-green);
     }
 
     .seat-btn.seat-selected {
-        background: linear-gradient(135deg, var(--accent-light), var(--accent));
-        border-color: var(--accent);
+        background: linear-gradient(135deg, var(--flag-green-3), var(--flag-green));
+        border-color: var(--flag-green);
         color: #fff;
-        box-shadow: 0 6px 14px rgba(31,161,92,0.28);
+        box-shadow: 0 6px 14px rgba(0,106,78,0.28);
     }
 
     .seat-btn.seat-booked {
-        background: #fdeceb;
-        border-color: #e6a19b;
-        color: #b3261e;
+        background: #fbe4e6;
+        border-color: #f2b4bb;
+        color: var(--flag-red-2);
         cursor: not-allowed;
         opacity: .85;
     }
     .seat-btn.seat-booked:hover {
-        border-color: #e6a19b;
-        color: #b3261e;
+        border-color: #f2b4bb;
+        color: var(--flag-red-2);
     }
     .seat-btn:disabled {
         pointer-events: none;
@@ -331,8 +339,8 @@
     }
 
     .dot-available { background: #fff; border: 1.5px solid var(--line); }
-    .dot-selected { background: linear-gradient(135deg, var(--accent-light), var(--accent)); }
-    .dot-booked { background: #fdeceb; border: 1.5px solid #e6a19b; }
+    .dot-selected { background: linear-gradient(135deg, var(--flag-green-3), var(--flag-green)); }
+    .dot-booked { background: #fbe4e6; border: 1.5px solid #f2b4bb; }
 
     /* ---- Real train-style seat layout: left block + aisle + right block ---- */
     .seat-coach-layout{
@@ -405,14 +413,14 @@
         color: var(--ink);
         min-width: 210px;
         appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7480' stroke-width='1.6' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7770' stroke-width='1.6' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: right .9rem center;
     }
     .coach-select:focus {
         outline: none;
-        border-color: var(--accent);
-        box-shadow: 0 0 0 4px rgba(31,161,92,0.12);
+        border-color: var(--flag-green);
+        box-shadow: 0 0 0 4px rgba(0,106,78,0.12);
     }
 
     .coach-seat-group { display: none; }
@@ -427,8 +435,8 @@
         top: 96px;
     }
     .summary-sidebar .sidebar-title {
-        font-family: 'Fraunces', serif;
-        font-weight: 600;
+        font-family: 'Merriweather', serif;
+        font-weight: 700;
         color: var(--ink);
         font-size: 1rem;
         margin-bottom: .9rem;
@@ -436,7 +444,7 @@
         align-items: center;
         gap: .45rem;
     }
-    .summary-sidebar .sidebar-title i { color: var(--accent-deep); }
+    .summary-sidebar .sidebar-title i { color: var(--flag-green); }
 
     .journey-mini-row {
         display: flex;
@@ -479,8 +487,8 @@
         display: inline-flex;
         align-items: center;
         gap: .35rem;
-        background: var(--accent-soft);
-        color: var(--accent-deep);
+        background: #e6f3ee;
+        color: var(--flag-green);
         border-radius: 999px;
         padding: .3rem .5rem .3rem .75rem;
         font-size: .8rem;
@@ -488,8 +496,8 @@
     }
     .seat-chip .chip-remove {
         border: none;
-        background: rgba(20,122,69,0.15);
-        color: var(--accent-deep);
+        background: rgba(0,106,78,0.15);
+        color: var(--flag-green);
         width: 16px;
         height: 16px;
         border-radius: 50%;
@@ -501,7 +509,7 @@
         cursor: pointer;
         padding: 0;
     }
-    .seat-chip .chip-remove:hover { background: rgba(20,122,69,0.3); }
+    .seat-chip .chip-remove:hover { background: rgba(0,106,78,0.3); }
 
     .summary-total-row {
         display: flex;
@@ -518,27 +526,27 @@
         letter-spacing: .04em;
     }
     .summary-total-row .value {
-        font-family: 'Fraunces', serif;
-        font-weight: 600;
-        color: var(--accent-deep);
+        font-family: 'Merriweather', serif;
+        font-weight: 700;
+        color: var(--flag-green);
         font-size: 1.35rem;
     }
 
     .btn-confirm {
-        border-radius: 999px;
+        border-radius: 4px;
         font-weight: 600;
         padding: .65rem 1.6rem;
-        background: linear-gradient(135deg, var(--accent-light), var(--accent));
+        background: var(--flag-green);
         border: none;
         color: #fff;
-        box-shadow: 0 10px 24px rgba(31,161,92,0.28);
+        box-shadow: 0 10px 24px rgba(0,106,78,0.28);
         transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
     }
 
     .btn-confirm:hover {
-        background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+        background: var(--flag-green-2);
         color: #fff;
-        box-shadow: 0 12px 28px rgba(31,161,92,0.34);
+        box-shadow: 0 12px 28px rgba(0,106,78,0.34);
     }
 
     .btn-confirm:disabled {
@@ -559,18 +567,19 @@
 
     .rs-empty-state i {
         font-size: 2.5rem;
-        color: var(--accent-light);
+        color: var(--flag-green-3);
         margin-bottom: .75rem;
         display: block;
     }
 
     .rs-empty-state h5{
-        font-family:'Fraunces',serif;
+        font-family:'Merriweather',serif;
         color: var(--ink);
-        font-weight: 600;
+        font-weight: 700;
     }
 
-    /* One panel visible at a time per train, controlled purely by the .active class */
+    /* One panel visible at a time per train, controlled purely by the .active class.
+       Nothing is active by default — a class card must be clicked first. */
     .seat-panel-box{ display:none; }
     .seat-panel-box.active{ display:block; }
 </style>
@@ -582,7 +591,7 @@
     <!-- Search Hero -->
     <div class="rs-search-hero">
         <h2><i class="bi bi-train-front-fill me-2"></i>Book Your Train Ticket</h2>
-        <p class="subtitle">Search routes across Bangladesh and reserve your seat in seconds</p>
+        <p class="subtitle">Search a route and date to see available trains and reserve your seat</p>
 
         <div class="rs-search-card">
             <form method="get" class="row g-3 align-items-end">
@@ -617,8 +626,8 @@
         </div>
     </div>
 
-    <!-- Search Results -->
-     
+    <!-- Search Results — nothing renders here until a search has actually been run -->
+
      {% if search_error %}
     <div class="rs-empty-state">
         <i class="bi bi-exclamation-circle"></i>
@@ -657,10 +666,11 @@
                         </div>
                     </div>
 
-                    <!-- Class cards: AC_S / SNIGDHA / S_CHAIR — click a card to open ONLY its own seat panel -->
+                    <!-- Class cards: AC_S / SNIGDHA / S_CHAIR — none selected by default.
+                         Clicking a card opens ONLY its own seat panel. -->
                     <div class="class-cards-row" data-train="{{ train_id }}">
                         {% for klass in train.classes %}
-                        <div class="class-card{% if forloop.first %} active{% endif %}"
+                        <div class="class-card"
                              data-panel-target="seatBox{{ train_id }}_{{ klass.code }}"
                              onclick="setActiveClass(this, '{{ train_id }}')">
                             <div class="class-card-name">{{ klass.label }}</div>
@@ -673,10 +683,10 @@
                         {% endfor %}
                     </div>
 
-                    <!-- Seat selection panels, one per class — only one visible at a time (controlled by JS) -->
+                    <!-- Seat selection panels, one per class — all hidden until a class card is clicked -->
                     <div class="seat-panels-wrap" data-train="{{ train_id }}">
                         {% for klass in train.classes %}
-                        <div class="seat-panel-box{% if forloop.first %} active{% endif %}" id="seatBox{{ train_id }}_{{ klass.code }}" data-schedule="{{ train.schedule_id }}">
+                        <div class="seat-panel-box" id="seatBox{{ train_id }}_{{ klass.code }}" data-schedule="{{ train.schedule_id }}">
                             <div class="seat-panel">
                                 <div class="seat-panel-heading">
                                     <i class="bi bi-award"></i> {{ klass.label }} <span class="seat-panel-price">৳{{ klass.price }} / seat</span>
