@@ -1,43 +1,128 @@
 {% extends 'Railway_Admin/superuser_base.html' %}
 {% block content %}
-<h1>Superuser Dashboard</h1>
-<p>Welcome, {{ user.username }}</p>
+<style>
+    .dash-head{
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 26px;
+    }
+    .dash-head h1{ font-size: 1.7rem; margin-bottom: 4px; }
+    .dash-head p{ color: var(--charcoal-soft); font-size: .92rem; }
+    .btn-add{
+        display: inline-flex; align-items: center; gap: 8px;
+        background: var(--flag-green);
+        color: #fff;
+        padding: 11px 20px;
+        border: none;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: .9rem;
+        cursor: pointer;
+        box-shadow: 0 10px 22px rgba(0,106,78,0.25);
+        transition: background .15s ease, transform .15s ease;
+    }
+    .btn-add:hover{ background: var(--flag-green-2); transform: translateY(-1px); }
 
-<button onclick="openCreateModal()" style="margin-top:15px; background:#1a1a2e; color:#fff; padding:10px 20px; border:none; border-radius:4px; cursor:pointer;">
-    + Add Admin
-</button>
+    .table-card{
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-m);
+        box-shadow: var(--shadow-1);
+        overflow: hidden;
+    }
+    table.admin-table{ width: 100%; border-collapse: collapse; }
+    table.admin-table thead tr{ background: var(--flag-green); }
+    table.admin-table th{
+        padding: 14px 16px;
+        color: #fff;
+        font-size: .78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        text-align: left;
+    }
+    table.admin-table td{
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+        font-size: .92rem;
+        color: var(--charcoal);
+    }
+    table.admin-table tbody tr:last-child td{ border-bottom: none; }
+    table.admin-table tbody tr:hover{ background: var(--mist); }
+    table.admin-table td.username-cell{ font-weight: 700; color: var(--ink); }
 
-<table style="width:100%; margin-top:20px; border-collapse:collapse; background:#fff;">
-    <tr style="background:#1a1a2e; color:#fff;">
-        <th style="padding:10px;">Username</th>
-        <th style="padding:10px;">Full Name</th>
-        <th style="padding:10px;">Email</th>
-        <th style="padding:10px;">Designation</th>
-        <th style="padding:10px;">Phone</th>
-        <th style="padding:10px;">Actions</th>
-    </tr>
-    {% for profile in profiles %}
-    <tr id="row-{{ profile.pk }}" style="border-bottom:1px solid #ddd;">
-        <td style="padding:10px;">{{ profile.user.username }}</td>
-        <td style="padding:10px;">{{ profile.full_name }}</td>
-        <td style="padding:10px;">{{ profile.email }}</td>
-        <td style="padding:10px;">{{ profile.designation }}</td>
-        <td style="padding:10px;">{{ profile.phone_number }}</td>
-        <td style="padding:10px;">
-            <button onclick="openEditModal({{ profile.pk }})">Edit</button>
-            <button onclick="deleteProfile({{ profile.pk }})" style="color:#e63946;">Remove</button>
-        </td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="6" style="padding:10px;">Kono admin profile nai.</td></tr>
-    {% endfor %}
-</table>
+    .actions-cell{ display: flex; gap: 8px; }
+    .btn-pill{
+        border: 1.5px solid var(--line);
+        background: #fff;
+        color: var(--charcoal);
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: .8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .15s ease;
+    }
+    .btn-pill.edit:hover{ border-color: var(--flag-green); color: var(--flag-green); background: #e6f3ee; }
+    .btn-pill.remove{ color: var(--flag-red-2); border-color: #f2b4bb; }
+    .btn-pill.remove:hover{ background: #fbe4e6; }
+
+    .empty-row td{ text-align: center; padding: 40px 16px; color: var(--charcoal-soft); }
+
+    #profileModal .modal-box{ width: 380px; }
+</style>
+
+<div class="dash-head">
+    <div>
+        <h1>Superuser Dashboard</h1>
+        <p>Welcome, {{ user.username }} — manage admin accounts below.</p>
+    </div>
+    <button class="btn-add" onclick="openCreateModal()"><i class="bi bi-person-plus-fill"></i> Add Admin</button>
+</div>
+
+<div class="table-card">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Designation</th>
+                <th>Phone</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for profile in profiles %}
+        <tr id="row-{{ profile.pk }}">
+            <td class="username-cell">{{ profile.user.username }}</td>
+            <td>{{ profile.full_name }}</td>
+            <td>{{ profile.email }}</td>
+            <td>{{ profile.designation }}</td>
+            <td>{{ profile.phone_number }}</td>
+            <td>
+                <div class="actions-cell">
+                    <button class="btn-pill edit" onclick="openEditModal({{ profile.pk }})"><i class="bi bi-pencil-square"></i> Edit</button>
+                    <button class="btn-pill remove" onclick="deleteProfile({{ profile.pk }})"><i class="bi bi-trash3"></i> Remove</button>
+                </div>
+            </td>
+        </tr>
+        {% empty %}
+        <tr class="empty-row"><td colspan="6"><i class="bi bi-inbox" style="font-size:1.4rem; display:block; margin-bottom:6px; color:var(--flag-green);"></i>No admin profiles found.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
 
 <!-- Create/Edit Modal -->
 <div class="modal-overlay" id="profileModal">
     <div class="modal-box">
         <button class="close-btn" onclick="closeProfileModal()">&times;</button>
         <h2 id="modalTitle">Add Admin</h2>
+        <p class="modal-sub">Fill in the administrator's details.</p>
         <div class="error-text" id="profileError" style="display:none;"></div>
         <form id="profileForm">
             {% csrf_token %}
@@ -111,7 +196,7 @@ document.getElementById('profileForm').addEventListener('submit', function(e) {
 });
 
 function deleteProfile(pk) {
-    if (!confirm('Sure remove korte chao?')) return;
+    if (!confirm('Are you sure you want to remove this admin?')) return;
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 

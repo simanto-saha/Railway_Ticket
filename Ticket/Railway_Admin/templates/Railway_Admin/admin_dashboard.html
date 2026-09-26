@@ -1,42 +1,145 @@
 {% extends 'Railway_Admin/superuser_base.html' %}
 {% block content %}
 <style>
-    .dash-wrap { font-family: 'Segoe UI', sans-serif; color: #1a1a2e; }
-    .dash-section { margin-top: 32px; background: #fff; border-radius: 10px; padding: 20px 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
-    .dash-section h2 { margin: 0 0 16px; font-size: 18px; display:flex; align-items:center; justify-content:space-between; }
-    .btn-primary { background: #1a1a2e; color:#fff; padding:9px 18px; border:none; border-radius:6px; cursor:pointer; font-size:14px; transition: background .2s; }
-    .btn-primary:hover { background:#33334d; }
-    .data-table { width:100%; border-collapse:collapse; margin-top:14px; font-size:14px; }
-    .data-table th { background:#f4f5fa; color:#1a1a2e; text-align:left; padding:12px; font-weight:600; border-bottom:2px solid #e2e2ea; }
-    .data-table td { padding:12px; border-bottom:1px solid #eee; }
-    .data-table tr:hover td { background:#fafafe; }
-    .row-actions button { background:none; border:1px solid #ccc; border-radius:5px; padding:4px 10px; margin-right:6px; cursor:pointer; font-size:12px; }
-    .row-actions button:hover { border-color:#1a1a2e; }
-    .empty-row td { text-align:center; color:#888; padding:16px; }
-    .price-badge { display:inline-block; background:#eef0fa; color:#1a1a2e; padding:2px 8px; border-radius:4px; font-size:12px; margin-right:4px; }
+    .dash-wrap { font-family: 'Inter', sans-serif; color: var(--charcoal); }
+    .dash-wrap > h1{ margin-bottom: 4px; }
+    .dash-sub{ color: var(--charcoal-soft); font-size: .92rem; margin-bottom: 10px; }
 
-    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; z-index:999; }
-    .modal-overlay.active { display:flex; }
-    .modal-box { background:#fff; border-radius:10px; padding:24px 28px; width:400px; max-width:90%; position:relative; max-height:90vh; overflow-y:auto; }
-    .modal-box h2 { margin-top:0; }
-    .modal-box input, .modal-box select { width:100%; padding:10px; margin-bottom:12px; border:1px solid #ddd; border-radius:6px; font-size:14px; box-sizing:border-box; }
-    .modal-box label { font-size:12px; color:#666; }
-    .close-btn { position:absolute; top:14px; right:16px; background:none; border:none; font-size:20px; cursor:pointer; color:#888; }
-    .submit-btn { width:100%; background:#1a1a2e; color:#fff; padding:11px; border:none; border-radius:6px; cursor:pointer; font-size:14px; margin-top:4px; }
-    .submit-btn:hover { background:#33334d; }
-    .error-text { color:#c0392b; font-size:13px; margin-bottom:10px; }
+    .dash-section {
+        margin-top: 28px;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-m);
+        padding: 22px 24px 24px;
+        box-shadow: var(--shadow-1);
+        overflow: hidden;
+    }
+    .dash-section h2 {
+        margin: 0 0 4px;
+        font-size: 1.15rem;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .dash-section h2 span.title-text{ display:flex; align-items:center; gap: 10px; }
+    .dash-section h2 i.section-icon{
+        width: 34px; height: 34px;
+        border-radius: 8px;
+        background: #e6f3ee;
+        color: var(--flag-green);
+        display: inline-flex; align-items:center; justify-content:center;
+        font-size: 1rem;
+    }
+
+    .btn-primary {
+        background: var(--flag-green);
+        color:#fff;
+        padding:10px 18px;
+        border:none;
+        border-radius:999px;
+        cursor:pointer;
+        font-size:13.5px;
+        font-weight: 700;
+        font-family: 'Inter', sans-serif;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        box-shadow: 0 8px 18px rgba(0,106,78,0.22);
+        transition: background .18s ease, transform .18s ease;
+    }
+    .btn-primary:hover { background: var(--flag-green-2); transform: translateY(-1px); }
+
+    .table-scroll{ overflow-x: auto; margin-top: 16px; }
+    .data-table { width:100%; border-collapse:collapse; font-size:14px; min-width: 560px; }
+    .data-table th {
+        background: var(--flag-green);
+        color:#fff;
+        text-align:left;
+        padding:12px 14px;
+        font-weight:700;
+        font-size: .76rem;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        white-space: nowrap;
+    }
+    .data-table th:first-child{ border-top-left-radius: var(--radius-s); }
+    .data-table th:last-child{ border-top-right-radius: var(--radius-s); }
+    .data-table td { padding:12px 14px; border-bottom:1px solid var(--line); color: var(--charcoal); }
+    .data-table tbody tr:hover td { background: var(--mist); }
+    .data-table tbody tr:last-child td{ border-bottom: none; }
+
+    .row-actions{ display: flex; gap: 8px; }
+    .row-actions button {
+        background: #fff;
+        border: 1.5px solid var(--line);
+        border-radius: 999px;
+        padding: 5px 13px;
+        margin-right: 0;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--charcoal);
+        transition: all .15s ease;
+    }
+    .row-actions button:first-child:hover { border-color: var(--flag-green); color: var(--flag-green); background: #e6f3ee; }
+    .row-actions button:last-child { color: var(--flag-red-2); border-color: #f2b4bb; }
+    .row-actions button:last-child:hover { background: #fbe4e6; }
+
+    .empty-row td { text-align:center; color: var(--charcoal-soft); padding:32px 16px; }
+
+    .price-badge {
+        display:inline-block;
+        background: #e6f3ee;
+        color: var(--flag-green);
+        padding:3px 10px;
+        border-radius:999px;
+        font-size:11.5px;
+        font-weight: 700;
+        margin-right:5px;
+        margin-bottom: 3px;
+    }
+
+    /* Modal overrides on top of the base modal styling */
+    .modal-box { width:420px; max-width:90%; max-height:90vh; overflow-y:auto; }
+    .modal-box select {
+        width:100%;
+        padding:11px 13px;
+        margin-bottom:12px;
+        border:1.5px solid var(--line);
+        border-radius: var(--radius-s);
+        background: var(--mist);
+        font-size:14px;
+        font-family: 'Inter', sans-serif;
+        color: var(--ink);
+        box-sizing:border-box;
+        transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+    }
+    .modal-box select:focus{
+        outline: none;
+        border-color: var(--flag-green);
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(0,106,78,0.12);
+    }
+    .modal-box label { font-size:12px; color: var(--charcoal-soft); font-weight: 600; display:block; margin-bottom: 4px; }
     .price-row { display:flex; gap:8px; }
     .price-row input { width:33%; }
 </style>
 
 <div class="dash-wrap">
 <h1>Admin Dashboard</h1>
+<p class="dash-sub">Manage trains, schedules, and drivers for RailwaySheba.</p>
 
 <!-- Train Information -->
 <div class="dash-section">
-    <h2>Train Information <button class="btn-primary" onclick="openCreateTrain()">+ Add Train</button></h2>
+    <h2>
+        <span class="title-text"><i class="bi bi-train-front section-icon"></i> Train Information</span>
+        <button class="btn-primary" onclick="openCreateTrain()"><i class="bi bi-plus-lg"></i> Add Train</button>
+    </h2>
+    <div class="table-scroll">
     <table class="data-table">
-        <tr><th>Train Number</th><th>Train Name</th><th>Total Seats</th><th>Actions</th></tr>
+        <thead><tr><th>Train Number</th><th>Train Name</th><th>Total Seats</th><th>Actions</th></tr></thead>
         <tbody id="trainTableBody">
         {% for train in trains %}
         <tr id="train-row-{{ train.pk }}">
@@ -44,22 +147,27 @@
             <td>{{ train.train_name }}</td>
             <td>{{ train.total_seats }}</td>
             <td class="row-actions">
-                <button type="button" onclick="editTrain({{ train.pk }})">Edit</button>
-                <button type="button" onclick="deleteRow('/super-admin/train/{{ train.pk }}/delete/', 'train-row-{{ train.pk }}')">Delete</button>
+                <button type="button" onclick="editTrain({{ train.pk }})"><i class="bi bi-pencil-square"></i> Edit</button>
+                <button type="button" onclick="deleteRow('/super-admin/train/{{ train.pk }}/delete/', 'train-row-{{ train.pk }}')"><i class="bi bi-trash3"></i> Delete</button>
             </td>
         </tr>
         {% empty %}
-        <tr id="no-trains-row" class="empty-row"><td colspan="4">Kono train nai.</td></tr>
+        <tr id="no-trains-row" class="empty-row"><td colspan="4"><i class="bi bi-inbox" style="font-size:1.3rem; display:block; margin-bottom:6px; color:var(--flag-green);"></i>No trains found.</td></tr>
         {% endfor %}
         </tbody>
     </table>
+    </div>
 </div>
 
 <!-- Train Schedule -->
 <div class="dash-section">
-    <h2>Train Schedule <button class="btn-primary" onclick="openCreateSchedule()">+ Add Schedule</button></h2>
+    <h2>
+        <span class="title-text"><i class="bi bi-calendar-week section-icon"></i> Train Schedule</span>
+        <button class="btn-primary" onclick="openCreateSchedule()"><i class="bi bi-plus-lg"></i> Add Schedule</button>
+    </h2>
+    <div class="table-scroll">
     <table class="data-table">
-        <tr><th>Train</th><th>Source</th><th>Destination</th><th>Departure</th><th>Arrival</th><th>Prices</th><th>Actions</th></tr>
+        <thead><tr><th>Train</th><th>Source</th><th>Destination</th><th>Departure</th><th>Arrival</th><th>Prices</th><th>Actions</th></tr></thead>
         <tbody>
         {% for s in schedules %}
         <tr id="schedule-row-{{ s.pk }}">
@@ -74,22 +182,27 @@
                 <span class="price-badge">S.Chair ৳{{ s.s_chair_ticket_price|default:"-" }}</span>
             </td>
             <td class="row-actions">
-                <button type="button" onclick="editSchedule({{ s.pk }})">Edit</button>
-                <button type="button" onclick="deleteRow('/super-admin/schedule/{{ s.pk }}/delete/', 'schedule-row-{{ s.pk }}')">Delete</button>
+                <button type="button" onclick="editSchedule({{ s.pk }})"><i class="bi bi-pencil-square"></i> Edit</button>
+                <button type="button" onclick="deleteRow('/super-admin/schedule/{{ s.pk }}/delete/', 'schedule-row-{{ s.pk }}')"><i class="bi bi-trash3"></i> Delete</button>
             </td>
         </tr>
         {% empty %}
-        <tr class="empty-row"><td colspan="7">Kono schedule nai.</td></tr>
+        <tr class="empty-row"><td colspan="7"><i class="bi bi-inbox" style="font-size:1.3rem; display:block; margin-bottom:6px; color:var(--flag-green);"></i>No schedules found.</td></tr>
         {% endfor %}
         </tbody>
     </table>
+    </div>
 </div>
 
 <!-- Train Drivers -->
 <div class="dash-section">
-    <h2>Train Drivers <button class="btn-primary" onclick="openCreateDriver()">+ Add Driver</button></h2>
+    <h2>
+        <span class="title-text"><i class="bi bi-person-badge section-icon"></i> Train Drivers</span>
+        <button class="btn-primary" onclick="openCreateDriver()"><i class="bi bi-plus-lg"></i> Add Driver</button>
+    </h2>
+    <div class="table-scroll">
     <table class="data-table">
-        <tr><th>Driver Name</th><th>Train</th><th>License Number</th><th>Contact</th><th>Actions</th></tr>
+        <thead><tr><th>Driver Name</th><th>Train</th><th>License Number</th><th>Contact</th><th>Actions</th></tr></thead>
         <tbody>
         {% for d in drivers %}
         <tr id="driver-row-{{ d.pk }}">
@@ -98,15 +211,16 @@
             <td>{{ d.license_number }}</td>
             <td>{{ d.contact_number }}</td>
             <td class="row-actions">
-                <button type="button" onclick="editDriver({{ d.pk }})">Edit</button>
-                <button type="button" onclick="deleteRow('{% url 'driver_delete' d.pk %}', 'driver-row-{{ d.pk }}')">Delete</button>
+                <button type="button" onclick="editDriver({{ d.pk }})"><i class="bi bi-pencil-square"></i> Edit</button>
+                <button type="button" onclick="deleteRow('{% url 'driver_delete' d.pk %}', 'driver-row-{{ d.pk }}')"><i class="bi bi-trash3"></i> Delete</button>
             </td>
         </tr>
         {% empty %}
-        <tr class="empty-row"><td colspan="5">Kono driver nai.</td></tr>
+        <tr class="empty-row"><td colspan="5"><i class="bi bi-inbox" style="font-size:1.3rem; display:block; margin-bottom:6px; color:var(--flag-green);"></i>No drivers found.</td></tr>
         {% endfor %}
         </tbody>
     </table>
+    </div>
 </div>
 </div>
 
@@ -218,7 +332,7 @@ function addTrainRow(data) {
     });
     const actions = document.createElement('td');
     actions.className = 'row-actions';
-    actions.innerHTML = `<button type="button" onclick="editTrain(${data.id})">Edit</button> <button type="button" onclick="deleteRow('/super-admin/train/${data.id}/delete/', 'train-row-${data.id}')">Delete</button>`;
+    actions.innerHTML = `<button type="button" onclick="editTrain(${data.id})"><i class="bi bi-pencil-square"></i> Edit</button> <button type="button" onclick="deleteRow('/super-admin/train/${data.id}/delete/', 'train-row-${data.id}')"><i class="bi bi-trash3"></i> Delete</button>`;
     row.appendChild(actions);
     document.getElementById('trainTableBody').appendChild(row);
 }
