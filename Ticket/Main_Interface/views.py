@@ -538,10 +538,7 @@ def sit_confarmation_page(request, schedule_id):
     })
 
 
-# ------------------------------------------------------------------
-# Apnar booking/search page er view te ei ta context e add korun,
-# jate template e aj ar koyta ticket baki ta jana jay.
-# ------------------------------------------------------------------
+
 def get_remaining_today(user):
     used = TrainTicket.objects.filter(
         user=user,
@@ -550,3 +547,23 @@ def get_remaining_today(user):
     ).count()
     return max(0, MAX_TICKETS_PER_DAY - used)
 
+
+
+def varification_ticket(request):
+    code = request.GET.get("confirmation_number", "").strip()
+    ticket = None
+    checked = bool(code)
+
+    if code:
+        ticket = (
+            TrainTicket.objects
+            .select_related("train_schedule__train")
+            .filter(confirmation_number=code, status="booked")
+            .first()
+        )
+
+    return render(request, "Main_Interface/varifaction_ticket.html", {
+        "code": code,
+        "checked": checked,
+        "ticket": ticket,
+    })

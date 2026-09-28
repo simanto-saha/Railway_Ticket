@@ -14,6 +14,8 @@ urlpatterns = [
     path('ticket/', views.ticket_page, name='ticket_page'),
     path('train-schedule/', views.train_schedule, name='train_schedule'),
     path("book-seat/<int:schedule_id>/", views.book_seat, name="book_seat"),
-    path("seat-confarmation/<int:schedule_id>/", views.sit_confarmation_page, name="seat_confarmation")
+    path("seat-confarmation/<int:schedule_id>/", views.sit_confarmation_page, name="seat_confarmation"),
+
+    path("varification-ticket/", views.varification_ticket, name="varifaction_ticket"),
    
 ]

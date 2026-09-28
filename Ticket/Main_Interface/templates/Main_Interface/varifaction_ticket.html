@@ -1,0 +1,63 @@
+{% extends "Main_Interface/base.html" %}
+
+{% block title %}Verify Ticket{% endblock %}
+
+{% block extra_css %}
+<style>
+  .verify-page{ padding:72px 0 100px; background:var(--mist); min-height:560px; }
+  .verify-card{ max-width:520px; margin:0 auto; background:#fff; border:1px solid var(--line);
+    border-radius:var(--radius-m); box-shadow:var(--shadow-1); padding:32px; }
+  .verify-card h1{ font-size:1.5rem; margin-bottom:6px; }
+  .verify-card > p{ color:var(--charcoal-soft); font-size:0.9rem; margin-bottom:20px; }
+  .verify-card input[type=text]{ width:100%; padding:12px 14px; border:1.5px solid var(--line);
+    border-radius:var(--radius-s); background:var(--mist); color:var(--ink); }
+  .verify-card input[type=text]:focus{ outline:none; border-color:var(--flag-green);
+    box-shadow:0 0 0 4px rgba(0,106,78,0.12); background:#fff; }
+  .result{ margin-top:22px; padding:16px; border-radius:var(--radius-s); }
+  .result.valid{ background:#e6f3ee; border:1px solid var(--flag-green); }
+  .result.invalid{ background:#fff2f0; border:1px solid var(--flag-red); }
+  .result h2{ font-size:1.1rem; margin-bottom:0; display:flex; align-items:center; gap:8px; }
+  .result.valid h2{ color:var(--flag-green); }
+  .result.invalid h2{ color:var(--flag-red-2); }
+  .result-details{ margin-top:12px; font-size:0.88rem; color:var(--charcoal); }
+  .result-details div{ display:flex; justify-content:space-between; padding:6px 0;
+    border-top:1px solid rgba(0,0,0,0.06); }
+  .result-details span{ color:var(--charcoal-soft); }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="verify-page">
+  <div class="wrap">
+    <div class="verify-card">
+      <h1>Verify Ticket</h1>
+      <p>Enter the confirmation number to check if the ticket is valid.</p>
+
+      <form method="get" action="{% url 'varifaction_ticket' %}">
+        <label class="field-label" for="confirmation_number">Confirmation Number</label>
+        <input type="text" id="confirmation_number" name="confirmation_number"
+               value="{{ code }}" placeholder="Enter confirmation number" required>
+        <button type="submit" class="btn btn-accent w-100 mt-3">Verify</button>
+      </form>
+
+      {% if checked %}
+        {% if ticket %}
+          <div class="result valid">
+            <h2><i class="bi bi-check-circle-fill"></i> Ticket is valid</h2>
+            <div class="result-details">
+              <div><span>Train</span><strong>{{ ticket.train_schedule.train.train_name }}</strong></div>
+              <div><span>Route</span><strong>{{ ticket.train_schedule.source_station }} → {{ ticket.train_schedule.destination_station }}</strong></div>
+              <div><span>Departure</span><strong>{{ ticket.train_schedule.departure_time|date:"d M Y, h:i A" }}</strong></div>
+              <div><span>Seat</span><strong>{{ ticket.seat_number }}</strong></div>
+            </div>
+          </div>
+        {% else %}
+          <div class="result invalid">
+            <h2><i class="bi bi-x-circle-fill"></i> Ticket is invalid</h2>
+          </div>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}
