@@ -5,8 +5,6 @@
 
 {% block extra_css %}
 <style>
-    /* Uses the site's design tokens from base.html: --ink, --flag-green, --mist, --line, Merriweather/Inter */
-
     .rs-page{ padding: 48px 0 32px; }
 
     /* ---- Search Hero ---- */
@@ -21,572 +19,261 @@
         overflow: hidden;
         border-top: 4px solid var(--gold);
     }
-
     .rs-search-hero::after{
         content:"";
         position:absolute; right:-60px; top:-60px;
         width:220px; height:220px; border-radius:50%;
         background: radial-gradient(circle, rgba(212,175,55,0.25), transparent 70%);
     }
-
     .rs-search-hero h2 {
-        font-family:'Merriweather',serif;
-        font-weight: 700;
-        font-size: 1.9rem;
-        color: #fff;
-        margin-bottom: .3rem;
-        position: relative;
+        font-family:'Merriweather',serif; font-weight: 700; font-size: 1.9rem;
+        color: #fff; margin-bottom: .3rem; position: relative;
     }
-
-    .rs-search-hero p.subtitle {
-        opacity: .78;
-        margin-bottom: 1.75rem;
-        font-size: .96rem;
-        position: relative;
-    }
-
+    .rs-search-hero p.subtitle { opacity: .78; margin-bottom: 1.75rem; font-size: .96rem; position: relative; }
     .rs-search-card {
-        background: #fff;
-        border-radius: var(--radius-m);
-        padding: 1.5rem;
-        box-shadow: var(--shadow-2);
-        position: relative;
+        background: #fff; border-radius: var(--radius-m); padding: 1.5rem;
+        box-shadow: var(--shadow-2); position: relative;
     }
-
     .rs-search-card .form-label {
-        color: var(--ink);
-        font-size: .8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: .04em;
-        margin-bottom: 7px;
+        color: var(--ink); font-size: .8rem; font-weight: 600;
+        text-transform: uppercase; letter-spacing: .04em; margin-bottom: 7px;
     }
-
     .rs-search-card .form-select,
     .rs-search-card .form-control {
-        border-radius: var(--radius-s);
-        padding: .65rem .9rem;
-        border: 1.5px solid var(--line);
-        background: var(--mist);
-        font-size: .95rem;
-        color: var(--ink);
+        border-radius: var(--radius-s); padding: .65rem .9rem;
+        border: 1.5px solid var(--line); background: var(--mist);
+        font-size: .95rem; color: var(--ink);
         transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
     }
-
     .rs-search-card .form-select:focus,
     .rs-search-card .form-control:focus {
-        outline: none;
-        border-color: var(--flag-green);
-        background: #fff;
+        outline: none; border-color: var(--flag-green); background: #fff;
         box-shadow: 0 0 0 4px rgba(0,106,78,0.12);
     }
 
     /* ---- Train Result Cards ---- */
     .rs-results-heading{
-        font-family:'Merriweather',serif;
-        color: var(--ink);
-        font-weight: 700;
-        margin-bottom: 1.1rem;
-        font-size: 1.15rem;
+        font-family:'Merriweather',serif; color: var(--ink);
+        font-weight: 700; margin-bottom: 1.1rem; font-size: 1.15rem;
     }
     .rs-results-heading .count-badge{
-        display:inline-flex; align-items:center;
-        background: #e6f3ee;
-        color: var(--flag-green);
-        border-radius: 999px;
-        font-family:'Inter',sans-serif;
-        font-size: .78rem;
-        font-weight: 700;
-        padding: .2rem .65rem;
-        margin-right: .5rem;
+        display:inline-flex; align-items:center; background: #e6f3ee;
+        color: var(--flag-green); border-radius: 999px;
+        font-family:'Inter',sans-serif; font-size: .78rem; font-weight: 700;
+        padding: .2rem .65rem; margin-right: .5rem;
     }
-
     .train-card {
-        border-radius: var(--radius-m);
-        background: #fff;
-        transition: box-shadow .2s ease, transform .2s ease;
-        overflow: hidden;
-        border: 1px solid var(--line) !important;
-        box-shadow: var(--shadow-1);
-        position: relative;
+        border-radius: var(--radius-m); background: #fff;
+        transition: box-shadow .2s ease, transform .2s ease; overflow: hidden;
+        border: 1px solid var(--line) !important; box-shadow: var(--shadow-1); position: relative;
     }
     .train-card::before{
-        content:"";
-        position:absolute; top:0; left:0;
-        width:4px; height:100%;
-        background: var(--flag-green);
+        content:""; position:absolute; top:0; left:0;
+        width:4px; height:100%; background: var(--flag-green);
     }
-
-    .train-card:hover {
-        box-shadow: var(--shadow-2);
-        transform: translateY(-2px);
-    }
-
-    .train-name {
-        font-family:'Merriweather',serif;
-        font-weight: 700;
-        font-size: 1.2rem;
-        color: var(--ink);
-    }
-
+    .train-card:hover { box-shadow: var(--shadow-2); transform: translateY(-2px); }
+    .train-name { font-family:'Merriweather',serif; font-weight: 700; font-size: 1.2rem; color: var(--ink); }
     .train-number-badge {
-        font-family:'Inter',sans-serif;
-        font-size: .72rem;
-        font-weight: 700;
-        background: var(--mist);
-        color: var(--charcoal-soft);
-        border: 1px solid var(--line);
-        border-radius: 20px;
-        padding: .2rem .6rem;
-        margin-left: .5rem;
-        vertical-align: middle;
+        font-family:'Inter',sans-serif; font-size: .72rem; font-weight: 700;
+        background: var(--mist); color: var(--charcoal-soft);
+        border: 1px solid var(--line); border-radius: 20px;
+        padding: .2rem .6rem; margin-left: .5rem; vertical-align: middle;
     }
-
     .route-line {
-        display: flex;
-        align-items: center;
-        gap: .5rem;
-        font-weight: 600;
-        color: var(--ink);
-        margin: .5rem 0;
-        font-size: .98rem;
+        display: flex; align-items: center; gap: .5rem; font-weight: 600;
+        color: var(--ink); margin: .5rem 0; font-size: .98rem;
     }
+    .route-line i { color: var(--flag-green); }
+    .time-info { font-size: .85rem; color: var(--charcoal-soft); }
+    .time-info i { width: 16px; color: var(--flag-green); opacity: .8; }
 
-    .route-line i {
-        color: var(--flag-green);
-    }
-
-    .time-info {
-        font-size: .85rem;
-        color: var(--charcoal-soft);
-    }
-
-    .time-info i {
-        width: 16px;
-        color: var(--flag-green);
-        opacity: .8;
-    }
-
-    .price-tag {
-        font-family:'Merriweather',serif;
-        font-size: 1.35rem;
-        font-weight: 700;
-        color: var(--flag-green);
-    }
-
-    .price-tag small {
-        font-family:'Inter',sans-serif;
-        font-size: .68rem;
-        font-weight: 500;
-        color: var(--charcoal-soft);
-    }
-
-    /* ---- Class Cards (ticket-class selector) ---- */
-    .class-cards-row{
-        display:flex; gap:.9rem; margin-top:1.2rem; flex-wrap:wrap;
-    }
+    /* ---- Class Cards ---- */
+    .class-cards-row{ display:flex; gap:.9rem; margin-top:1.2rem; flex-wrap:wrap; }
     .class-card{
-        flex:1; min-width:150px;
-        border:1.5px solid var(--line);
-        border-radius: var(--radius-m);
-        padding:1rem 1.1rem;
-        background:#fff;
-        cursor:pointer;
-        transition: all .18s ease;
+        flex:1; min-width:150px; border:1.5px solid var(--line);
+        border-radius: var(--radius-m); padding:1rem 1.1rem; background:#fff;
+        cursor:pointer; transition: all .18s ease;
     }
     .class-card:hover{ border-color: var(--flag-green); transform: translateY(-1px); }
     .class-card.active{
         background: linear-gradient(135deg, var(--flag-green-3), var(--flag-green-2));
-        border-color: var(--flag-green-2);
-        color:#fff;
+        border-color: var(--flag-green-2); color:#fff;
         box-shadow: 0 10px 24px rgba(0,106,78,0.28);
     }
     .class-card.active .class-card-price,
     .class-card.active .class-card-avail{ color:#fff; opacity:.92; }
-    .class-card-name{
-        font-weight:700; font-size:.82rem;
-        text-transform:uppercase; letter-spacing:.03em;
-    }
-    .class-card-price{
-        font-family:'Merriweather',serif; font-weight:700;
-        font-size:1.35rem; margin:.3rem 0;
-    }
-    .class-card-avail{
-        font-size:.78rem; color:var(--charcoal-soft); margin-bottom:.7rem;
-    }
-    .class-card .btn-select-seat{ pointer-events:none; } /* card itself handles the click */
-
+    .class-card-name{ font-weight:700; font-size:.82rem; text-transform:uppercase; letter-spacing:.03em; }
+    .class-card-price{ font-family:'Merriweather',serif; font-weight:700; font-size:1.35rem; margin:.3rem 0; }
+    .class-card-avail{ font-size:.78rem; color:var(--charcoal-soft); margin-bottom:.7rem; }
+    .class-card .btn-select-seat{ pointer-events:none; }
     .btn-select-seat {
-        border-radius: 4px;
-        font-weight: 600;
-        padding: .55rem 1.2rem;
-        font-size: .9rem;
-        background: var(--ink);
-        color: #fff;
-        border: none;
+        border-radius: 4px; font-weight: 600; padding: .55rem 1.2rem; font-size: .9rem;
+        background: var(--ink); color: #fff; border: none;
         transition: background .18s ease, transform .18s ease;
     }
-    .class-card.active .btn-select-seat{
-        background: rgba(255,255,255,0.22);
-    }
+    .class-card.active .btn-select-seat{ background: rgba(255,255,255,0.22); }
 
     /* ---- Seat Panel ---- */
     .seat-panel {
-        background: var(--mist);
-        border-radius: var(--radius-m);
-        margin-top: 1.1rem;
-        padding: 1.4rem;
-        border: 1px dashed var(--line);
+        background: var(--mist); border-radius: var(--radius-m);
+        margin-top: 1.1rem; padding: 1.4rem; border: 1px dashed var(--line);
     }
-
     .seat-panel-heading{
-        font-family:'Merriweather',serif;
-        font-weight:700;
-        font-size:1rem;
-        color: var(--ink);
-        margin-bottom: 1rem;
-        display:flex; align-items:center; gap:.5rem;
+        font-family:'Merriweather',serif; font-weight:700; font-size:1rem;
+        color: var(--ink); margin-bottom: 1rem; display:flex; align-items:center; gap:.5rem;
     }
     .seat-panel-heading i{ color: var(--flag-green); }
     .seat-panel-price{
-        margin-left:auto;
-        font-family:'Inter',sans-serif;
-        font-size:.85rem;
-        font-weight:700;
-        color: var(--flag-green);
+        margin-left:auto; font-family:'Inter',sans-serif; font-size:.85rem;
+        font-weight:700; color: var(--flag-green);
     }
-
-    .coach-label {
-        font-weight: 700;
-        color: var(--ink);
-        font-size: .88rem;
-        display: flex;
-        align-items: center;
-        gap: .4rem;
-        margin-bottom: .6rem;
-    }
-
-    .coach-label i {
-        color: var(--flag-green);
-    }
-
-    .coach-available-badge {
-        margin-left: auto;
-        background: #e6f3ee;
-        color: var(--flag-green);
-        border-radius: 999px;
-        font-family: 'Inter', sans-serif;
-        font-size: .72rem;
-        font-weight: 700;
-        padding: .15rem .6rem;
-    }
-
     .seat-btn {
-        width: 58px;
-        height: 40px;
-        border-radius: 9px;
-        font-size: .8rem;
-        font-weight: 600;
-        border: 1.5px solid var(--line);
-        color: var(--charcoal);
-        background: #fff;
+        width: 58px; height: 40px; border-radius: 9px; font-size: .8rem; font-weight: 600;
+        border: 1.5px solid var(--line); color: var(--charcoal); background: #fff;
         transition: all .15s ease;
     }
-
-    .seat-btn:hover {
-        border-color: var(--flag-green);
-        color: var(--flag-green);
-    }
-
+    .seat-btn:hover { border-color: var(--flag-green); color: var(--flag-green); }
     .seat-btn.seat-selected {
         background: linear-gradient(135deg, var(--flag-green-3), var(--flag-green));
-        border-color: var(--flag-green);
-        color: #fff;
+        border-color: var(--flag-green); color: #fff;
         box-shadow: 0 6px 14px rgba(0,106,78,0.28);
     }
-
     .seat-btn.seat-booked {
-        background: #fbe4e6;
-        border-color: #f2b4bb;
-        color: var(--flag-red-2);
-        cursor: not-allowed;
-        opacity: .85;
+        background: #fbe4e6; border-color: #f2b4bb; color: var(--flag-red-2);
+        cursor: not-allowed; opacity: .85;
     }
-    .seat-btn.seat-booked:hover {
-        border-color: #f2b4bb;
-        color: var(--flag-red-2);
-    }
-    .seat-btn:disabled {
-        pointer-events: none;
-    }
+    .seat-btn.seat-booked:hover { border-color: #f2b4bb; color: var(--flag-red-2); }
+    .seat-btn:disabled { pointer-events: none; }
 
     .seat-legend {
-        font-size: .78rem;
-        color: var(--charcoal-soft);
-        display: flex;
-        gap: 1rem;
-        margin-top: .9rem;
-        flex-wrap: wrap;
+        font-size: .78rem; color: var(--charcoal-soft); display: flex;
+        gap: 1rem; margin-top: .9rem; flex-wrap: wrap;
     }
-
     .seat-legend .dot {
-        display: inline-block;
-        width: 12px;
-        height: 12px;
-        border-radius: 4px;
-        margin-right: .3rem;
-        vertical-align: middle;
+        display: inline-block; width: 12px; height: 12px; border-radius: 4px;
+        margin-right: .3rem; vertical-align: middle;
     }
-
     .dot-available { background: #fff; border: 1.5px solid var(--line); }
     .dot-selected { background: linear-gradient(135deg, var(--flag-green-3), var(--flag-green)); }
     .dot-booked { background: #fbe4e6; border: 1.5px solid #f2b4bb; }
 
-    /* ---- Real train-style seat layout: left block + aisle + right block ---- */
-    .seat-coach-layout{
-        display:flex;
-        flex-direction:column;
-        gap:.55rem;
-    }
-    .seat-row{
-        display:flex;
-        align-items:center;
-        gap:10px;
-    }
-    .seat-block{
-        display:flex;
-        gap:.4rem;
-    }
-    .seat-aisle{
-        width:26px;
-        flex-shrink:0;
-        align-self:stretch;
-        position:relative;
-    }
+    /* ---- Train-style seat layout ---- */
+    .seat-coach-layout{ display:flex; flex-direction:column; gap:.55rem; }
+    .seat-row{ display:flex; align-items:center; gap:10px; }
+    .seat-block{ display:flex; gap:.4rem; }
+    .seat-aisle{ width:26px; flex-shrink:0; align-self:stretch; position:relative; }
     .seat-aisle::after{
-        content:"";
-        position:absolute;
-        left:50%;
-        top:0;
-        bottom:0;
-        width:1px;
+        content:""; position:absolute; left:50%; top:0; bottom:0; width:1px;
         transform:translateX(-50%);
-        background:repeating-linear-gradient(
-            to bottom,
-            var(--line) 0 5px,
-            transparent 5px 10px
-        );
+        background:repeating-linear-gradient(to bottom, var(--line) 0 5px, transparent 5px 10px);
     }
 
     /* ---- Booking Summary Sidebar ---- */
-    .seat-layout {
-        display: grid;
-        grid-template-columns: 1fr 300px;
-        gap: 1.5rem;
-        align-items: start;
-    }
-    @media (max-width: 860px) {
-        .seat-layout { grid-template-columns: 1fr; }
-    }
+    .seat-layout { display: grid; grid-template-columns: 1fr 300px; gap: 1.5rem; align-items: start; }
+    @media (max-width: 860px) { .seat-layout { grid-template-columns: 1fr; } }
 
-    .coach-select-wrap {
-        margin-bottom: 1.2rem;
-        display: flex;
-        align-items: center;
-        gap: .7rem;
-        flex-wrap: wrap;
-    }
+    .coach-select-wrap { margin-bottom: 1.2rem; display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; }
     .coach-select-wrap label {
-        font-size: .78rem;
-        font-weight: 700;
-        color: var(--ink);
-        text-transform: uppercase;
-        letter-spacing: .04em;
+        font-size: .78rem; font-weight: 700; color: var(--ink);
+        text-transform: uppercase; letter-spacing: .04em;
     }
     .coach-select {
-        border-radius: var(--radius-s);
-        border: 1.5px solid var(--line);
-        background: #fff;
-        padding: .55rem 2rem .55rem .9rem;
-        font-size: .9rem;
-        font-weight: 600;
-        color: var(--ink);
-        min-width: 210px;
-        appearance: none;
+        border-radius: var(--radius-s); border: 1.5px solid var(--line); background: #fff;
+        padding: .55rem 2rem .55rem .9rem; font-size: .9rem; font-weight: 600;
+        color: var(--ink); min-width: 210px; appearance: none;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7770' stroke-width='1.6' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right .9rem center;
+        background-repeat: no-repeat; background-position: right .9rem center;
     }
-    .coach-select:focus {
-        outline: none;
-        border-color: var(--flag-green);
-        box-shadow: 0 0 0 4px rgba(0,106,78,0.12);
-    }
-
+    .coach-select:focus { outline: none; border-color: var(--flag-green); box-shadow: 0 0 0 4px rgba(0,106,78,0.12); }
     .coach-seat-group { display: none; }
     .coach-seat-group.active { display: block; }
 
     .summary-sidebar {
-        background: #fff;
-        border: 1px solid var(--line);
-        border-radius: var(--radius-m);
-        padding: 1.3rem;
-        position: sticky;
-        top: 96px;
+        background: #fff; border: 1px solid var(--line); border-radius: var(--radius-m);
+        padding: 1.3rem; position: sticky; top: 96px;
     }
     .summary-sidebar .sidebar-title {
-        font-family: 'Merriweather', serif;
-        font-weight: 700;
-        color: var(--ink);
-        font-size: 1rem;
-        margin-bottom: .9rem;
-        display: flex;
-        align-items: center;
-        gap: .45rem;
+        font-family: 'Merriweather', serif; font-weight: 700; color: var(--ink);
+        font-size: 1rem; margin-bottom: .9rem; display: flex; align-items: center; gap: .45rem;
     }
     .summary-sidebar .sidebar-title i { color: var(--flag-green); }
-
     .journey-mini-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: .75rem;
-        font-size: .84rem;
-        padding: .4rem 0;
-        border-bottom: 1px dashed var(--line);
+        display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem;
+        font-size: .84rem; padding: .4rem 0; border-bottom: 1px dashed var(--line);
     }
     .journey-mini-row:last-child { border-bottom: none; }
-    .journey-mini-row .jm-label {
-        color: var(--charcoal-soft);
-        white-space: nowrap;
-    }
-    .journey-mini-row .jm-value {
-        color: var(--ink);
-        font-weight: 600;
-        text-align: right;
-    }
+    .journey-mini-row .jm-label { color: var(--charcoal-soft); white-space: nowrap; }
+    .journey-mini-row .jm-value { color: var(--ink); font-weight: 600; text-align: right; }
+    .sidebar-divider { border: none; border-top: 1px solid var(--line); margin: 1.2rem 0; }
+    .seat-limit-hint { font-size: .78rem; color: var(--charcoal-soft); margin-bottom: .6rem; }
 
-    .sidebar-divider {
-        border: none;
-        border-top: 1px solid var(--line);
-        margin: 1.2rem 0;
-    }
-
-    .selected-seats-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: .4rem;
-        min-height: 34px;
-        margin-bottom: 1rem;
-    }
-    .selected-seats-list .empty-hint {
-        color: var(--charcoal-soft);
-        font-size: .85rem;
-    }
+    .selected-seats-list { display: flex; flex-wrap: wrap; gap: .4rem; min-height: 34px; margin-bottom: 1rem; }
+    .selected-seats-list .empty-hint { color: var(--charcoal-soft); font-size: .85rem; }
     .seat-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: .35rem;
-        background: #e6f3ee;
-        color: var(--flag-green);
-        border-radius: 999px;
-        padding: .3rem .5rem .3rem .75rem;
-        font-size: .8rem;
-        font-weight: 700;
+        display: inline-flex; align-items: center; gap: .35rem; background: #e6f3ee;
+        color: var(--flag-green); border-radius: 999px; padding: .3rem .5rem .3rem .75rem;
+        font-size: .8rem; font-weight: 700;
     }
     .seat-chip .chip-remove {
-        border: none;
-        background: rgba(0,106,78,0.15);
-        color: var(--flag-green);
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        font-size: .65rem;
-        line-height: 1;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        padding: 0;
+        border: none; background: rgba(0,106,78,0.15); color: var(--flag-green);
+        width: 16px; height: 16px; border-radius: 50%; font-size: .65rem; line-height: 1;
+        display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
     }
     .seat-chip .chip-remove:hover { background: rgba(0,106,78,0.3); }
 
     .summary-total-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-top: 1px dashed var(--line);
-        padding-top: .9rem;
-        margin-bottom: 1.1rem;
+        display: flex; justify-content: space-between; align-items: center;
+        border-top: 1px dashed var(--line); padding-top: .9rem; margin-bottom: 1.1rem;
     }
-    .summary-total-row .label {
-        font-size: .78rem;
-        color: var(--charcoal-soft);
-        text-transform: uppercase;
-        letter-spacing: .04em;
-    }
-    .summary-total-row .value {
-        font-family: 'Merriweather', serif;
-        font-weight: 700;
-        color: var(--flag-green);
-        font-size: 1.35rem;
-    }
+    .summary-total-row .label { font-size: .78rem; color: var(--charcoal-soft); text-transform: uppercase; letter-spacing: .04em; }
+    .summary-total-row .value { font-family: 'Merriweather', serif; font-weight: 700; color: var(--flag-green); font-size: 1.35rem; }
 
     .btn-confirm {
-        border-radius: 4px;
-        font-weight: 600;
-        padding: .65rem 1.6rem;
-        background: var(--flag-green);
-        border: none;
-        color: #fff;
+        border-radius: 4px; font-weight: 600; padding: .65rem 1.6rem;
+        background: var(--flag-green); border: none; color: #fff;
         box-shadow: 0 10px 24px rgba(0,106,78,0.28);
         transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
     }
+    .btn-confirm:hover { background: var(--flag-green-2); color: #fff; box-shadow: 0 12px 28px rgba(0,106,78,0.34); }
+    .btn-confirm:disabled { background: #c7ccd3; box-shadow: none; cursor: not-allowed; }
 
-    .btn-confirm:hover {
-        background: var(--flag-green-2);
-        color: #fff;
-        box-shadow: 0 12px 28px rgba(0,106,78,0.34);
-    }
-
-    .btn-confirm:disabled {
-        background: #c7ccd3;
-        box-shadow: none;
-        cursor: not-allowed;
-    }
-
-    /* ---- Empty / No results ---- */
+    /* ---- Empty state ---- */
     .rs-empty-state {
-        text-align: center;
-        padding: 3.5rem 1rem;
-        background: #fff;
-        border-radius: var(--radius-l);
-        border: 1px dashed var(--line);
-        color: var(--charcoal-soft);
+        text-align: center; padding: 3.5rem 1rem; background: #fff;
+        border-radius: var(--radius-l); border: 1px dashed var(--line); color: var(--charcoal-soft);
     }
+    .rs-empty-state i { font-size: 2.5rem; color: var(--flag-green-3); margin-bottom: .75rem; display: block; }
+    .rs-empty-state h5{ font-family:'Merriweather',serif; color: var(--ink); font-weight: 700; }
 
-    .rs-empty-state i {
-        font-size: 2.5rem;
-        color: var(--flag-green-3);
-        margin-bottom: .75rem;
-        display: block;
-    }
-
-    .rs-empty-state h5{
-        font-family:'Merriweather',serif;
-        color: var(--ink);
-        font-weight: 700;
-    }
-
-    /* One panel visible at a time per train, controlled purely by the .active class.
-       Nothing is active by default — a class card must be clicked first. */
     .seat-panel-box{ display:none; }
     .seat-panel-box.active{ display:block; }
+
+    /* ---- Popup modal (replaces alert) ---- */
+    .rs-modal-overlay {
+        position: fixed; inset: 0; z-index: 3000;
+        background: rgba(10, 26, 18, .55); backdrop-filter: blur(2px);
+        display: none; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .rs-modal-overlay.show { display: flex; animation: rsFade .15s ease; }
+    .rs-modal {
+        background: #fff; border-radius: var(--radius-m); width: 100%; max-width: 420px;
+        padding: 1.8rem 1.6rem 1.5rem; text-align: center; box-shadow: var(--shadow-2);
+        border-top: 4px solid var(--flag-red-2); animation: rsPop .18s ease;
+    }
+    .rs-modal.success { border-top-color: var(--flag-green); }
+    .rs-modal-icon { font-size: 2.6rem; line-height: 1; margin-bottom: .6rem; color: var(--flag-red-2); }
+    .rs-modal.success .rs-modal-icon { color: var(--flag-green); }
+    .rs-modal h5 { font-family: 'Merriweather', serif; font-weight: 700; color: var(--ink); margin-bottom: .5rem; }
+    .rs-modal p { color: var(--charcoal-soft); font-size: .93rem; white-space: pre-line; margin-bottom: 1.2rem; }
+    .rs-modal .btn-confirm { min-width: 120px; }
+    @keyframes rsFade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes rsPop { from { transform: translateY(8px) scale(.97); opacity: 0; } to { transform: none; opacity: 1; } }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="wrap rs-page">
+    {% csrf_token %}
 
     <!-- Search Hero -->
     <div class="rs-search-hero">
@@ -626,9 +313,7 @@
         </div>
     </div>
 
-    <!-- Search Results — nothing renders here until a search has actually been run -->
-
-     {% if search_error %}
+    {% if search_error %}
     <div class="rs-empty-state">
         <i class="bi bi-exclamation-circle"></i>
         <h5 class="fw-semibold mb-1">{{ search_error }}</h5>
@@ -663,8 +348,7 @@
                         </div>
                     </div>
 
-                    <!-- Class cards: AC_S / SNIGDHA / S_CHAIR — none selected by default.
-                         Clicking a card opens ONLY its own seat panel. -->
+                    <!-- Class cards -->
                     <div class="class-cards-row" data-train="{{ train_id }}">
                         {% for klass in train.classes %}
                         <div class="class-card"
@@ -680,7 +364,7 @@
                         {% endfor %}
                     </div>
 
-                    <!-- Seat selection panels, one per class — all hidden until a class card is clicked -->
+                    <!-- Seat panels -->
                     <div class="seat-panels-wrap" data-train="{{ train_id }}">
                         {% for klass in train.classes %}
                         <div class="seat-panel-box" id="seatBox{{ train_id }}_{{ klass.code }}" data-schedule="{{ train.schedule_id }}">
@@ -689,7 +373,6 @@
                                     <i class="bi bi-award"></i> {{ klass.label }} <span class="seat-panel-price">৳{{ klass.price }} / seat</span>
                                 </div>
                                 <div class="seat-layout">
-                                    <!-- Left: coach picker + seat grid -->
                                     <div>
                                         <div class="coach-select-wrap">
                                             <label for="coachSelect{{ train_id }}_{{ klass.code }}">Coach</label>
@@ -702,7 +385,6 @@
 
                                         {% for coach in klass.coaches %}
                                         <div class="coach-seat-group" data-train="{{ train_id }}" data-class="{{ klass.code }}" data-coach="{{ coach.letter }}" data-seat-count="{{ coach.available }}">
-
                                             <div class="d-flex flex-wrap gap-2">
                                                 {% for seat in coach.seats %}
                                                 <button type="button"
@@ -754,7 +436,7 @@
                                         <hr class="sidebar-divider">
 
                                         <div class="sidebar-title"><i class="bi bi-ticket-perforated"></i> Your Selection</div>
-                                        <p class="seat-limit-hint">Maximum 4 seats can be booked at a time.</p>
+                                        <p class="seat-limit-hint">Maximum {{ remaining_today|default:4 }} seat(s) can be booked at a time.</p>
                                         <div class="selected-seats-list" id="selectedSeats{{ train_id }}_{{ klass.code }}">
                                             <span class="empty-hint">No seats selected yet</span>
                                         </div>
@@ -791,10 +473,61 @@
 
 </div>
 
+<!-- Popup modal -->
+<div class="rs-modal-overlay" id="rsModal" role="dialog" aria-modal="true" aria-labelledby="rsModalTitle">
+    <div class="rs-modal" id="rsModalBox">
+        <div class="rs-modal-icon"><i class="bi bi-exclamation-triangle-fill" id="rsModalIcon"></i></div>
+        <h5 id="rsModalTitle"></h5>
+        <p id="rsModalMsg"></p>
+        <button type="button" class="btn btn-confirm" id="rsModalOk">OK</button>
+    </div>
+</div>
+
 <script>
+// Server theke asha limit (aj ar koyta ticket kinte parbe). Default 4.
+const MAX_SEATS = {{ remaining_today|default:4 }};
+// Confirmation page URL template ("0" er jaygay schedule id boshbe)
+const CONFIRM_URL_TEMPLATE = "{% url 'seat_confarmation' 0 %}";
+
 const selectedSeatsMap = {}; // { "trainId_classCode": { seatName: price } }
 
-// ---------- Class card selector: click a card => activate its own card+panel, deactivate the rest ----------
+// ---------- Popup modal ----------
+let modalOkCallback = null;
+
+function showModal(title, message, type, onOk) {
+    const overlay = document.getElementById('rsModal');
+    const box = document.getElementById('rsModalBox');
+    const icon = document.getElementById('rsModalIcon');
+
+    document.getElementById('rsModalTitle').textContent = title;
+    document.getElementById('rsModalMsg').textContent = message;
+
+    const isSuccess = type === 'success';
+    box.classList.toggle('success', isSuccess);
+    icon.className = 'bi ' + (isSuccess ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill');
+
+    modalOkCallback = onOk || null;
+    overlay.classList.add('show');
+    document.getElementById('rsModalOk').focus();
+}
+
+function closeModal() {
+    document.getElementById('rsModal').classList.remove('show');
+    const cb = modalOkCallback;
+    modalOkCallback = null;
+    if (cb) cb();
+}
+
+document.getElementById('rsModalOk').addEventListener('click', closeModal);
+document.addEventListener('keydown', (e) => {
+    const open = document.getElementById('rsModal').classList.contains('show');
+    if (open && (e.key === 'Escape' || e.key === 'Enter')) {
+        e.preventDefault();
+        closeModal();
+    }
+});
+
+// ---------- Class card selector ----------
 function setActiveClass(card, trainId) {
     card.closest('.class-cards-row').querySelectorAll('.class-card')
         .forEach(c => c.classList.remove('active'));
@@ -808,7 +541,7 @@ function setActiveClass(card, trainId) {
     });
 }
 
-// ---------- Seat interaction: single click selects, double click deselects ----------
+// ---------- Seat interaction: click = select, double click = deselect ----------
 document.querySelectorAll('.seat-btn').forEach(btn => {
     btn.addEventListener('click', () => selectSeat(btn));
     btn.addEventListener('dblclick', (e) => {
@@ -817,9 +550,7 @@ document.querySelectorAll('.seat-btn').forEach(btn => {
     });
 });
 
-// ---------- Rebuild each coach's flat seat list into real train-style rows ----------
-// AC_S / SNIGDHA -> 2 + 2 (aisle) per row. S_CHAIR -> 3 + 2 per row (Shovon Chair style).
-// Moves the existing <button> nodes (does not clone them), so click/dblclick listeners stay attached.
+// ---------- Train-style seat rows ----------
 function buildTrainSeatLayout() {
     document.querySelectorAll('.coach-seat-group').forEach(group => {
         const classCode = group.dataset.class;
@@ -859,10 +590,9 @@ function buildTrainSeatLayout() {
         oldWrap.replaceWith(layout);
     });
 }
-
 buildTrainSeatLayout();
 
-// ---------- Init: pick the coach with the most AVAILABLE seats as default per (train, class) ----------
+// ---------- Init coach select ----------
 document.querySelectorAll('.coach-select').forEach(select => {
     const trainId = select.dataset.train;
     const classCode = select.dataset.class;
@@ -872,7 +602,7 @@ document.querySelectorAll('.coach-select').forEach(select => {
 
     let bestCoach = null, bestCount = -1;
     groups.forEach(g => {
-        const count = parseInt(g.dataset.seatCount, 10) || 0; // available seat count
+        const count = parseInt(g.dataset.seatCount, 10) || 0;
         if (count > bestCount) { bestCount = count; bestCoach = g.dataset.coach; }
     });
 
@@ -887,6 +617,12 @@ document.querySelectorAll('.coach-select').forEach(select => {
     });
 });
 
+// Puro page e (shob train, shob class) mile koyta seat select kora ache
+function totalSelectedCount() {
+    return Object.values(selectedSeatsMap)
+        .reduce((n, seatMap) => n + Object.keys(seatMap).length, 0);
+}
+
 function selectSeat(btn) {
     if (btn.disabled || btn.classList.contains('seat-booked')) return;
 
@@ -895,7 +631,16 @@ function selectSeat(btn) {
     const price = parseFloat(btn.dataset.price);
 
     if (!selectedSeatsMap[key]) selectedSeatsMap[key] = {};
-    if (selectedSeatsMap[key][seat]) return; // already selected, single click does nothing more
+    if (selectedSeatsMap[key][seat]) return; // already selected
+
+    // Limit check: limit cross korle seat select hobe na, popup dekhabe
+    if (totalSelectedCount() >= MAX_SEATS) {
+        const msg = MAX_SEATS > 0
+            ? 'You can not book more than ' + MAX_SEATS + ' ticket' + (MAX_SEATS > 1 ? 's' : '') + '.'
+            : 'You have reached your daily ticket limit. Please try again after 8:00 AM tomorrow.';
+        showModal('Limit reached', msg, 'error');
+        return;
+    }
 
     selectedSeatsMap[key][seat] = price;
     btn.classList.add('seat-selected');
@@ -918,7 +663,6 @@ function updateSummary(key) {
     const seats = Object.keys(seatMap);
     const total = Object.values(seatMap).reduce((a, b) => a + b, 0);
 
-    // Rebuild the right-side chip list
     const listEl = document.getElementById('selectedSeats' + key);
     if (!listEl) return;
     listEl.innerHTML = '';
@@ -946,14 +690,12 @@ function updateSummary(key) {
     if (confirmBtn) confirmBtn.disabled = seats.length === 0;
 }
 
-// ---------- Live seat availability via WebSocket (with auto-reconnect) ----------
+// ---------- Live seat availability via WebSocket ----------
 function connectSeatSocket(scheduleId, attempt = 0) {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const socket = new WebSocket(`${protocol}//${window.location.host}/ws/schedule/${scheduleId}/`);
 
-    socket.onopen = () => {
-        attempt = 0; // reset backoff once a connection succeeds
-    };
+    socket.onopen = () => { attempt = 0; };
 
     socket.onmessage = (e) => {
         const data = JSON.parse(e.data);
@@ -965,7 +707,6 @@ function connectSeatSocket(scheduleId, attempt = 0) {
         const key = btn.dataset.train + '_' + btn.dataset.class;
         const seat = btn.dataset.seat;
 
-        // If this seat was selected by the current user, drop it — someone else took it first
         if (selectedSeatsMap[key] && selectedSeatsMap[key][seat]) {
             delete selectedSeatsMap[key][seat];
             updateSummary(key);
@@ -978,27 +719,32 @@ function connectSeatSocket(scheduleId, attempt = 0) {
 
     socket.onerror = () => console.error('Seat socket error for schedule ' + scheduleId);
 
-    // The server side (Channels/Redis) can drop an idle connection — reconnect with backoff
-    // instead of leaving the user stuck without live seat updates until they refresh.
     socket.onclose = (e) => {
-        if (e.code === 1000) return; // normal, intentional close — don't reconnect
-        const delay = Math.min(1000 * 2 ** attempt, 15000); // 1s, 2s, 4s ... capped at 15s
+        if (e.code === 1000) return;
+        const delay = Math.min(1000 * 2 ** attempt, 15000);
         setTimeout(() => connectSeatSocket(scheduleId, attempt + 1), delay);
     };
 
     return socket;
 }
 
-// Open one live socket per train card shown on the page
 document.querySelectorAll('.seat-panel-box[data-schedule]').forEach(box => {
     connectSeatSocket(box.dataset.schedule);
 });
 
-// ---------- Confirm booking: POST each selected seat to the server ----------
+// ---------- CSRF ----------
+function getCsrfToken() {
+    const input = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (input && input.value) return input.value;
+    const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+}
+
+// ---------- Confirm booking ----------
 function bookTrain(key, scheduleId, trainNumber) {
     const seats = Object.keys(selectedSeatsMap[key] || {});
     if (seats.length === 0) {
-        alert('Please select at least one seat.');
+        showModal('No seat selected', 'Please select at least one seat.', 'error');
         return;
     }
 
@@ -1010,7 +756,7 @@ function bookTrain(key, scheduleId, trainNumber) {
         confirmBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Booking...';
     }
 
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const csrfToken = getCsrfToken();
 
     const requests = seats.map(seat =>
         fetch(`/book-seat/${scheduleId}/`, {
@@ -1049,13 +795,21 @@ function bookTrain(key, scheduleId, trainNumber) {
             confirmBtn.disabled = Object.keys(selectedSeatsMap[key] || {}).length === 0;
         }
 
-        if (booked.length) {
-            const confirmations = booked.map(r => `${r.seat}: ${r.confirmation_number || 'confirmed'}`).join('\n');
-            alert(`Train ${trainNumber} — Booked seats:\n${confirmations}`);
-        }
-        if (failed.length) {
+        // Kono ticket book hole confirmation page e redirect
+        const goToConfirmation = () => {
+            const codes = booked.map(r => r.confirmation_number).filter(Boolean).join(',');
+            const url = CONFIRM_URL_TEMPLATE.replace('/0/', '/' + scheduleId + '/');
+            window.location.href = url + '?c=' + encodeURIComponent(codes);
+        };
+
+        if (booked.length && failed.length) {
             const failMsgs = failed.map(r => `${r.seat}: ${r.message || 'could not be booked'}`).join('\n');
-            alert(`Some seats could not be booked:\n${failMsgs}`);
+            showModal('Some seats could not be booked', failMsgs, 'error', goToConfirmation);
+        } else if (booked.length) {
+            goToConfirmation();
+        } else if (failed.length) {
+            const failMsgs = failed.map(r => `${r.seat}: ${r.message || 'could not be booked'}`).join('\n');
+            showModal('Booking failed', failMsgs, 'error');
         }
     });
 }

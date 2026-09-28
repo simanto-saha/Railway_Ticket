@@ -1,6 +1,6 @@
 import random
 import string
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
 from django.http import JsonResponse
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
@@ -14,7 +14,6 @@ from datetime import timedelta
 from django.urls import reverse
 from .models import Profile, VarificationCode
 from Railway_Admin.models import TrainInformation, TrainSchedule, TrainTicket
-
 import redis
 from django.db import transaction
 from asgiref.sync import async_to_sync
@@ -434,8 +433,8 @@ def book_seat(request, schedule_id):
             return JsonResponse({
                 "success": False,
                 "message": (
-                    f"Daily limit of {MAX_TICKETS_PER_DAY} tickets reached. "
-                    f"You can book again after {next_reset.strftime('%d %b, %I:%M %p')}."
+                    f"Maximum Ticket limit is {MAX_TICKETS_PER_DAY}"
+                    
                 ),
             }, status=403)
 
@@ -475,3 +474,44 @@ def book_seat(request, schedule_id):
     finally:
         safe_release(seat_lock)
         safe_release(user_lock)
+
+
+
+
+@login_required
+def sit_confarmation_page(request, schedule_id):
+    schedule = get_object_or_404(TrainSchedule, id=schedule_id)
+
+    # Redirect er URL e ?c=123456789012,987654321098 ashe
+    codes = [c.strip() for c in request.GET.get("c", "").split(",") if c.strip()]
+
+    if codes:
+        tickets = TrainTicket.objects.filter(
+            user=request.user,               # onno user er ticket dekha jabe na
+            train_schedule=schedule,
+            status="booked",
+            confirmation_number__in=codes,
+        ).order_by("seat_number")
+    else:
+        tickets = TrainTicket.objects.none()
+
+    return render(request, "Main_Interface/sit_confarmation.html", {
+        "schedule": schedule,
+        "tickets": tickets,
+    })
+
+
+# ------------------------------------------------------------------
+# Apnar booking/search page er view te ei ta context e add korun,
+# jate template e aj ar koyta ticket baki ta jana jay.
+# ------------------------------------------------------------------
+def get_remaining_today(user):
+    used = TrainTicket.objects.filter(
+        user=user,
+        status="booked",
+        booking_time__gte=get_booking_window_start(),
+    ).count()
+    return max(0, MAX_TICKETS_PER_DAY - used)
+
+# Tarpor render() er context e:
+#   "remaining_today": get_remaining_today(request.user),
