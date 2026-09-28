@@ -16,6 +16,6 @@ urlpatterns = [
     path("book-seat/<int:schedule_id>/", views.book_seat, name="book_seat"),
     path("seat-confarmation/<int:schedule_id>/", views.sit_confarmation_page, name="seat_confarmation"),
 
-    path("varification-ticket/", views.varification_ticket, name="varifaction_ticket"),
+    path("varification-ticket/", views.varification_ticket, name="varification_ticket"),
    
 ]

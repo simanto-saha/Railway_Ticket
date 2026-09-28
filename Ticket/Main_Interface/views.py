@@ -515,26 +515,49 @@ def book_seat(request, schedule_id):
 
 
 
+from django.urls import reverse
+
+def _mask(value, head=3, tail=3):
+    value = str(value or "")
+    if len(value) <= head + tail:
+        return value
+    return value[:head] + "*" * (len(value) - head - tail) + value[-tail:]
+
+
 @login_required
 def sit_confarmation_page(request, schedule_id):
-    schedule = get_object_or_404(TrainSchedule, id=schedule_id)
-
-    # Redirect er URL e ?c=123456789012,987654321098 ashe
+    schedule = get_object_or_404(
+        TrainSchedule.objects.select_related("train"), id=schedule_id
+    )
     codes = [c.strip() for c in request.GET.get("c", "").split(",") if c.strip()]
 
+    tickets = []
     if codes:
-        tickets = TrainTicket.objects.filter(
-            user=request.user,               # onno user er ticket dekha jabe na
+        # seat -> (class label, fare)
+        seat_info = {}
+        for c in _build_classes(schedule.train.total_seats, schedule, set()):
+            for coach in c["coaches"]:
+                for s in coach["seats"]:
+                    seat_info[s] = (c["label"], c["price"])
+
+        qs = TrainTicket.objects.filter(
+            user=request.user,
             train_schedule=schedule,
             status="booked",
             confirmation_number__in=codes,
         ).order_by("seat_number")
-    else:
-        tickets = TrainTicket.objects.none()
+
+        verify_base = request.build_absolute_uri(reverse("varification_ticket"))
+        for t in qs:
+            t.class_name, t.fare = seat_info.get(t.seat_number, ("-", 0))
+            t.phone_masked = _mask(t.passenger_phone_number)
+            t.verify_url = f"{verify_base}?confirmation_number={t.confirmation_number}"
+            tickets.append(t)
 
     return render(request, "Main_Interface/sit_confarmation.html", {
         "schedule": schedule,
         "tickets": tickets,
+        "nid_masked": _mask(getattr(request.user.profile, "nid", "")),
     })
 
 
