@@ -248,7 +248,7 @@
     .seat-panel-box{ display:none; }
     .seat-panel-box.active{ display:block; }
 
-    /* ---- Popup modal (replaces alert) ---- */
+    /* ---- Popup modal ---- */
     .rs-modal-overlay {
         position: fixed; inset: 0; z-index: 3000;
         background: rgba(10, 26, 18, .55); backdrop-filter: blur(2px);
@@ -436,7 +436,7 @@
                                         <hr class="sidebar-divider">
 
                                         <div class="sidebar-title"><i class="bi bi-ticket-perforated"></i> Your Selection</div>
-                                        <p class="seat-limit-hint">Maximum {{ remaining_today|default:4 }} seat(s) can be booked at a time.</p>
+                                        <p class="seat-limit-hint">Maximum {{ remaining_today|default_if_none:4 }} seat(s) can be booked at a time.</p>
                                         <div class="selected-seats-list" id="selectedSeats{{ train_id }}_{{ klass.code }}">
                                             <span class="empty-hint">No seats selected yet</span>
                                         </div>
@@ -484,8 +484,8 @@
 </div>
 
 <script>
-// Server theke asha limit (aj ar koyta ticket kinte parbe). Default 4.
-const MAX_SEATS = {{ remaining_today|default:4 }};
+// Server theke asha limit (aj ar koyta ticket kinte parbe). 0 hole 0-i thakbe.
+const MAX_SEATS = {{ remaining_today|default_if_none:4 }};
 // Confirmation page URL template ("0" er jaygay schedule id boshbe)
 const CONFIRM_URL_TEMPLATE = "{% url 'seat_confarmation' 0 %}";
 
@@ -633,7 +633,6 @@ function selectSeat(btn) {
     if (!selectedSeatsMap[key]) selectedSeatsMap[key] = {};
     if (selectedSeatsMap[key][seat]) return; // already selected
 
-    // Limit check: limit cross korle seat select hobe na, popup dekhabe
     if (totalSelectedCount() >= MAX_SEATS) {
         const msg = MAX_SEATS > 0
             ? 'You can not book more than ' + MAX_SEATS + ' ticket' + (MAX_SEATS > 1 ? 's' : '') + '.'
@@ -740,7 +739,7 @@ function getCsrfToken() {
     return match ? decodeURIComponent(match[1]) : '';
 }
 
-// ---------- Confirm booking ----------
+// ---------- Confirm booking (shob seat 1 ta request, 1 ta confirmation number) ----------
 function bookTrain(key, scheduleId, trainNumber) {
     const seats = Object.keys(selectedSeatsMap[key] || {});
     if (seats.length === 0) {
@@ -756,61 +755,49 @@ function bookTrain(key, scheduleId, trainNumber) {
         confirmBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Booking...';
     }
 
-    const csrfToken = getCsrfToken();
+    const resetButton = () => {
+        if (!confirmBtn) return;
+        confirmBtn.innerHTML = originalLabel;
+        confirmBtn.disabled = Object.keys(selectedSeatsMap[key] || {}).length === 0;
+    };
 
-    const requests = seats.map(seat =>
-        fetch(`/book-seat/${scheduleId}/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': csrfToken,
-            },
-            body: `seat_number=${encodeURIComponent(seat)}`,
-        })
-        .then(r => r.json())
-        .then(data => ({ seat, ...data }))
-        .catch(() => ({ seat, success: false, message: 'Network error while booking ' + seat }))
-    );
+    fetch(`/book-seat/${scheduleId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCsrfToken(),
+        },
+        body: 'seat_numbers=' + encodeURIComponent(seats.join(',')),
+    })
+    .then(r => r.json().catch(() => ({ success: false, message: 'Unexpected server response.' })))
+    .then(data => {
+        if (!data.success) {
+            resetButton();
+            showModal('Booking failed', data.message || 'Could not book the selected seats.', 'error');
+            return;
+        }
 
-    Promise.all(requests).then(results => {
-        const booked = results.filter(r => r.success);
-        const failed = results.filter(r => !r.success);
-
-        booked.forEach(r => {
+        // Booking success: seat gulo booked mark kori
+        (data.seats || seats).forEach(seat => {
             const btn = document.querySelector(
-                `.seat-btn[data-train="${trainId}"][data-class="${classCode}"][data-seat="${r.seat}"]`
+                `.seat-btn[data-train="${trainId}"][data-class="${classCode}"][data-seat="${seat}"]`
             );
             if (btn) {
                 btn.classList.remove('seat-selected');
                 btn.classList.add('seat-booked');
                 btn.disabled = true;
             }
-            if (selectedSeatsMap[key]) delete selectedSeatsMap[key][r.seat];
         });
-
+        selectedSeatsMap[key] = {};
         updateSummary(key);
 
-        if (confirmBtn) {
-            confirmBtn.innerHTML = originalLabel;
-            confirmBtn.disabled = Object.keys(selectedSeatsMap[key] || {}).length === 0;
-        }
-
-        // Kono ticket book hole confirmation page e redirect
-        const goToConfirmation = () => {
-            const codes = booked.map(r => r.confirmation_number).filter(Boolean).join(',');
-            const url = CONFIRM_URL_TEMPLATE.replace('/0/', '/' + scheduleId + '/');
-            window.location.href = url + '?c=' + encodeURIComponent(codes);
-        };
-
-        if (booked.length && failed.length) {
-            const failMsgs = failed.map(r => `${r.seat}: ${r.message || 'could not be booked'}`).join('\n');
-            showModal('Some seats could not be booked', failMsgs, 'error', goToConfirmation);
-        } else if (booked.length) {
-            goToConfirmation();
-        } else if (failed.length) {
-            const failMsgs = failed.map(r => `${r.seat}: ${r.message || 'could not be booked'}`).join('\n');
-            showModal('Booking failed', failMsgs, 'error');
-        }
+        // 1 ta confirmation number diye confirmation page e
+        const url = CONFIRM_URL_TEMPLATE.replace('/0/', '/' + scheduleId + '/');
+        window.location.href = url + '?c=' + encodeURIComponent(data.confirmation_number);
+    })
+    .catch(() => {
+        resetButton();
+        showModal('Network error', 'Please check your connection and try again.', 'error');
     });
 }
 </script>

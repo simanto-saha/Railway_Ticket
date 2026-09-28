@@ -55,6 +55,13 @@ class TrainDriverInformation(models.Model):
 from django.conf import settings
 from django.db.models import Q
 
+def generate_confirmation_number():
+    while True:
+        code = ''.join(random.choices(string.digits, k=12))
+        if not TrainTicket.objects.filter(confirmation_number=code).exists():
+            return code
+
+        
 class TrainTicket(models.Model):
 
     StatusChoices = [
@@ -75,7 +82,7 @@ class TrainTicket(models.Model):
     seat_number = models.CharField(max_length=10)
     booking_time = models.DateTimeField(auto_now_add=True, db_index=True)
     status = models.CharField(max_length=10, choices=StatusChoices, default='booked')
-    confirmation_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    confirmation_number = models.CharField(max_length=20, db_index=True, blank=True, null=True)
 
     class Meta:
         constraints = [
@@ -89,14 +96,10 @@ class TrainTicket(models.Model):
 
     def save(self, *args, **kwargs):
         if self.status == 'booked' and not self.confirmation_number:
-            self.confirmation_number = self._generate_confirmation_number()
+            self.confirmation_number = generate_confirmation_number()
         super().save(*args, **kwargs)
 
-    def _generate_confirmation_number(self):
-        while True:
-            code = ''.join(random.choices(string.digits, k=12))
-            if not TrainTicket.objects.filter(confirmation_number=code).exists():
-                return code
+
 
     def __str__(self):
         return f"Ticket for {self.passenger_name} on {self.train_schedule.train.train_name}"

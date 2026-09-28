@@ -207,14 +207,20 @@ def update_profile_image(request):
 
 
 def _profile_context(user, password_form=None):
+    rows = (
+        TrainTicket.objects
+        .filter(user=user, status="booked")
+        .select_related("train_schedule")
+        .order_by("-booking_time", "seat_number")
+    )
+    groups = {}
+    for t in rows:
+        g = groups.setdefault(t.confirmation_number, {"ticket": t, "seats": []})
+        g["seats"].append(t.seat_number)
+
     return {
         'password_form': password_form or PasswordChangeForm(user),
-        'all_tickets': (
-            TrainTicket.objects
-            .filter(user=user, status="booked")
-            .select_related("train_schedule")
-            .order_by("-booking_time")
-        ),
+        'all_tickets': list(groups.values()),
     }
 
 
@@ -383,6 +389,7 @@ def ticket_page(request):
         "stations": stations,
         "searched": searched,
         "search_error": search_error,
+        "remaining_today": get_remaining_today(request.user),
     })
 
 
@@ -424,97 +431,89 @@ def book_seat(request, schedule_id):
     if request.method != "POST":
         return JsonResponse({"success": False, "message": "Invalid method."}, status=405)
 
-    seat_number = request.POST.get("seat_number")
-    if not seat_number:
+    # seat_number (single/repeated) ba seat_numbers ("A1,A2,A3") dutoi cholbe
+    raw = request.POST.getlist("seat_number") + request.POST.get("seat_numbers", "").split(",")
+    seats = list(dict.fromkeys(s.strip() for s in raw if s.strip()))
+
+    if not seats:
         return JsonResponse({"success": False, "message": "seat_number required."}, status=400)
+    if len(seats) > MAX_TICKETS_PER_DAY:
+        return JsonResponse({"success": False, "message": f"Maximum {MAX_TICKETS_PER_DAY} seats per booking."}, status=400)
 
-    # User lock: same user er parallel request e 4 er beshi ticket na kata jay
-    user_lock = redis_client.lock(
-        f"lock:user:{request.user.id}:booking", timeout=LOCK_TIMEOUT
-    )
-    # Seat lock: ekoi seat duijon ek shathe na kinte pare
-    seat_lock = redis_client.lock(
-        f"lock:schedule:{schedule_id}:seat:{seat_number}", timeout=LOCK_TIMEOUT
-    )
-
+    user_lock = redis_client.lock(f"lock:user:{request.user.id}:booking", timeout=LOCK_TIMEOUT)
     if not user_lock.acquire(blocking=True, blocking_timeout=3):
-        return JsonResponse(
-            {"success": False, "message": "Another booking in progress. Try again."},
-            status=429,
-        )
+        return JsonResponse({"success": False, "message": "Another booking in progress. Try again."}, status=429)
 
-    if not seat_lock.acquire(blocking=True, blocking_timeout=3):
-        safe_release(user_lock)
-        return JsonResponse(
-            {"success": False, "message": "Seat is being booked by someone else. Try again."},
-            status=409,
-        )
-
+    seat_locks = []
     try:
+        # sorted order-e lock nai, jate deadlock na hoy
+        for s in sorted(seats):
+            lk = redis_client.lock(f"lock:schedule:{schedule_id}:seat:{s}", timeout=LOCK_TIMEOUT)
+            if not lk.acquire(blocking=True, blocking_timeout=3):
+                return JsonResponse({"success": False, "message": f"Seat {s} is being booked by someone else. Try again."}, status=409)
+            seat_locks.append(lk)
+
         try:
             schedule = TrainSchedule.objects.get(id=schedule_id)
         except TrainSchedule.DoesNotExist:
             return JsonResponse({"success": False, "message": "Schedule not found."}, status=404)
 
-        window_start = get_booking_window_start()
-
-        # Daily limit check
         booked_count = TrainTicket.objects.filter(
-            user=request.user,
-            status="booked",
-            booking_time__gte=window_start,
+            user=request.user, status="booked",
+            booking_time__gte=get_booking_window_start(),
         ).count()
 
-        if booked_count >= MAX_TICKETS_PER_DAY:
-            next_reset = window_start + timedelta(days=1)
+        if booked_count + len(seats) > MAX_TICKETS_PER_DAY:
+            left = max(0, MAX_TICKETS_PER_DAY - booked_count)
             return JsonResponse({
                 "success": False,
-                "message": (
-                    f"Maximum Ticket limit is {MAX_TICKETS_PER_DAY}"
-                    
-                ),
+                "message": f"Maximum Ticket limit is {MAX_TICKETS_PER_DAY}. You can book {left} more today.",
             }, status=403)
 
-        # Seat already booked check
-        if TrainTicket.objects.filter(
-            train_schedule=schedule, seat_number=seat_number, status="booked"
-        ).exists():
-            return JsonResponse({"success": False, "message": "Seat already booked."}, status=409)
+        taken = list(TrainTicket.objects.filter(
+            train_schedule=schedule, seat_number__in=seats, status="booked"
+        ).values_list("seat_number", flat=True))
+        if taken:
+            return JsonResponse({"success": False, "message": f"Seat already booked: {', '.join(taken)}"}, status=409)
 
-        # Ticket create (DB unique constraint double booking rokhbe)
+        confirmation_number = generate_confirmation_number()  # sob seat-er jonno 1 ta
         try:
-            with transaction.atomic():
-                ticket = TrainTicket.objects.create(
-                    user=request.user,
-                    train_schedule=schedule,
-                    passenger_name=request.user.get_full_name() or request.user.username,
-                    passenger_phone_number=request.user.profile.phone_number,
-                    seat_number=seat_number,
-                    status="booked",
-                )
+            with transaction.atomic():  # ekta fail hole kono seat-i book hobe na
+                for s in seats:
+                    TrainTicket.objects.create(
+                        user=request.user,
+                        train_schedule=schedule,
+                        passenger_name=request.user.get_full_name() or request.user.username,
+                        passenger_phone_number=request.user.profile.phone_number,
+                        seat_number=s,
+                        status="booked",
+                        confirmation_number=confirmation_number,
+                    )
         except IntegrityError:
             return JsonResponse({"success": False, "message": "Seat already booked."}, status=409)
 
-        # Websocket update
         channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"schedule_{schedule_id}",
-            {"type": "seat_update", "seat_number": seat_number, "status": "booked"},
-        )
+        for s in seats:
+            async_to_sync(channel_layer.group_send)(
+                f"schedule_{schedule_id}",
+                {"type": "seat_update", "seat_number": s, "status": "booked"},
+            )
 
         return JsonResponse({
             "success": True,
             "message": "Seat booked successfully.",
-            "confirmation_number": ticket.confirmation_number,
-            "remaining_today": MAX_TICKETS_PER_DAY - booked_count - 1,
+            "confirmation_number": confirmation_number,
+            "seats": seats,
+            "remaining_today": MAX_TICKETS_PER_DAY - booked_count - len(seats),
         })
     finally:
-        safe_release(seat_lock)
+        for lk in seat_locks:
+            safe_release(lk)
         safe_release(user_lock)
 
 
 
-
+from Railway_Admin.models import TrainInformation, TrainSchedule, TrainTicket, generate_confirmation_number
 from django.urls import reverse
 
 def _mask(value, head=3, tail=3):
@@ -531,32 +530,49 @@ def sit_confarmation_page(request, schedule_id):
     )
     codes = [c.strip() for c in request.GET.get("c", "").split(",") if c.strip()]
 
-    tickets = []
+    ticket = None
     if codes:
-        # seat -> (class label, fare)
         seat_info = {}
         for c in _build_classes(schedule.train.total_seats, schedule, set()):
             for coach in c["coaches"]:
                 for s in coach["seats"]:
                     seat_info[s] = (c["label"], c["price"])
 
-        qs = TrainTicket.objects.filter(
-            user=request.user,
-            train_schedule=schedule,
-            status="booked",
-            confirmation_number__in=codes,
-        ).order_by("seat_number")
+        rows = list(
+            TrainTicket.objects.filter(
+                user=request.user,
+                train_schedule=schedule,
+                status="booked",
+                confirmation_number__in=codes,
+            ).order_by("seat_number")
+        )
 
-        verify_base = request.build_absolute_uri(reverse("varification_ticket"))
-        for t in qs:
-            t.class_name, t.fare = seat_info.get(t.seat_number, ("-", 0))
-            t.phone_masked = _mask(t.passenger_phone_number)
-            t.verify_url = f"{verify_base}?confirmation_number={t.confirmation_number}"
-            tickets.append(t)
+        if rows:
+            first = rows[0]
+            classes = []
+            total_fare = 0
+            for r in rows:
+                label, price = seat_info.get(r.seat_number, ("-", 0))
+                if label not in classes:
+                    classes.append(label)
+                total_fare += price
+
+            verify_base = request.build_absolute_uri(reverse("varification_ticket"))
+            ticket = {
+                "passenger_name": first.passenger_name,
+                "phone_masked": _mask(first.passenger_phone_number),
+                "issue_time": min(r.booking_time for r in rows),
+                "seats": ", ".join(r.seat_number for r in rows),
+                "seat_count": len(rows),
+                "class_name": ", ".join(classes),
+                "total_fare": total_fare,
+                "verify_url": f"{verify_base}?confirmation_number={rows[0].confirmation_number}",
+                
+            }
 
     return render(request, "Main_Interface/sit_confarmation.html", {
         "schedule": schedule,
-        "tickets": tickets,
+        "ticket": ticket,
         "nid_masked": _mask(getattr(request.user.profile, "nid", "")),
     })
 

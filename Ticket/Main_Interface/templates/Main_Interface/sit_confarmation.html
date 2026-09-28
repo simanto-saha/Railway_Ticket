@@ -65,12 +65,12 @@ table.et-table{ width:100%; border-collapse:collapse; }
 {% block content %}
 <div class="wrap et-page">
 
-{% if tickets %}
+{% if ticket %}
   <div class="et-actions">
-    <button type="button" class="et-btn" onclick="window.print()"><i class="bi bi-printer me-1"></i> Print </button>
+    <button type="button" class="et-btn" onclick="window.print()"><i class="bi bi-printer me-1"></i> Print / Save as PDF</button>
+    <a href="{% url 'profile' %}" class="et-btn secondary"><i class="bi bi-arrow-left me-1"></i> My Tickets</a>
   </div>
 
-  {% for t in tickets %}
   <div class="eticket">
     <div class="et-head">
       <img src="{% static 'image/RailwaySheba.png' %}" alt="Logo" class="et-logo">
@@ -78,36 +78,39 @@ table.et-table{ width:100%; border-collapse:collapse; }
         <h1>RAILWAYSHEBA E-TICKET</h1>
         <small>Bangladesh Railway</small>
       </div>
-      <div class="et-qr" data-url="{{ t.verify_url }}"></div>
+      <div class="et-qr" data-url="{{ ticket.verify_url }}"></div>
     </div>
 
     <p class="et-intro">
-      Dear {{ t.passenger_name }},<br>
+      Dear {{ ticket.passenger_name }},<br>
       Your request to book e-ticket for your journey was successful. You can travel on the train mentioned
       in the ticket subject to showing your NID or Photo ID card. The details of your e-ticket are as below:
     </p>
 
     <div class="et-section">Journey Information</div>
     <table class="et-table">
-      <tr><td>Issue Date &amp; Time</td><td>{{ t.booking_time|date:"d-m-Y H:i" }}</td></tr>
+      <tr><td>Issue Date &amp; Time</td><td>{{ ticket.issue_time|date:"d-m-Y H:i" }}</td></tr>
       <tr><td>Journey Date &amp; Time</td><td>{{ schedule.departure_time|date:"d-m-Y H:i" }}</td></tr>
       <tr><td>Train Name &amp; Number</td><td>{{ schedule.train.train_name|upper }} [{{ schedule.train.train_number }}]</td></tr>
       <tr><td>From Station</td><td>{{ schedule.source_station }}</td></tr>
       <tr><td>To Station</td><td>{{ schedule.destination_station }}</td></tr>
-      <tr><td>Class Name</td><td>{{ t.class_name }}</td></tr>
-      <tr><td>Seat</td><td>{{ t.seat_number }}</td></tr>
-      <tr><td>No. of Seats</td><td>1</td></tr>
-      <tr><td>No. of Adult Passenger(s)</td><td>1</td></tr>
-      <tr class="total"><td>Total Fare</td><td>BDT {{ t.fare|floatformat:2 }}</td></tr>
+      <tr><td>Class Name</td><td>{{ ticket.class_name }}</td></tr>
+      <tr><td>Seat(s)</td><td>{{ ticket.seats }}</td></tr>
+      <tr><td>No. of Seats</td><td>{{ ticket.seat_count }}</td></tr>
+      <tr><td>No. of Adult Passenger(s)</td><td>{{ ticket.seat_count }}</td></tr>
+      <tr class="total"><td>Total Fare</td><td>BDT {{ ticket.total_fare|floatformat:2 }}</td></tr>
     </table>
 
     <div class="et-section">Passenger Information</div>
     <table class="et-table">
-      <tr><td>Passenger Name</td><td>{{ t.passenger_name }}</td></tr>
+      <tr><td>Passenger Name</td><td>{{ ticket.passenger_name }}</td></tr>
       <tr><td>Identification Type</td><td>NID</td></tr>
       <tr><td>Identification Number</td><td>{{ nid_masked }}</td></tr>
-      <tr><td>Mobile Number</td><td>{{ t.phone_masked }}</td></tr>
-      <tr class="total"><td>Confirmation Number</td><td>{{ t.confirmation_number }}</td></tr>
+      <tr><td>Mobile Number</td><td>{{ ticket.phone_masked }}</td></tr>
+      <tr class="total">
+        <td>Confirmation Number{{ ticket.confirmation_numbers|length|pluralize }}</td>
+        <td>{{ ticket.confirmation_numbers|join:", " }}</td>
+      </tr>
     </table>
 
     <div class="et-notes">
@@ -127,7 +130,6 @@ table.et-table{ width:100%; border-collapse:collapse; }
       <b>RailwaySheba</b>
     </div>
   </div>
-  {% endfor %}
 
 {% else %}
   <div class="et-empty">
