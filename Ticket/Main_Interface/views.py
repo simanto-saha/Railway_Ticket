@@ -206,11 +206,21 @@ def update_profile_image(request):
     return redirect('profile')
 
 
+def _profile_context(user, password_form=None):
+    return {
+        'password_form': password_form or PasswordChangeForm(user),
+        'all_tickets': (
+            TrainTicket.objects
+            .filter(user=user, status="booked")
+            .select_related("train_schedule")
+            .order_by("-booking_time")
+        ),
+    }
+
+
 @login_required
 def profile_view(request):
-    return render(request, "Main_Interface/profile.html", {
-        'password_form': PasswordChangeForm(request.user),
-    })
+    return render(request, "Main_Interface/profile.html", _profile_context(request.user))
 
 
 @login_required
@@ -220,11 +230,10 @@ def change_password(request):
         if form.is_valid():
             form.save()
             login(request, request.user)
+            messages.success(request, "Password updated.")
             return redirect('profile')
-    else:
-        form = PasswordChangeForm(request.user)
-
-    return render(request, "Main_Interface/profile.html", {'password_form': form})
+        return render(request, "Main_Interface/profile.html", _profile_context(request.user, form))
+    return redirect('profile')
 
 
 def get_coach_letter(index):
@@ -541,5 +550,3 @@ def get_remaining_today(user):
     ).count()
     return max(0, MAX_TICKETS_PER_DAY - used)
 
-# Tarpor render() er context e:
-#   "remaining_today": get_remaining_today(request.user),

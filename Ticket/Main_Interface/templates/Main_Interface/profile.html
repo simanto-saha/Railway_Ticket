@@ -6,6 +6,7 @@
 <style>
   .profile-page{ padding:72px 0 100px; background:var(--mist); min-height:560px; }
   .profile-layout{ display:grid; grid-template-columns:0.8fr 1.2fr; gap:24px; align-items:start; }
+  .profile-left{ display:flex; flex-direction:column; gap:24px; }
   .profile-panel{ background:#fff; border:1px solid var(--line); border-radius:var(--radius-m); box-shadow:var(--shadow-1); padding:30px; }
   .profile-summary{ text-align:center; }
 
@@ -13,8 +14,8 @@
   .avatar-wrap{ position:relative; width:86px; height:86px; margin:0 auto 18px; }
   .profile-large-avatar{
     width:86px; height:86px; margin:0; border-radius:50%; overflow:hidden;
-    display:grid; place-items:center; background:var(--accent); color:#fff;
-    font-family:'Fraunces',serif; font-size:2.2rem; box-shadow:0 12px 26px rgba(182,130,63,0.25);
+    display:grid; place-items:center; background:var(--flag-green); color:#fff;
+    font-family:'Merriweather',serif; font-size:2.2rem; box-shadow:0 12px 26px rgba(0,106,78,0.25);
   }
   .profile-large-avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
   .avatar-edit{
@@ -22,16 +23,17 @@
     background:var(--ink); color:#fff; display:grid; place-items:center;
     cursor:pointer; font-size:0.8rem; border:2px solid #fff; margin:0;
   }
-  .avatar-edit:hover{ background:var(--accent-deep); }
+  .avatar-edit:hover{ background:var(--flag-green); }
   .remove-photo{ background:none; border:0; color:#a34036; font-size:0.8rem; margin:-6px 0 10px; cursor:pointer; }
   .remove-photo:hover{ text-decoration:underline; }
 
   .profile-summary h1{ font-size:1.7rem; }
   .profile-summary p{ color:var(--charcoal-soft); margin:5px 0 0; font-size:0.9rem; }
-  .profile-summary .profile-links{ margin-top:25px; border-top:1px solid var(--line); padding-top:17px; }
+  .profile-summary .profile-links{ margin-top:25px; border-top:1px solid var(--line); padding-top:17px; text-align:left; }
   .profile-links a{ display:flex; align-items:center; gap:10px; padding:10px 0; color:var(--ink); font-size:0.9rem; }
-  .profile-links a:hover{ color:var(--accent-deep); }
-  .profile-links i{ width:18px; color:var(--accent-deep); }
+  .profile-links a:hover{ color:var(--flag-green); }
+  .profile-links i{ width:18px; color:var(--flag-green); }
+
   .profile-heading{ margin-bottom:22px; }
   .profile-heading h2{ font-size:1.45rem; }
   .profile-heading p{ color:var(--charcoal-soft); margin:5px 0 0; font-size:0.9rem; }
@@ -39,11 +41,27 @@
   .detail-item{ padding:14px; background:var(--mist); border-radius:var(--radius-s); }
   .detail-item span{ display:block; color:var(--charcoal-soft); font-size:0.76rem; margin-bottom:4px; }
   .detail-item strong{ color:var(--ink); font-size:0.92rem; font-weight:600; word-break:break-word; }
+
+  /* My tickets */
+  .my-tickets h2{ font-size:1.25rem; margin-bottom:14px; }
+  .ticket-link{
+    display:block; padding:12px 14px; margin-bottom:10px; text-align:left;
+    background:var(--mist); border:1px solid var(--line); border-radius:var(--radius-s);
+    color:var(--ink); transition:border-color .15s, transform .15s;
+  }
+  .ticket-link:last-child{ margin-bottom:0; }
+  .ticket-link:hover{ border-color:var(--flag-green); transform:translateY(-1px); color:var(--ink); }
+  .ticket-route{ font-weight:600; font-size:0.92rem; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .ticket-route i{ color:var(--flag-green); }
+  .ticket-conf{ font-size:0.78rem; color:var(--charcoal-soft); margin-top:4px; word-break:break-all; }
+  .no-tickets{ color:var(--charcoal-soft); font-size:0.88rem; margin:0; }
+
   .password-form{ margin-top:34px; padding-top:28px; border-top:1px solid var(--line); }
   .password-form .field-label{ margin-top:15px; }
   .password-form input{ width:100%; padding:11px 13px; border:1.5px solid var(--line); border-radius:var(--radius-s); background:var(--mist); color:var(--ink); }
-  .password-form input:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 4px rgba(182,130,63,0.12); background:#fff; }
+  .password-form input:focus{ outline:none; border-color:var(--flag-green); box-shadow:0 0 0 4px rgba(0,106,78,0.12); background:#fff; }
   .password-form ul, .password-form .errorlist{ color:#a34036; font-size:0.82rem; padding-left:18px; margin:6px 0; }
+
   @media (max-width:760px){ .profile-layout{ grid-template-columns:1fr; } }
   @media (max-width:480px){ .detail-grid{ grid-template-columns:1fr; } .profile-panel{ padding:22px; } }
 </style>
@@ -53,51 +71,72 @@
 <section class="profile-page">
   <div class="wrap">
 
-    {% if messages %}
-      {% for m in messages %}
-        <div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags|default:'info' }}{% endif %} mb-3">{{ m }}</div>
-      {% endfor %}
-    {% endif %}
+    {% for m in messages %}
+      <div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags|default:'info' }}{% endif %} mb-3">{{ m }}</div>
+    {% endfor %}
 
     <div class="profile-layout">
-      <aside class="profile-panel profile-summary">
 
-        <div class="avatar-wrap">
-          <div class="profile-large-avatar">
-            {% if request.user.profile.profile_image %}
-              <img src="{{ request.user.profile.profile_image.url }}" alt="Profile photo">
-            {% elif request.user.first_name %}
-              {{ request.user.first_name|first|upper }}
-            {% else %}
-              {{ request.user.username|first|upper }}
-            {% endif %}
+      <!-- LEFT COLUMN -->
+      <div class="profile-left">
+        <aside class="profile-panel profile-summary">
+
+          <div class="avatar-wrap">
+            <div class="profile-large-avatar">
+              {% if request.user.profile.profile_image %}
+                <img src="{{ request.user.profile.profile_image.url }}" alt="Profile photo">
+              {% elif request.user.first_name %}
+                {{ request.user.first_name|first|upper }}
+              {% else %}
+                {{ request.user.username|first|upper }}
+              {% endif %}
+            </div>
+
+            <form method="post" action="{% url 'update_profile_image' %}" enctype="multipart/form-data" id="avatarForm">
+              {% csrf_token %}
+              <label class="avatar-edit" for="avatarInput" title="Change photo"><i class="bi bi-camera"></i></label>
+              <input type="file" id="avatarInput" name="profile_image"
+                     accept="image/png,image/jpeg,image/webp" hidden
+                     onchange="document.getElementById('avatarForm').submit()">
+            </form>
           </div>
 
-          <form method="post" action="{% url 'update_profile_image' %}" enctype="multipart/form-data" id="avatarForm">
+          {% if request.user.profile.profile_image %}
+          <form method="post" action="{% url 'update_profile_image' %}">
             {% csrf_token %}
-            <label class="avatar-edit" for="avatarInput" title="Change photo"><i class="bi bi-camera"></i></label>
-            <input type="file" id="avatarInput" name="profile_image"
-                   accept="image/png,image/jpeg,image/webp" hidden
-                   onchange="document.getElementById('avatarForm').submit()">
+            <input type="hidden" name="remove" value="1">
+            <button type="submit" class="remove-photo">Remove photo</button>
           </form>
-        </div>
+          {% endif %}
 
-        {% if request.user.profile.profile_image %}
-        <form method="post" action="{% url 'update_profile_image' %}">
-          {% csrf_token %}
-          <input type="hidden" name="remove" value="1">
-          <button type="submit" class="remove-photo">Remove photo</button>
-        </form>
-        {% endif %}
+          <h1>{{ request.user.first_name|default:request.user.username }}</h1>
+          <p>{{ request.user.email }}</p>
 
-        <h1>{{ request.user.first_name|default:request.user.username }}</h1>
-        <p>{{ request.user.email }}</p>
-        <div class="profile-links">
-          <a href="{% url 'ticket_page' %}"><i class="bi bi-ticket-perforated"></i> Book a ticket</a>
-          <a href="{% url 'change_password' %}"><i class="bi bi-shield-lock"></i> Change password</a>
-        </div>
-      </aside>
+          <div class="profile-links">
+            <a href="{% url 'ticket_page' %}"><i class="bi bi-ticket-perforated"></i> Book a ticket</a>
+            <a href="{% url 'change_password' %}"><i class="bi bi-shield-lock"></i> Change password</a>
+          </div>
+        </aside>
 
+        <section class="profile-panel my-tickets">
+          <h2>My Tickets</h2>
+          {% for ticket in all_tickets %}
+            <a class="ticket-link"
+               href="{% url 'seat_confarmation' ticket.train_schedule.id %}?c={{ ticket.confirmation_number }}">
+              <div class="ticket-route">
+                {{ ticket.train_schedule.source_station }}
+                <i class="bi bi-arrow-right"></i>
+                {{ ticket.train_schedule.destination_station }}
+              </div>
+              <div class="ticket-conf">Confirmation: {{ ticket.confirmation_number }}</div>
+            </a>
+          {% empty %}
+            <p class="no-tickets">You have no booked tickets yet.</p>
+          {% endfor %}
+        </section>
+      </div>
+
+      <!-- RIGHT COLUMN -->
       <section class="profile-panel">
         <div class="profile-heading">
           <h2>Personal details</h2>
@@ -127,6 +166,7 @@
           </form>
         </div>
       </section>
+
     </div>
   </div>
 </section>
