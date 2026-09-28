@@ -15,6 +15,15 @@ from django.urls import reverse
 from .models import Profile, VarificationCode
 from Railway_Admin.models import TrainInformation, TrainSchedule, TrainTicket
 
+import redis
+from django.db import transaction
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
+from django.db import IntegrityError, transaction
+
+from redis.exceptions import LockError
+
 
 def home_page(request):
     schedules = TrainSchedule.objects.select_related('train').order_by('departure_time')
@@ -348,14 +357,31 @@ def train_schedule(request):
     })
 
 
-import redis
-from django.db import transaction
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
 
 
 redis_client = redis.Redis.from_url(settings.REDIS_URL)
 LOCK_TIMEOUT = 10  # seconds
+
+MAX_TICKETS_PER_DAY = 4
+RESET_HOUR = 8  # 8:00 AM
+
+
+def get_booking_window_start():
+    """Current booking day er shuru (8:00 AM) return kore."""
+    now = timezone.localtime()
+    start = now.replace(hour=RESET_HOUR, minute=0, second=0, microsecond=0)
+    if now < start:
+        start -= timedelta(days=1)
+    return start
+
+
+def safe_release(lock):
+    """Lock timeout e expire hoye gele release() LockError dey, seta ignore kori."""
+    try:
+        lock.release()
+    except LockError:
+        pass
+
 
 @login_required
 def book_seat(request, schedule_id):
@@ -364,32 +390,76 @@ def book_seat(request, schedule_id):
 
     seat_number = request.POST.get("seat_number")
     if not seat_number:
-        return JsonResponse({"success": False, "message": "seat_number required."})
+        return JsonResponse({"success": False, "message": "seat_number required."}, status=400)
 
-    lock_key = f"lock:schedule:{schedule_id}:seat:{seat_number}"
-    lock = redis_client.lock(lock_key, timeout=LOCK_TIMEOUT)
+    # User lock: same user er parallel request e 4 er beshi ticket na kata jay
+    user_lock = redis_client.lock(
+        f"lock:user:{request.user.id}:booking", timeout=LOCK_TIMEOUT
+    )
+    # Seat lock: ekoi seat duijon ek shathe na kinte pare
+    seat_lock = redis_client.lock(
+        f"lock:schedule:{schedule_id}:seat:{seat_number}", timeout=LOCK_TIMEOUT
+    )
 
-    if not lock.acquire(blocking=True, blocking_timeout=3):
-        return JsonResponse({"success": False, "message": "Seat is being booked by someone else. Try again."})
+    if not user_lock.acquire(blocking=True, blocking_timeout=3):
+        return JsonResponse(
+            {"success": False, "message": "Another booking in progress. Try again."},
+            status=429,
+        )
+
+    if not seat_lock.acquire(blocking=True, blocking_timeout=3):
+        safe_release(user_lock)
+        return JsonResponse(
+            {"success": False, "message": "Seat is being booked by someone else. Try again."},
+            status=409,
+        )
 
     try:
-        schedule = TrainSchedule.objects.get(id=schedule_id)
+        try:
+            schedule = TrainSchedule.objects.get(id=schedule_id)
+        except TrainSchedule.DoesNotExist:
+            return JsonResponse({"success": False, "message": "Schedule not found."}, status=404)
 
-        already_taken = TrainTicket.objects.filter(
+        window_start = get_booking_window_start()
+
+        # Daily limit check
+        booked_count = TrainTicket.objects.filter(
+            user=request.user,
+            status="booked",
+            booking_time__gte=window_start,
+        ).count()
+
+        if booked_count >= MAX_TICKETS_PER_DAY:
+            next_reset = window_start + timedelta(days=1)
+            return JsonResponse({
+                "success": False,
+                "message": (
+                    f"Daily limit of {MAX_TICKETS_PER_DAY} tickets reached. "
+                    f"You can book again after {next_reset.strftime('%d %b, %I:%M %p')}."
+                ),
+            }, status=403)
+
+        # Seat already booked check
+        if TrainTicket.objects.filter(
             train_schedule=schedule, seat_number=seat_number, status="booked"
-        ).exists()
-        if already_taken:
-            return JsonResponse({"success": False, "message": "Seat already booked."})
+        ).exists():
+            return JsonResponse({"success": False, "message": "Seat already booked."}, status=409)
 
-        with transaction.atomic():
-            ticket = TrainTicket.objects.create(
-                train_schedule=schedule,
-                passenger_name=request.user.get_full_name() or request.user.username,
-                passenger_phone_number=request.user.profile.phone_number,
-                seat_number=seat_number,
-                status="booked",
-            )
+        # Ticket create (DB unique constraint double booking rokhbe)
+        try:
+            with transaction.atomic():
+                ticket = TrainTicket.objects.create(
+                    user=request.user,
+                    train_schedule=schedule,
+                    passenger_name=request.user.get_full_name() or request.user.username,
+                    passenger_phone_number=request.user.profile.phone_number,
+                    seat_number=seat_number,
+                    status="booked",
+                )
+        except IntegrityError:
+            return JsonResponse({"success": False, "message": "Seat already booked."}, status=409)
 
+        # Websocket update
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f"schedule_{schedule_id}",
@@ -400,6 +470,8 @@ def book_seat(request, schedule_id):
             "success": True,
             "message": "Seat booked successfully.",
             "confirmation_number": ticket.confirmation_number,
+            "remaining_today": MAX_TICKETS_PER_DAY - booked_count - 1,
         })
     finally:
-        lock.release()
+        safe_release(seat_lock)
+        safe_release(user_lock)

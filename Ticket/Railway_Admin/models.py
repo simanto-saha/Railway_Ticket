@@ -52,6 +52,9 @@ class TrainDriverInformation(models.Model):
         return f"{self.driver_name} - {self.train.train_name}"
 
 
+from django.conf import settings
+from django.db.models import Q
+
 class TrainTicket(models.Model):
 
     StatusChoices = [
@@ -59,13 +62,30 @@ class TrainTicket(models.Model):
         ('booked', 'Booked'),
         ('cancelled', 'Cancelled'),
     ]
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="tickets",
+        null=True,   # purono ticket gulor jonno (niche dekhun)
+        blank=True,
+    )
     train_schedule = models.ForeignKey(TrainSchedule, on_delete=models.CASCADE)
     passenger_name = models.CharField(max_length=100)
     passenger_phone_number = models.CharField(max_length=15)
     seat_number = models.CharField(max_length=10)
-    booking_time = models.DateTimeField(auto_now_add=True)
+    booking_time = models.DateTimeField(auto_now_add=True, db_index=True)
     status = models.CharField(max_length=10, choices=StatusChoices, default='booked')
     confirmation_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
+
+    class Meta:
+        constraints = [
+            # DB level e double booking ekdom rokhbe
+            models.UniqueConstraint(
+                fields=["train_schedule", "seat_number"],
+                condition=Q(status="booked"),
+                name="unique_booked_seat_per_schedule",
+            ),
+        ]
 
     def save(self, *args, **kwargs):
         if self.status == 'booked' and not self.confirmation_number:
