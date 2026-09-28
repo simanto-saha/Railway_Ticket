@@ -15,7 +15,6 @@
 
 <style>
   :root{
-    /* Official government palette */
     --flag-green:   #006a4e;
     --flag-green-2: #00543e;
     --flag-green-3: #007a58;
@@ -69,26 +68,7 @@
 
   .wrap{ max-width:var(--maxw); margin:0 auto; padding:0 32px; }
 
-  /* ===== Government identity strip ===== */
-  .gov-strip{
-    background:var(--ink);
-    color:#dfe8e4;
-    font-size:0.78rem;
-    letter-spacing:0.02em;
-  }
-  .gov-strip .wrap{
-    display:flex; align-items:center; justify-content:space-between;
-    height:34px;
-  }
-  .gov-strip .gov-left{ display:flex; align-items:center; gap:8px; }
-  .gov-strip .gov-left i{ color:var(--gold-light); }
-  .gov-strip .gov-right a{ color:#dfe8e4; margin-left:16px; }
-  .gov-strip .gov-right a:hover{ color:#fff; text-decoration:underline; }
-  @media (max-width:700px){
-    .gov-strip .gov-right{ display:none; }
-  }
-
-  /* ===== Tricolour accent rule ===== */
+  /* ===== Tricolour accent rule (used in footer) ===== */
   .tri-rule{ height:4px; background:linear-gradient(90deg, var(--flag-green) 0 66%, var(--flag-red) 66% 100%); }
 
   .btn{
@@ -124,67 +104,49 @@
   .btn-icon-right i{ transition:transform 0.18s ease; }
   .btn-icon-right:hover i{ transform:translateX(3px); }
 
-  /* ===== Main header (emblem + name) ===== */
-  .site-header{
-    background:#ffffff;
-    border-bottom:1px solid var(--line);
-  }
-  .site-header .wrap{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:2px 32px;
-    gap:20px;
-  }
+  /* ===== Brand (logo + name) ===== */
   .brand{
-    display:flex; align-items:center; gap:14px;
+    display:flex; align-items:center; gap:12px;
   }
   .brand-logo-wrap{
     display:inline-flex;
     align-items:center; justify-content:center;
-    width:58px; height:58px;
+    width:46px; height:46px;
     border-radius:50%;
     background:var(--mist);
-    border:2px solid var(--flag-green);
+    border:2px solid #fff;
     overflow:hidden;
     flex-shrink:0;
   }
   .brand-logo{
-    width:46px; height:46px;
+    width:36px; height:36px;
     object-fit:cover;
   }
-  .brand-text-block{ display:flex; flex-direction:column; line-height:1.28; }
-  .brand-kicker{
-    font-family:'Inter',sans-serif;
-    text-transform:uppercase;
-    letter-spacing:0.06em;
-    font-size:0.78rem;
-    font-weight:600;
-    color:var(--flag-green);
-    letter-spacing:0.01em;
-  }
+  .brand-text-block{ display:flex; flex-direction:column; line-height:1.2; }
   .brand-text{
     font-family:'Merriweather',serif;
     font-weight:900;
-    font-size:1.5rem;
+    font-size:1.35rem;
     letter-spacing:-0.01em;
     white-space:nowrap;
   }
   .brand-text .txt-railway{ color:var(--ink); }
   .brand-text .txt-sheba{ color:var(--flag-red); }
-  .brand-sub{
-    font-size:0.76rem;
-    color:var(--charcoal-soft);
-    margin-top:1px;
-  }
 
-  /* ===== Nav bar (official menu strip) ===== */
+  /* Brand colours inside the green nav (red would be unreadable on green) */
+  .site-nav .brand-text .txt-railway{ color:#fff; }
+  .site-nav .brand-text .txt-sheba{ color:var(--gold-light); }
+
+  /* ===== Nav bar ===== */
   .site-nav{
     position:sticky; top:0; z-index:1030;
     background:var(--flag-green);
     border-bottom:3px solid var(--flag-red);
   }
   .site-nav .wrap{
-    display:flex; align-items:center; justify-content:space-between;
-    height:58px;
+    display:flex; align-items:center;
+    height:66px;
+    gap:28px;
   }
   .nav-center{
     display:flex; align-items:center; gap:4px;
@@ -200,7 +162,9 @@
   }
   .nav-center a:hover{ background:rgba(255,255,255,0.12); color:#fff; }
   .nav-center a.active{ background:var(--flag-green-2); color:#fff; }
-  .nav-actions{ display:flex; align-items:center; gap:10px; }
+
+  /* Buttons pushed to the far right */
+  .nav-actions{ display:flex; align-items:center; gap:10px; margin-left:auto; }
 
   .profile-menu{ position:relative; }
   .profile-trigger{
@@ -260,18 +224,23 @@
     border:1px solid rgba(255,255,255,0.4);
     color:#fff;
     border-radius:6px;
-    padding:8px 11px;
+    padding:6px 11px;
+    font-size:1.2rem;
+    line-height:1;
   }
 
+  @media (min-width:861px){
+    #navMobile{ display:none !important; }
+  }
   @media (max-width:860px){
+    .site-nav .wrap{ gap:14px; padding:0 16px; }
     .nav-center{ display:none; }
     .navbar-toggler-custom{ display:inline-flex; }
-    .nav-actions .btn span{ display:none; }
-    .nav-actions .btn{ padding:0.6rem 0.9rem; }
-    .brand-text{ font-size:1.24rem; }
+    .brand-text{ font-size:1.15rem; }
   }
-  @media (max-width:520px){
-    .brand-sub{ display:none; }
+  @media (max-width:420px){
+    .nav-actions .btn{ padding:0.4rem 0.7rem; font-size:0.8rem; }
+    .brand-text{ font-size:1.02rem; }
   }
 
   .modal-content{
@@ -406,21 +375,8 @@
 </head>
 <body>
 
-<!-- ============ Government identity strip ============ -->
-<div class="gov-strip">
-  <div class="wrap">
-    <div class="gov-left"><i class="bi bi-bank2"></i> Official Railway Ticket Booking Service</div>
-    <div class="gov-right">
-      <a href="#">Screen Reader</a>
-      <a href="#">Sitemap</a>
-      <a href="#">Help</a>
-    </div>
-  </div>
-</div>
-<div class="tri-rule"></div>
-
-<!-- ============ Header: emblem + service name ============ -->
-<header class="site-header">
+<!-- ============ Nav (logo + links left, buttons right) ============ -->
+<nav class="site-nav">
   <div class="wrap">
     <a href="{% url 'home_page' %}" class="brand" aria-label="RailwaySheba home">
       <span class="brand-logo-wrap">
@@ -430,12 +386,7 @@
         <span class="brand-text"><span class="txt-railway">Railway</span><span class="txt-sheba">Sheba</span></span>
       </span>
     </a>
-  </div>
-</header>
 
-<!-- ============ Nav ============ -->
-<nav class="site-nav">
-  <div class="wrap">
     <div class="nav-center">
       <a href="{% url 'home_page' %}" class="{% if request.resolver_match.url_name == 'home_page' %}active{% endif %}">Home</a>
       {% if request.user.is_authenticated %}
@@ -445,9 +396,6 @@
     </div>
 
     <div class="nav-actions">
-      <button type="button" class="navbar-toggler-custom d-md-none" data-bs-toggle="collapse" data-bs-target="#navMobile" aria-label="Toggle menu">
-        <i class="bi bi-list"></i>
-      </button>
       {% if request.user.is_authenticated and not request.user.is_superuser %}
         <div class="profile-menu dropdown">
           <button type="button" class="profile-trigger" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open profile menu">
@@ -475,12 +423,20 @@
           <span>Create Account</span>
         </button>
       {% endif %}
+
+      <button type="button" class="navbar-toggler-custom" data-bs-toggle="collapse" data-bs-target="#navMobile" aria-label="Toggle menu">
+        <i class="bi bi-list"></i>
+      </button>
     </div>
   </div>
 
-  <div class="collapse d-md-none" id="navMobile" style="background:var(--flag-green-2);">
-    <div class="wrap pb-3">
+  <div class="collapse" id="navMobile" style="background:var(--flag-green-2);">
+    <div class="wrap pb-3" style="display:block;height:auto;">
       <a href="{% url 'home_page' %}" class="d-block py-2" style="color:#fff;">Home</a>
+      {% if request.user.is_authenticated %}
+        <a href="{% url 'ticket_page' %}" class="d-block py-2" style="color:#fff;">Book Ticket</a>
+      {% endif %}
+      <a href="{% url 'train_schedule' %}" class="d-block py-2" style="color:#fff;">Train Schedule</a>
     </div>
   </div>
 </nav>
