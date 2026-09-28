@@ -177,6 +177,34 @@ def logout_view(request):
     logout(request)
     return redirect('home_page')
 
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.views.decorators.http import require_POST
+from .forms import ProfileImageForm
+
+
+@require_POST
+@login_required
+def update_profile_image(request):
+    profile = request.user.profile
+    old = profile.profile_image.name if profile.profile_image else None
+
+    if request.POST.get('remove'):
+        if old:
+            profile.profile_image.delete(save=True)
+        messages.success(request, "Profile photo removed.")
+        return redirect('profile')
+
+    form = ProfileImageForm(request.POST, request.FILES, instance=profile)
+    if form.is_valid() and request.FILES.get('profile_image'):
+        if old:
+            profile.profile_image.storage.delete(old)  # purano image delete
+        form.save()
+        messages.success(request, "Profile photo updated.")
+    else:
+        messages.error(request, "; ".join(form.errors.get('profile_image', ["Please choose an image."])))
+    return redirect('profile')
+
 
 @login_required
 def profile_view(request):

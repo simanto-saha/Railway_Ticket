@@ -8,11 +8,24 @@
   .profile-layout{ display:grid; grid-template-columns:0.8fr 1.2fr; gap:24px; align-items:start; }
   .profile-panel{ background:#fff; border:1px solid var(--line); border-radius:var(--radius-m); box-shadow:var(--shadow-1); padding:30px; }
   .profile-summary{ text-align:center; }
+
+  /* Avatar */
+  .avatar-wrap{ position:relative; width:86px; height:86px; margin:0 auto 18px; }
   .profile-large-avatar{
-    width:86px; height:86px; margin:0 auto 18px; border-radius:50%;
+    width:86px; height:86px; margin:0; border-radius:50%; overflow:hidden;
     display:grid; place-items:center; background:var(--accent); color:#fff;
     font-family:'Fraunces',serif; font-size:2.2rem; box-shadow:0 12px 26px rgba(182,130,63,0.25);
   }
+  .profile-large-avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .avatar-edit{
+    position:absolute; right:-4px; bottom:-4px; width:30px; height:30px; border-radius:50%;
+    background:var(--ink); color:#fff; display:grid; place-items:center;
+    cursor:pointer; font-size:0.8rem; border:2px solid #fff; margin:0;
+  }
+  .avatar-edit:hover{ background:var(--accent-deep); }
+  .remove-photo{ background:none; border:0; color:#a34036; font-size:0.8rem; margin:-6px 0 10px; cursor:pointer; }
+  .remove-photo:hover{ text-decoration:underline; }
+
   .profile-summary h1{ font-size:1.7rem; }
   .profile-summary p{ color:var(--charcoal-soft); margin:5px 0 0; font-size:0.9rem; }
   .profile-summary .profile-links{ margin-top:25px; border-top:1px solid var(--line); padding-top:17px; }
@@ -39,11 +52,44 @@
 {% block content %}
 <section class="profile-page">
   <div class="wrap">
+
+    {% if messages %}
+      {% for m in messages %}
+        <div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags|default:'info' }}{% endif %} mb-3">{{ m }}</div>
+      {% endfor %}
+    {% endif %}
+
     <div class="profile-layout">
       <aside class="profile-panel profile-summary">
-        <div class="profile-large-avatar">
-          {% if request.user.first_name %}{{ request.user.first_name|first|upper }}{% else %}{{ request.user.username|first|upper }}{% endif %}
+
+        <div class="avatar-wrap">
+          <div class="profile-large-avatar">
+            {% if request.user.profile.profile_image %}
+              <img src="{{ request.user.profile.profile_image.url }}" alt="Profile photo">
+            {% elif request.user.first_name %}
+              {{ request.user.first_name|first|upper }}
+            {% else %}
+              {{ request.user.username|first|upper }}
+            {% endif %}
+          </div>
+
+          <form method="post" action="{% url 'update_profile_image' %}" enctype="multipart/form-data" id="avatarForm">
+            {% csrf_token %}
+            <label class="avatar-edit" for="avatarInput" title="Change photo"><i class="bi bi-camera"></i></label>
+            <input type="file" id="avatarInput" name="profile_image"
+                   accept="image/png,image/jpeg,image/webp" hidden
+                   onchange="document.getElementById('avatarForm').submit()">
+          </form>
         </div>
+
+        {% if request.user.profile.profile_image %}
+        <form method="post" action="{% url 'update_profile_image' %}">
+          {% csrf_token %}
+          <input type="hidden" name="remove" value="1">
+          <button type="submit" class="remove-photo">Remove photo</button>
+        </form>
+        {% endif %}
+
         <h1>{{ request.user.first_name|default:request.user.username }}</h1>
         <p>{{ request.user.email }}</p>
         <div class="profile-links">
