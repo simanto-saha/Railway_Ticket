@@ -144,6 +144,11 @@
         cursor: not-allowed; opacity: .85;
     }
     .seat-btn.seat-booked:hover { border-color: #f2b4bb; color: var(--flag-red-2); }
+    .seat-btn.seat-pending {
+        background: #fff4d6; border-color: #e4bd58; color: #785600;
+        cursor: not-allowed; opacity: .9;
+    }
+    .seat-btn.seat-pending:hover { border-color: #e4bd58; color: #785600; }
     .seat-btn:disabled { pointer-events: none; }
 
     .seat-legend {
@@ -156,6 +161,7 @@
     }
     .dot-available { background: #fff; border: 1.5px solid var(--line); }
     .dot-selected { background: linear-gradient(135deg, var(--flag-green-3), var(--flag-green)); }
+    .dot-pending { background: #fff4d6; border: 1.5px solid #e4bd58; }
     .dot-booked { background: #fbe4e6; border: 1.5px solid #f2b4bb; }
 
     /* ---- Train-style seat layout ---- */
@@ -246,6 +252,10 @@
     .rs-empty-state i { font-size: 2.5rem; color: var(--flag-green-3); margin-bottom: .75rem; display: block; }
     .rs-empty-state h5{ font-family:'Merriweather',serif; color: var(--ink); font-weight: 700; }
 
+    .reservation-time { font-weight:700; color:#785600; font-variant-numeric:tabular-nums; }
+    .reservation-timer { display:none; margin:.4rem 0 .7rem; color:#785600; font-size:.82rem; font-weight:700; }
+    .reservation-timer.active { display:block; }
+
     .seat-panel-box{ display:none; }
     .seat-panel-box.active{ display:block; }
 
@@ -303,7 +313,7 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Date of Journey</label>
-                    <input type="date" name="date" class="form-control" value="{{ request.GET.date }}" required>
+                    <input type="date" name="date" class="form-control" value="{{ request.GET.date }}" min="{{ today|date:'Y-m-d' }}" required>
                 </div>
                 <div class="col-md-3">
                     <button type="submit" class="btn btn-accent btn-lg w-100">
@@ -389,13 +399,13 @@
                                             <div class="d-flex flex-wrap gap-2">
                                                 {% for seat in coach.seats %}
                                                 <button type="button"
-                                                    class="seat-btn{% if seat in train.booked_seats %} seat-booked{% endif %}"
+                                                    class="seat-btn{% if seat in train.booked_seats %} seat-booked{% elif seat in train.pending_seats %} seat-pending{% endif %}"
                                                     data-train="{{ train_id }}"
                                                     data-class="{{ klass.code }}"
                                                     data-schedule="{{ train.schedule_id }}"
                                                     data-price="{{ klass.price }}"
                                                     data-seat="{{ seat }}"
-                                                    {% if seat in train.booked_seats %}disabled{% endif %}>
+                                                    {% if seat in train.booked_seats or seat in train.pending_seats %}disabled{% endif %}>
                                                     {{ seat }}
                                                 </button>
                                                 {% endfor %}
@@ -406,6 +416,7 @@
                                         <div class="seat-legend">
                                             <span><span class="dot dot-available"></span>Available (click to select)</span>
                                             <span><span class="dot dot-selected"></span>Selected (click again to remove)</span>
+                                            <span><span class="dot dot-pending"></span>Awaiting payment</span>
                                             <span><span class="dot dot-booked"></span>Already booked</span>
                                         </div>
                                     </div>
@@ -438,6 +449,9 @@
 
                                         <div class="sidebar-title"><i class="bi bi-ticket-perforated"></i> Your Selection</div>
                                         <p class="seat-limit-hint">You can book up to <span class="limit-left">{{ remaining_today|default_if_none:4 }}</span> more seat(s) today.</p>
+                                        <div class="reservation-timer" data-reservation-timer="{{ train.schedule_id }}">
+                                            Complete payment within <span class="reservation-time" data-countdown>05:00</span>
+                                        </div>
                                         <div class="selected-seats-list" id="selectedSeats{{ train_id }}_{{ klass.code }}">
                                             <span class="empty-hint">No seats selected yet</span>
                                         </div>
@@ -449,7 +463,7 @@
                                             id="confirmBtn{{ train_id }}_{{ klass.code }}"
                                             disabled
                                             onclick="bookTrain('{{ train_id }}_{{ klass.code }}', {{ train.schedule_id }})">
-                                            <i class="bi bi-check2-circle me-1"></i> Confirm Booking
+                                            <i class="bi bi-credit-card me-1"></i> Pay &amp; Confirm
                                         </button>
                                     </div>
                                 </div>
@@ -474,6 +488,8 @@
 
 </div>
 
+{{ pending_reservation_data|json_script:"pending-reservations-data" }}
+
 <!-- Popup modal -->
 <div class="rs-modal-overlay" id="rsModal" role="dialog" aria-modal="true" aria-labelledby="rsModalTitle">
     <div class="rs-modal" id="rsModalBox">
@@ -487,13 +503,22 @@
 <script>
 // Server theke asha limit (aj ar koyta ticket kinte parbe). Na ashle default 4, 0 hole 0-i thakbe.
 const _rem = parseInt("{{ remaining_today|default_if_none:'' }}", 10);
-const MAX_SEATS = Number.isNaN(_rem) ? 4 : _rem;
+const _pendingData = document.getElementById('pending-reservations-data');
+const _heldCount = _pendingData
+    ? JSON.parse(_pendingData.textContent || '[]').reduce((count, item) => count + item.seats.length, 0)
+    : 0;
+const MAX_SEATS = (Number.isNaN(_rem) ? 4 : _rem) + _heldCount;
 
 // URL template ("0" er jaygay schedule id boshbe)
-const CONFIRM_URL_TEMPLATE = "{% url 'seat_confarmation' 0 %}";
 const BOOK_URL_TEMPLATE = "{% url 'book_seat' 0 %}";
+const HOLD_URL_TEMPLATE = "{% url 'hold_seat' 0 %}";
+const PAYMENT_URL = "{% url 'start_ticket_payment' %}";
+const ABANDON_PAYMENT_URL = "{% url 'abandon_ticket_payment' %}";
+const HOME_URL = "{% url 'home_page' %}";
 
 const selectedSeatsMap = {}; // { "trainId_classCode": { seatName: price } }
+const reservationState = {};
+let activeGatewayPaymentId = null;
 
 // key = "<trainId>_<classCode>", classCode e underscore thakte pare (S_CHAIR), tai prothom "_" e bhag kori
 function splitKey(key) {
@@ -632,7 +657,7 @@ function totalSelectedCount() {
         .reduce((n, seatMap) => n + Object.keys(seatMap).length, 0);
 }
 
-function selectSeat(btn) {
+async function selectSeat(btn) {
     if (btn.disabled || btn.classList.contains('seat-booked')) return;
 
     const key = btn.dataset.train + '_' + btn.dataset.class;
@@ -650,6 +675,39 @@ function selectSeat(btn) {
         return;
     }
 
+    const scheduleId = btn.dataset.schedule;
+    const holdUrl = HOLD_URL_TEMPLATE.replace('/0/', '/' + scheduleId + '/');
+    const holdBody = new URLSearchParams({
+        seat_number: seat,
+        confirmation_number: reservationState[scheduleId]?.confirmationNumber || '',
+        action: 'hold',
+    });
+    let holdData;
+    try {
+        const response = await fetch(holdUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCsrfToken(),
+            },
+            body: holdBody.toString(),
+        });
+        holdData = await response.json();
+    } catch (error) {
+        showModal('Seat hold failed', 'Could not reserve this seat. Please try again.', 'error');
+        return;
+    }
+    if (!holdData.success) {
+        showModal('Seat hold failed', holdData.message || 'This seat is no longer available.', 'error');
+        if (holdData.expired) window.location.href = '/';
+        return;
+    }
+
+    reservationState[scheduleId] = {
+        confirmationNumber: holdData.confirmation_number,
+        expiresAt: Date.parse(holdData.expires_at),
+    };
+    refreshCountdowns();
     selectedSeatsMap[key][seat] = price;
     btn.classList.add('seat-selected');
     updateSummary(key);
@@ -663,47 +721,176 @@ function deselectSeat(btn) {
 
     delete selectedSeatsMap[key][seat];
     btn.classList.remove('seat-selected');
+    if (btn.classList.contains('seat-pending')) {
+        btn.classList.remove('seat-pending');
+        btn.disabled = false;
+    }
     updateSummary(key);
+
+    const scheduleId = btn.dataset.schedule;
+    const reservation = reservationState[scheduleId];
+    if (reservation) {
+        const holdUrl = HOLD_URL_TEMPLATE.replace('/0/', '/' + scheduleId + '/');
+        fetch(holdUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCsrfToken(),
+            },
+            body: new URLSearchParams({
+                seat_number: seat,
+                confirmation_number: reservation.confirmationNumber,
+                action: 'release',
+            }).toString(),
+        }).then(response => response.json()).then(data => {
+            if (!data.has_reservation) {
+                delete reservationState[scheduleId];
+            } else if (data.confirmation_number) {
+                reservation.confirmationNumber = data.confirmation_number;
+            }
+            refreshCountdowns();
+        }).catch(() => {});
+    }
 }
+
+function refreshCountdowns() {
+    const now = Date.now();
+    document.querySelectorAll('[data-reservation-timer]').forEach(timer => {
+        const reservation = reservationState[timer.dataset.reservationTimer];
+        timer.classList.toggle('active', Boolean(reservation));
+        if (reservation) {
+            const output = timer.querySelector('[data-countdown]');
+            if (output) output.textContent = formatCountdown(reservation.expiresAt - now);
+        }
+    });
+    if (Object.values(reservationState).some(item => item.expiresAt <= now)) {
+        window.location.href = '/';
+    }
+}
+
+function formatCountdown(milliseconds) {
+    const seconds = Math.max(0, Math.ceil(milliseconds / 1000));
+    return String(Math.floor(seconds / 60)).padStart(2, '0') + ':' +
+        String(seconds % 60).padStart(2, '0');
+}
+
+setInterval(refreshCountdowns, 1000);
+
+window.addEventListener('pageshow', () => {
+    const paymentId = sessionStorage.getItem('activeSslPaymentId');
+    if (!paymentId) return;
+    sessionStorage.removeItem('activeSslPaymentId');
+    fetch(ABANDON_PAYMENT_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCsrfToken(),
+        },
+        body: new URLSearchParams({ payment_id: paymentId }).toString(),
+        keepalive: true,
+    }).then(response => response.json()).then(data => {
+        if (data.expired) {
+            window.location.replace(HOME_URL);
+            return;
+        }
+        window.location.reload();
+    }).catch(() => window.location.reload());
+});
 
 function updateSummary(key) {
-    const seatMap = selectedSeatsMap[key] || {};
-    const seats = Object.keys(seatMap);
-    const total = Object.values(seatMap).reduce((a, b) => a + b, 0);
-
-    const listEl = document.getElementById('selectedSeats' + key);
-    if (!listEl) return;
-    listEl.innerHTML = '';
-    if (seats.length === 0) {
-        listEl.innerHTML = '<span class="empty-hint">No seats selected yet</span>';
-    } else {
-        seats.forEach(seat => {
-            const chip = document.createElement('span');
-            chip.className = 'seat-chip';
-            chip.appendChild(document.createTextNode(seat + ' '));
-
-            const removeBtn = document.createElement('button');
-            removeBtn.type = 'button';
-            removeBtn.className = 'chip-remove';
-            removeBtn.setAttribute('aria-label', 'Remove ' + seat);
-            removeBtn.innerHTML = '&times;';
-            removeBtn.addEventListener('click', () => {
-                const [trainId, classCode] = splitKey(key);
-                const seatBtn = document.querySelector(
-                    '.seat-btn[data-train="' + trainId + '"][data-class="' + classCode + '"][data-seat="' + seat + '"]'
-                );
-                if (seatBtn) deselectSeat(seatBtn);
-            });
-            chip.appendChild(removeBtn);
-            listEl.appendChild(chip);
-        });
-    }
-
-    document.getElementById('totalPrice' + key).innerText = '৳' + total;
-
-    const confirmBtn = document.getElementById('confirmBtn' + key);
-    if (confirmBtn) confirmBtn.disabled = seats.length === 0;
+    const [trainId, classCode] = splitKey(key);
+    const seatButton = document.querySelector(
+        '.seat-btn[data-train="' + trainId + '"][data-class="' + classCode + '"]'
+    );
+    if (seatButton) updateScheduleConfirmButtons(seatButton.dataset.schedule);
 }
+
+function getScheduleSelection(scheduleId) {
+    const selection = [];
+    document.querySelectorAll('.seat-btn[data-schedule="' + scheduleId + '"]').forEach(btn => {
+        const key = btn.dataset.train + '_' + btn.dataset.class;
+        const price = selectedSeatsMap[key]?.[btn.dataset.seat];
+        if (price !== undefined) selection.push({ seat: btn.dataset.seat, price, key });
+    });
+    return selection;
+}
+
+function updateScheduleConfirmButtons(scheduleId) {
+    const selection = getScheduleSelection(scheduleId);
+    const total = selection.reduce((sum, item) => sum + item.price, 0);
+    document.querySelectorAll('.seat-panel-box[data-schedule="' + scheduleId + '"]').forEach(panel => {
+        const list = panel.querySelector('.selected-seats-list');
+        if (list) {
+            list.replaceChildren();
+            if (selection.length === 0) {
+                const empty = document.createElement('span');
+                empty.className = 'empty-hint';
+                empty.textContent = 'No seats selected yet';
+                list.appendChild(empty);
+            } else {
+                selection.forEach(item => {
+                    const chip = document.createElement('span');
+                    chip.className = 'seat-chip';
+                    chip.appendChild(document.createTextNode(item.seat + ' '));
+
+                    const removeButton = document.createElement('button');
+                    removeButton.type = 'button';
+                    removeButton.className = 'chip-remove';
+                    removeButton.setAttribute('aria-label', 'Remove ' + item.seat);
+                    removeButton.innerHTML = '&times;';
+                    removeButton.addEventListener('click', () => {
+                        const seatButton = document.querySelector(
+                            '.seat-btn[data-schedule="' + scheduleId + '"][data-seat="' + item.seat + '"]'
+                        );
+                        if (seatButton) deselectSeat(seatButton);
+                    });
+                    chip.appendChild(removeButton);
+                    list.appendChild(chip);
+                });
+            }
+        }
+
+        const totalPrice = panel.querySelector('.summary-total-row .value');
+        if (totalPrice) totalPrice.textContent = '৳' + total;
+
+        const confirmButton = panel.querySelector('[id^="confirmBtn"]');
+        if (!confirmButton) return;
+        confirmButton.disabled = selection.length === 0;
+        confirmButton.innerHTML = '<i class="bi bi-credit-card me-1"></i> Pay ৳' + total + ' &amp; Confirm';
+    });
+}
+
+function hydratePendingReservations() {
+    const dataElement = document.getElementById('pending-reservations-data');
+    if (!dataElement) return;
+
+    const reservations = JSON.parse(dataElement.textContent || '[]');
+    reservations.forEach(reservation => {
+        const scheduleId = String(reservation.schedule_id);
+        reservationState[scheduleId] = {
+            confirmationNumber: reservation.confirmation_number,
+            expiresAt: Date.parse(reservation.expires_at),
+        };
+        (reservation.seats || []).forEach(heldSeat => {
+            const button = document.querySelector(
+                '.seat-btn[data-schedule="' + scheduleId + '"][data-seat="' + heldSeat.seat_number + '"]'
+            );
+            if (!button) return;
+            const key = button.dataset.train + '_' + button.dataset.class;
+            if (!selectedSeatsMap[key]) selectedSeatsMap[key] = {};
+            selectedSeatsMap[key][heldSeat.seat_number] = Number(heldSeat.price);
+            button.classList.remove('seat-booked');
+            button.classList.add('seat-pending');
+            button.disabled = true;
+        });
+    });
+
+    Object.keys(selectedSeatsMap).forEach(updateSummary);
+    refreshCountdowns();
+}
+
+hydratePendingReservations();
+refreshCountdowns();
 
 // ---------- Live seat availability via WebSocket ----------
 function connectSeatSocket(scheduleId, attempt = 0) {
@@ -715,7 +902,7 @@ function connectSeatSocket(scheduleId, attempt = 0) {
     socket.onmessage = (e) => {
         let data;
         try { data = JSON.parse(e.data); } catch (err) { return; }
-        if (data.status !== 'booked') return;
+        if (!['pending', 'booked', 'released'].includes(data.status)) return;
 
         document.querySelectorAll(
             `.seat-btn[data-schedule="${scheduleId}"][data-seat="${data.seat_number}"]`
@@ -723,14 +910,23 @@ function connectSeatSocket(scheduleId, attempt = 0) {
             const key = btn.dataset.train + '_' + btn.dataset.class;
             const seat = btn.dataset.seat;
 
-            if (selectedSeatsMap[key] && selectedSeatsMap[key][seat] !== undefined) {
+            if (data.status === 'booked' && selectedSeatsMap[key] && selectedSeatsMap[key][seat] !== undefined) {
                 delete selectedSeatsMap[key][seat];
                 updateSummary(key);
             }
 
-            btn.classList.remove('seat-selected');
-            btn.classList.add('seat-booked');
-            btn.disabled = true;
+            if (data.status === 'booked') {
+                btn.classList.remove('seat-selected', 'seat-pending');
+                btn.classList.add('seat-booked');
+                btn.disabled = true;
+            } else if (data.status === 'pending') {
+                btn.classList.remove('seat-selected');
+                btn.classList.add('seat-pending');
+                btn.disabled = true;
+            } else if (!btn.classList.contains('seat-booked')) {
+                btn.classList.remove('seat-pending');
+                btn.disabled = false;
+            }
         });
     };
 
@@ -764,13 +960,13 @@ function getCsrfToken() {
 
 // ---------- Confirm booking (shob seat 1 ta request, 1 ta confirmation number) ----------
 function bookTrain(key, scheduleId) {
-    const seats = Object.keys(selectedSeatsMap[key] || {});
+    const scheduleSelection = getScheduleSelection(scheduleId);
+    const seats = scheduleSelection.map(item => item.seat);
     if (seats.length === 0) {
         showModal('No seat selected', 'Please select at least one seat.', 'error');
         return;
     }
 
-    const [trainId, classCode] = splitKey(key);
     const confirmBtn = document.getElementById('confirmBtn' + key);
     const originalLabel = confirmBtn ? confirmBtn.innerHTML : '';
     if (confirmBtn) {
@@ -781,7 +977,7 @@ function bookTrain(key, scheduleId) {
     const resetButton = () => {
         if (!confirmBtn) return;
         confirmBtn.innerHTML = originalLabel;
-        confirmBtn.disabled = Object.keys(selectedSeatsMap[key] || {}).length === 0;
+        confirmBtn.disabled = getScheduleSelection(scheduleId).length === 0;
     };
 
     const bookUrl = BOOK_URL_TEMPLATE.replace('/0/', '/' + scheduleId + '/');
@@ -802,23 +998,47 @@ function bookTrain(key, scheduleId) {
             return;
         }
 
-        // Booking success: seat gulo booked mark kori
+        // Mark the unpaid hold separately; payment success broadcasts booked.
         (data.seats || seats).forEach(seat => {
             const btn = document.querySelector(
-                `.seat-btn[data-train="${trainId}"][data-class="${classCode}"][data-seat="${seat}"]`
+                `.seat-btn[data-schedule="${scheduleId}"][data-seat="${seat}"]`
             );
             if (btn) {
                 btn.classList.remove('seat-selected');
-                btn.classList.add('seat-booked');
+                btn.classList.add('seat-pending');
                 btn.disabled = true;
             }
         });
-        selectedSeatsMap[key] = {};
-        updateSummary(key);
+        const affectedKeys = new Set(scheduleSelection.map(item => item.key));
+        affectedKeys.forEach(selectionKey => {
+            selectedSeatsMap[selectionKey] = {};
+            updateSummary(selectionKey);
+        });
 
-        // 1 ta confirmation number diye confirmation page e
-        const url = CONFIRM_URL_TEMPLATE.replace('/0/', '/' + scheduleId + '/');
-        window.location.href = url + '?c=' + encodeURIComponent(data.confirmation_number);
+        const formData = new URLSearchParams({ confirmation_number: data.confirmation_number });
+        fetch(PAYMENT_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCsrfToken(),
+            },
+            body: formData.toString(),
+        })
+        .then(r => r.json().catch(() => ({ success: false, message: 'Unexpected server response.' })))
+        .then(paymentData => {
+            if (!paymentData.success) {
+                if (paymentData.expired) {
+                    window.location.href = '/';
+                    return;
+                }
+                showModal('Payment could not start', paymentData.message || 'Please try again.', 'error', () => window.location.reload());
+                return;
+            }
+            activeGatewayPaymentId = paymentData.payment_id;
+            sessionStorage.setItem('activeSslPaymentId', activeGatewayPaymentId);
+            window.location.href = paymentData.payment_url;
+        })
+        .catch(() => showModal('Network error', 'Could not connect to the payment service. Your hold remains active.', 'error', () => window.location.reload()));
     })
     .catch(() => {
         resetButton();

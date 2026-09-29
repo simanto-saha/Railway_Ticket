@@ -122,13 +122,13 @@
           <h2>My Tickets</h2>
           {% for ticket in all_tickets %}
             <a class="ticket-link"
-               href="{% url 'seat_confarmation' ticket.train_schedule.id %}?c={{ ticket.confirmation_number }}">
+               href="{% url 'seat_confarmation' ticket.ticket.train_schedule_id %}?c={{ ticket.ticket.confirmation_number }}">
               <div class="ticket-route">
-                {{ ticket.train_schedule.source_station }}
+                {{ ticket.ticket.train_schedule.source_station }}
                 <i class="bi bi-arrow-right"></i>
-                {{ ticket.train_schedule.destination_station }}
+                {{ ticket.ticket.train_schedule.destination_station }}
               </div>
-              <div class="ticket-conf">Confirmation: {{ ticket.confirmation_number }}</div>
+              <div class="ticket-conf">Confirmation: {{ ticket.ticket.confirmation_number }}</div>
             </a>
           {% empty %}
             <p class="no-tickets">You have no booked tickets yet.</p>

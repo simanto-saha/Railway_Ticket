@@ -11,18 +11,16 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+load_dotenv(BASE_DIR / ".env")
 import environ
 
 env = environ.Env()
-environ.Env.read_env(BASE_DIR / ".env")
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
@@ -165,3 +163,22 @@ CHANNEL_LAYERS = {
 }
 
 REDIS_URL = "redis://127.0.0.1:6379/1"
+
+SSL_COMMERZ_STORE_ID = (
+    os.getenv("SSL_COMMERZ_STORE_ID")
+    or os.getenv("SSL_STORER_ID")
+    or os.getenv("SSL_STORE_ID", "")
+)
+SSL_COMMERZ_STORE_PASSWORD = (
+    os.getenv("SSL_COMMERZ_STORE_PASSWORD")
+    or os.getenv("SSL_STORER_PASSWORD")
+    or os.getenv("SSL_STORE_PASSWORD", "")
+)
+SSL_COMMERZ_GATEWAY_URL = os.getenv(
+    "SSL_COMMERZ_GATEWAY_URL",
+    "https://sandbox.sslcommerz.com/gwprocess/v4/api.php",
+)
+SSL_COMMERZ_VALIDATION_URL = os.getenv(
+    "SSL_COMMERZ_VALIDATION_URL",
+    "https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php",
+)

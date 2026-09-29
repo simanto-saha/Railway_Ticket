@@ -34,6 +34,25 @@
 		margin-bottom: 8px;
 	}
 	.schedule-heading p { color: var(--charcoal-soft); font-size: 1rem; max-width: 52ch; }
+	.schedule-search-card {
+		background:var(--paper); border-radius:var(--radius-m); padding:1.5rem;
+		box-shadow:var(--shadow-2); margin:-16px 0 38px;
+	}
+	.schedule-search-card .form-label {
+		color:var(--ink); font-size:.8rem; font-weight:600;
+		text-transform:uppercase; margin-bottom:7px;
+	}
+	.schedule-search-card .form-select,
+	.schedule-search-card .form-control {
+		border-radius:var(--radius-s); padding:.65rem .9rem;
+		border:1.5px solid var(--line); background:var(--mist);
+		font-size:.95rem; color:var(--ink);
+	}
+	.schedule-search-card .form-select:focus,
+	.schedule-search-card .form-control:focus {
+		outline:none; border-color:var(--flag-green); background:#fff;
+		box-shadow:0 0 0 4px rgba(0,106,78,.12);
+	}
 
 	/* ===== Train Info strip (compact, above cards) ===== */
 	.train-strip {
@@ -296,10 +315,45 @@
 			<p>Browse all active trains and their upcoming departures, updated in real time.</p>
 		</div>
 
-		<div class="section-label">Available Trains</div>
+		<div class="schedule-search-card">
+			<form method="get" class="row g-3 align-items-end">
+				<div class="col-md-3">
+					<label class="form-label" for="scheduleSource">From</label>
+					<select id="scheduleSource" name="source" class="form-select" required>
+						<option value="">Select Station</option>
+						{% for station in stations %}
+						<option value="{{ station }}" {% if request.GET.source == station %}selected{% endif %}>{{ station }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div class="col-md-3">
+					<label class="form-label" for="scheduleDestination">To</label>
+					<select id="scheduleDestination" name="destination" class="form-select" required>
+						<option value="">Select Station</option>
+						{% for station in stations %}
+						<option value="{{ station }}" {% if request.GET.destination == station %}selected{% endif %}>{{ station }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div class="col-md-3">
+					<label class="form-label" for="scheduleDate">Date of Journey</label>
+					<input id="scheduleDate" type="date" name="date" class="form-control" value="{{ request.GET.date|default:today|date:'Y-m-d' }}" min="{{ today|date:'Y-m-d' }}" required>
+				</div>
+				<div class="col-md-3">
+					<button type="submit" class="btn btn-accent btn-lg w-100">
+						<i class="bi bi-search me-1"></i> Search Trains
+					</button>
+				</div>
+			</form>
+		</div>
+
+		{% if search_error %}
+		<div class="empty-state"><i class="bi bi-exclamation-circle"></i>{{ search_error }}</div>
+		{% elif schedules %}
+		<div class="section-label">{% if searched %}Available Trains{% else %}Today's Upcoming Trains{% endif %}</div>
 		<div class="train-strip">
 			{% for train in trains %}
-			<div class="train-strip-card">
+			<div class="train-strip-card" data-schedule-search-item>
 				<div class="train-strip-icon"><i class="bi bi-train-front"></i></div>
 				<div class="train-strip-info">
 					<div class="name">{{ train.train_name }}</div>
@@ -314,7 +368,7 @@
 		<div class="section-label">Upcoming Journeys</div>
 		<div class="journey-list">
 			{% for schedule in schedules %}
-			<div class="journey-card">
+			<div class="journey-card" data-schedule-search-item>
 				<div class="journey-top">
 					<div class="journey-train-name">
 						<i class="bi bi-train-front"></i>
@@ -353,6 +407,11 @@
 			<div class="empty-state"><i class="bi bi-calendar-x"></i>No train schedules available.</div>
 			{% endfor %}
 		</div>
+		{% elif searched %}
+		<div class="empty-state"><i class="bi bi-calendar-x"></i>No trains found for this route and date.</div>
+		{% else %}
+		<div class="empty-state"><i class="bi bi-calendar-x"></i>No upcoming trains left today.</div>
+		{% endif %}
 	</div>
 </section>
 

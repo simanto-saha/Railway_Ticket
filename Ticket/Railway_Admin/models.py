@@ -89,7 +89,7 @@ class TrainTicket(models.Model):
             # DB level e double booking ekdom rokhbe
             models.UniqueConstraint(
                 fields=["train_schedule", "seat_number"],
-                condition=Q(status="booked"),
+                condition=Q(status__in=("pending", "booked")),
                 name="unique_booked_seat_per_schedule",
             ),
         ]
@@ -104,3 +104,15 @@ class TrainTicket(models.Model):
     def __str__(self):
         return f"Ticket for {self.passenger_name} on {self.train_schedule.train.train_name}"
 
+
+
+class TicketPayment(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    tickets = models.ManyToManyField(TrainTicket, related_name="payments")
+    payment_id = models.CharField(max_length=100, unique=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=10, default="pending")
+    payment_time = models.DateTimeField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Payment {self.payment_id} - {self.amount} ({self.status})"

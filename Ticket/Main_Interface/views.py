@@ -1,5 +1,7 @@
 import random
 import string
+import uuid
+from decimal import Decimal, InvalidOperation
 from django.shortcuts import redirect, render, get_object_or_404
 from django.http import JsonResponse
 from django.contrib.auth.models import User
@@ -7,13 +9,16 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.hashers import make_password
+from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
 from django.urls import reverse
+from urllib.parse import urlencode
 from .models import Profile, VarificationCode
-from Railway_Admin.models import TrainInformation, TrainSchedule, TrainTicket
+from Railway_Admin.models import TrainInformation, TrainSchedule, TrainTicket, TicketPayment, generate_confirmation_number
+import requests
 import redis
 from django.db import transaction
 from asgiref.sync import async_to_sync
@@ -25,6 +30,7 @@ from redis.exceptions import LockError
 
 
 def home_page(request):
+    expire_pending_reservations()
     schedules = TrainSchedule.objects.select_related('train').order_by('departure_time')
     return render(request, "Main_Interface/home_page.html", {
         'featured_schedules': schedules[:3],
@@ -38,10 +44,11 @@ def _varification_code():
 
 def send_verification_code(email):
     code = _varification_code()
+    created_at = timezone.now()
 
-    VarificationCode.objects.update_or_create(
+    entry, _ = VarificationCode.objects.update_or_create(
         email=email,
-        defaults={'code': code, 'is_used': False}
+        defaults={'code': code, 'is_used': False, 'created_at': created_at}
     )
 
     send_mail(
@@ -51,6 +58,7 @@ def send_verification_code(email):
         [email],
         fail_silently=False,
     )
+    return entry.created_at + timedelta(minutes=2)
 
 
 def register(request):
@@ -86,12 +94,13 @@ def register(request):
     }
     request.session['pending_email'] = email
 
-    send_verification_code(email)
+    expires_at = send_verification_code(email)
 
     return JsonResponse({
         'success': True,
         'message': 'A verification code has been sent to your email.',
-        'next_modal': 'verifyModal'
+        'next_modal': 'verifyModal',
+        'expires_at': expires_at.isoformat(),
     })
 
 
@@ -111,7 +120,7 @@ def varification_code(request):
     except VarificationCode.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Invalid or expired verification code.'})
 
-    if entry.created_at < timezone.now() - timedelta(minutes=10):
+    if entry.created_at < timezone.now() - timedelta(minutes=2):
         return JsonResponse({'success': False, 'message': 'Verification code expired. Please resend.'})
 
     entry.is_used = True
@@ -148,8 +157,12 @@ def resend_code(request):
     if not pending_email:
         return JsonResponse({'success': False, 'message': 'No pending email found. Please register again.'})
 
-    send_verification_code(pending_email)
-    return JsonResponse({'success': True, 'message': 'A new code has been sent.'})
+    expires_at = send_verification_code(pending_email)
+    return JsonResponse({
+        'success': True,
+        'message': 'A new code has been sent.',
+        'expires_at': expires_at.isoformat(),
+    })
 
 
 def login_view(request):
@@ -210,7 +223,7 @@ def _profile_context(user, password_form=None):
     rows = (
         TrainTicket.objects
         .filter(user=user, status="booked")
-        .select_related("train_schedule")
+        .select_related("train_schedule__train")
         .order_by("-booking_time", "seat_number")
     )
     groups = {}
@@ -324,6 +337,9 @@ from datetime import datetime
 
 @login_required
 def ticket_page(request):
+    expire_pending_reservations()
+    normalize_pending_reservations(request.user)
+    today = timezone.localdate()
     source = request.GET.get('source', '').strip()
     destination = request.GET.get('destination', '').strip()
     date_str = request.GET.get('date', '').strip()
@@ -349,7 +365,9 @@ def ticket_page(request):
             except ValueError:
                 journey_date = None
 
-            if journey_date:
+            if journey_date and journey_date < today:
+                search_error = 'Journey date cannot be in the past.'
+            elif journey_date:
                 schedules = TrainSchedule.objects.select_related("train").filter(
                     source_station__iexact=source,
                     destination_station__iexact=destination,
@@ -357,6 +375,18 @@ def ticket_page(request):
                 ).order_by('departure_time')
             else:
                 search_error = 'Invalid date.'
+
+    pending_schedule_ids = TrainTicket.objects.filter(
+        user=request.user,
+        status="pending",
+        booking_time__gte=timezone.now() - RESERVATION_DURATION,
+    ).values_list("train_schedule_id", flat=True).distinct()
+    schedules_by_id = {schedule.id: schedule for schedule in schedules}
+    for pending_schedule in TrainSchedule.objects.filter(
+        id__in=pending_schedule_ids
+    ).select_related("train"):
+        schedules_by_id.setdefault(pending_schedule.id, pending_schedule)
+    schedules = sorted(schedules_by_id.values(), key=lambda schedule: schedule.departure_time)
 
     train_list = []
     for sched in schedules:
@@ -367,8 +397,15 @@ def ticket_page(request):
                 train_schedule=sched, status="booked"
             ).values_list("seat_number", flat=True)
         )
+        pending_seats = set(
+            TrainTicket.objects.filter(
+                train_schedule=sched,
+                status="pending",
+                booking_time__gte=timezone.now() - RESERVATION_DURATION,
+            ).values_list("seat_number", flat=True)
+        )
 
-        classes = _build_classes(total_seats, sched, booked_seats)
+        classes = _build_classes(total_seats, sched, booked_seats | pending_seats)
         starting_price = min((c["price"] for c in classes), default=0)
 
         train_list.append({
@@ -382,7 +419,49 @@ def ticket_page(request):
             "starting_price": starting_price,
             "classes": classes,
             "booked_seats": booked_seats,
+            "pending_seats": pending_seats,
         })
+
+    pending_groups = {}
+    pending_tickets = TrainTicket.objects.filter(
+        user=request.user,
+        status="pending",
+        booking_time__gte=timezone.now() - RESERVATION_DURATION,
+    ).select_related("train_schedule__train").order_by("booking_time")
+    for pending_ticket in pending_tickets:
+        group = pending_groups.setdefault(pending_ticket.confirmation_number, {
+            "confirmation_number": pending_ticket.confirmation_number,
+            "schedule": pending_ticket.train_schedule,
+            "schedule_id": pending_ticket.train_schedule_id,
+            "tickets": [],
+            "seat_data": [],
+            "amount": Decimal("0.00"),
+            "expires_at": reservation_expiry([pending_ticket]),
+        })
+        group["tickets"].append(pending_ticket)
+        group["expires_at"] = min(
+            group["expires_at"], pending_ticket.booking_time + RESERVATION_DURATION
+        )
+        classes_for_schedule = _build_classes(
+            pending_ticket.train_schedule.train.total_seats,
+            pending_ticket.train_schedule,
+            set(),
+        )
+        seat_class = next(
+            (
+                klass
+                for klass in classes_for_schedule
+                if any(pending_ticket.seat_number in coach["seats"] for coach in klass["coaches"])
+            ),
+            {"code": "", "price": 0},
+        )
+        seat_price = seat_class["price"]
+        group["seat_data"].append({
+            "seat_number": pending_ticket.seat_number,
+            "class_code": seat_class["code"],
+            "price": seat_price,
+        })
+        group["amount"] += Decimal(str(seat_price))
 
     return render(request, "Main_Interface/ticket_page.html", {
         "train_list": train_list,
@@ -390,13 +469,76 @@ def ticket_page(request):
         "searched": searched,
         "search_error": search_error,
         "remaining_today": get_remaining_today(request.user),
+        "today": today,
+        "pending_reservations": list(pending_groups.values()),
+        "pending_reservation_data": [
+            {
+                "schedule_id": group["schedule_id"],
+                "confirmation_number": group["confirmation_number"],
+                "expires_at": group["expires_at"].isoformat(),
+                "seats": group["seat_data"],
+            }
+            for group in pending_groups.values()
+        ],
     })
 
 
 def train_schedule(request):
+    now = timezone.now()
+    today = timezone.localdate()
+    source = request.GET.get("source", "").strip()
+    destination = request.GET.get("destination", "").strip()
+    date_str = request.GET.get("date", "").strip()
+    stations = sorted(set(
+        TrainSchedule.objects.values_list("source_station", flat=True)
+    ) | set(
+        TrainSchedule.objects.values_list("destination_station", flat=True)
+    ))
+
+    searched = bool(source or destination or date_str)
+    search_error = None
+    schedules = TrainSchedule.objects.none()
+    if searched:
+        if not (source and destination and date_str):
+            search_error = "Source, destination and date are required."
+        else:
+            try:
+                journey_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            except ValueError:
+                journey_date = None
+
+            if journey_date and journey_date < today:
+                search_error = "Journey date cannot be in the past."
+            elif journey_date:
+                schedule_filters = {
+                    "source_station__iexact": source,
+                    "destination_station__iexact": destination,
+                    "departure_time__date": journey_date,
+                }
+                schedules = TrainSchedule.objects.select_related("train").filter(
+                    **schedule_filters
+                )
+                if journey_date == today:
+                    schedules = schedules.filter(departure_time__gte=now)
+                schedules = schedules.order_by("departure_time")
+            else:
+                search_error = "Invalid date."
+    else:
+        schedules = TrainSchedule.objects.select_related("train").filter(
+            departure_time__date=today,
+            departure_time__gte=now,
+        ).order_by("departure_time")
+
+    trains = TrainInformation.objects.filter(
+        id__in=schedules.values_list("train_id", flat=True)
+    ).order_by("train_number").distinct()
     return render(request, "Main_Interface/train_schedule.html", {
-        'trains': TrainInformation.objects.all().order_by('train_number'),
-        'schedules': TrainSchedule.objects.select_related('train').order_by('departure_time'),
+        "trains": trains,
+        "schedules": schedules,
+        "stations": stations,
+        "searched": searched,
+        "search_error": search_error,
+        "today": today,
     })
 
 
@@ -404,9 +546,193 @@ def train_schedule(request):
 
 redis_client = redis.Redis.from_url(settings.REDIS_URL)
 LOCK_TIMEOUT = 10  # seconds
+RESERVATION_DURATION = timedelta(minutes=5)
 
 MAX_TICKETS_PER_DAY = 4
 RESET_HOUR = 8  # 8:00 AM
+
+
+def expire_pending_reservations():
+    expired = list(TrainTicket.objects.filter(
+        status="pending",
+        booking_time__lt=timezone.now() - RESERVATION_DURATION,
+    ).values_list("train_schedule_id", "seat_number"))
+    if not expired:
+        return
+
+    TrainTicket.objects.filter(
+        status="pending",
+        booking_time__lt=timezone.now() - RESERVATION_DURATION,
+    ).update(status="cancelled")
+    channel_layer = get_channel_layer()
+    for schedule_id, seat_number in expired:
+        async_to_sync(channel_layer.group_send)(
+            f"schedule_{schedule_id}",
+            {"type": "seat_update", "seat_number": seat_number, "status": "released"},
+        )
+
+
+def normalize_pending_reservations(user, schedule_id=None):
+    tickets = TrainTicket.objects.filter(
+        user=user,
+        status="pending",
+        booking_time__gte=timezone.now() - RESERVATION_DURATION,
+    ).order_by("train_schedule_id", "booking_time", "id")
+    if schedule_id is not None:
+        tickets = tickets.filter(train_schedule_id=schedule_id)
+
+    grouped_tickets = {}
+    for ticket in tickets:
+        grouped_tickets.setdefault(ticket.train_schedule_id, []).append(ticket)
+
+    for schedule_tickets in grouped_tickets.values():
+        canonical_number = schedule_tickets[0].confirmation_number
+        duplicate_ids = [
+            ticket.id
+            for ticket in schedule_tickets
+            if ticket.confirmation_number != canonical_number
+        ]
+        if duplicate_ids:
+            TrainTicket.objects.filter(id__in=duplicate_ids).update(
+                confirmation_number=canonical_number
+            )
+
+
+def reservation_expiry(tickets):
+    created_at = min(ticket.booking_time for ticket in tickets)
+    return created_at + RESERVATION_DURATION
+
+
+@login_required
+def hold_seat(request, schedule_id):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method."}, status=405)
+
+    expire_pending_reservations()
+    normalize_pending_reservations(request.user, schedule_id)
+    seat_number = request.POST.get("seat_number", "").strip()
+    confirmation_number = request.POST.get("confirmation_number", "").strip()
+    action = request.POST.get("action", "hold")
+    if not seat_number or action not in {"hold", "release"}:
+        return JsonResponse({"success": False, "message": "Invalid seat hold request."}, status=400)
+
+    user_lock = redis_client.lock(
+        f"lock:user:{request.user.id}:booking", timeout=LOCK_TIMEOUT
+    )
+    if not user_lock.acquire(blocking=True, blocking_timeout=3):
+        return JsonResponse({"success": False, "message": "Another booking is in progress. Try again."}, status=429)
+
+    seat_lock = redis_client.lock(
+        f"lock:schedule:{schedule_id}:seat:{seat_number}", timeout=LOCK_TIMEOUT
+    )
+    if not seat_lock.acquire(blocking=True, blocking_timeout=3):
+        safe_release(user_lock)
+        return JsonResponse({"success": False, "message": "Seat is being selected by someone else."}, status=409)
+
+    try:
+        schedule = get_object_or_404(TrainSchedule.objects.select_related("train"), id=schedule_id)
+        current_reservation = TrainTicket.objects.filter(
+            user=request.user,
+            train_schedule=schedule,
+            status="pending",
+            booking_time__gte=timezone.now() - RESERVATION_DURATION,
+        ).order_by("booking_time", "id").first()
+        if current_reservation:
+            confirmation_number = current_reservation.confirmation_number
+
+        active_tickets = TrainTicket.objects.filter(
+            user=request.user,
+            train_schedule=schedule,
+            confirmation_number=confirmation_number,
+            status="pending",
+            booking_time__gte=timezone.now() - RESERVATION_DURATION,
+        ) if confirmation_number else TrainTicket.objects.none()
+
+        if action == "release":
+            held_ticket = active_tickets.filter(seat_number=seat_number).first()
+            if held_ticket:
+                held_ticket.status = "cancelled"
+                held_ticket.save(update_fields=["status"])
+                async_to_sync(get_channel_layer().group_send)(
+                    f"schedule_{schedule_id}",
+                    {"type": "seat_update", "seat_number": seat_number, "status": "released"},
+                )
+            remaining_tickets = list(active_tickets.exclude(seat_number=seat_number))
+            if not remaining_tickets:
+                confirmation_number = ""
+            return JsonResponse({
+                "success": True,
+                "confirmation_number": confirmation_number,
+                "has_reservation": bool(remaining_tickets),
+            })
+
+        existing_ticket = active_tickets.filter(seat_number=seat_number).first()
+        if existing_ticket:
+            current_tickets = list(active_tickets)
+            return JsonResponse({
+                "success": True,
+                "confirmation_number": confirmation_number,
+                "expires_at": reservation_expiry(current_tickets).isoformat(),
+            })
+
+        valid_seats = {
+            seat
+            for klass in _build_classes(schedule.train.total_seats, schedule, set())
+            for coach in klass["coaches"]
+            for seat in coach["seats"]
+        }
+        if seat_number not in valid_seats:
+            return JsonResponse({"success": False, "message": "Invalid seat."}, status=400)
+
+        if TrainTicket.objects.filter(
+            train_schedule=schedule,
+            seat_number=seat_number,
+            status__in=("pending", "booked"),
+        ).exists():
+            return JsonResponse({"success": False, "message": "Seat is no longer available."}, status=409)
+
+        booking_start = get_booking_window_start()
+        booked_today = TrainTicket.objects.filter(
+            user=request.user, status="booked", booking_time__gte=booking_start
+        ).count()
+        pending_today = TrainTicket.objects.filter(
+            user=request.user,
+            status="pending",
+            booking_time__gte=max(booking_start, timezone.now() - RESERVATION_DURATION),
+        ).count()
+        if booked_today + pending_today >= MAX_TICKETS_PER_DAY:
+            return JsonResponse({"success": False, "message": "You have reached today's ticket limit."}, status=403)
+
+        if not confirmation_number or not active_tickets.exists():
+            confirmation_number = generate_confirmation_number()
+        try:
+            held_ticket = TrainTicket.objects.create(
+                user=request.user,
+                train_schedule=schedule,
+                passenger_name=request.user.get_full_name() or request.user.username,
+                passenger_phone_number=request.user.profile.phone_number,
+                seat_number=seat_number,
+                status="pending",
+                confirmation_number=confirmation_number,
+            )
+        except IntegrityError:
+            return JsonResponse({"success": False, "message": "Seat is no longer available."}, status=409)
+
+        async_to_sync(get_channel_layer().group_send)(
+            f"schedule_{schedule_id}",
+            {"type": "seat_update", "seat_number": seat_number, "status": "pending"},
+        )
+        group_tickets = list(TrainTicket.objects.filter(
+            user=request.user, confirmation_number=confirmation_number, status="pending"
+        ))
+        return JsonResponse({
+            "success": True,
+            "confirmation_number": confirmation_number,
+            "expires_at": reservation_expiry(group_tickets).isoformat(),
+        })
+    finally:
+        safe_release(seat_lock)
+        safe_release(user_lock)
 
 
 def get_booking_window_start():
@@ -430,6 +756,9 @@ def safe_release(lock):
 def book_seat(request, schedule_id):
     if request.method != "POST":
         return JsonResponse({"success": False, "message": "Invalid method."}, status=405)
+
+    expire_pending_reservations()
+    normalize_pending_reservations(request.user, schedule_id)
 
     # seat_number (single/repeated) ba seat_numbers ("A1,A2,A3") dutoi cholbe
     raw = request.POST.getlist("seat_number") + request.POST.get("seat_numbers", "").split(",")
@@ -458,12 +787,25 @@ def book_seat(request, schedule_id):
         except TrainSchedule.DoesNotExist:
             return JsonResponse({"success": False, "message": "Schedule not found."}, status=404)
 
+        reservation_start = timezone.now() - RESERVATION_DURATION
+        TrainTicket.objects.filter(
+            train_schedule=schedule,
+            status="pending",
+            booking_time__lt=reservation_start,
+        ).update(status="cancelled")
+
         booked_count = TrainTicket.objects.filter(
-            user=request.user, status="booked",
+            user=request.user,
+            status="booked",
             booking_time__gte=get_booking_window_start(),
         ).count()
+        booked_count += TrainTicket.objects.filter(
+            user=request.user,
+            status="pending",
+            booking_time__gte=reservation_start,
+        ).count()
 
-        if booked_count + len(seats) > MAX_TICKETS_PER_DAY:
+        if booked_count > MAX_TICKETS_PER_DAY:
             left = max(0, MAX_TICKETS_PER_DAY - booked_count)
             return JsonResponse({
                 "success": False,
@@ -471,45 +813,271 @@ def book_seat(request, schedule_id):
             }, status=403)
 
         taken = list(TrainTicket.objects.filter(
-            train_schedule=schedule, seat_number__in=seats, status="booked"
+            train_schedule=schedule,
+            seat_number__in=seats,
+            status="booked",
         ).values_list("seat_number", flat=True))
+        taken += list(TrainTicket.objects.filter(
+            train_schedule=schedule,
+            seat_number__in=seats,
+            status="pending",
+        ).exclude(user=request.user).values_list("seat_number", flat=True))
         if taken:
             return JsonResponse({"success": False, "message": f"Seat already booked: {', '.join(taken)}"}, status=409)
 
-        confirmation_number = generate_confirmation_number()  # sob seat-er jonno 1 ta
-        try:
-            with transaction.atomic():  # ekta fail hole kono seat-i book hobe na
-                for s in seats:
-                    TrainTicket.objects.create(
-                        user=request.user,
-                        train_schedule=schedule,
-                        passenger_name=request.user.get_full_name() or request.user.username,
-                        passenger_phone_number=request.user.profile.phone_number,
-                        seat_number=s,
-                        status="booked",
-                        confirmation_number=confirmation_number,
-                    )
-        except IntegrityError:
-            return JsonResponse({"success": False, "message": "Seat already booked."}, status=409)
+        seat_prices = {
+            seat: klass["price"]
+            for klass in _build_classes(schedule.train.total_seats, schedule, set())
+            for coach in klass["coaches"]
+            for seat in coach["seats"]
+        }
+        invalid_seats = [seat for seat in seats if seat not in seat_prices]
+        if invalid_seats:
+            return JsonResponse({"success": False, "message": f"Invalid seat: {', '.join(invalid_seats)}"}, status=400)
 
-        channel_layer = get_channel_layer()
-        for s in seats:
-            async_to_sync(channel_layer.group_send)(
-                f"schedule_{schedule_id}",
-                {"type": "seat_update", "seat_number": s, "status": "booked"},
-            )
+        held_tickets = list(TrainTicket.objects.filter(
+            user=request.user,
+            train_schedule=schedule,
+            seat_number__in=seats,
+            status="pending",
+            booking_time__gte=reservation_start,
+        ).order_by("booking_time"))
+        if len(held_tickets) != len(seats):
+            return JsonResponse({"success": False, "message": "Please select the seats again to start their five-minute reservation."}, status=409)
+
+        confirmation_numbers = {ticket.confirmation_number for ticket in held_tickets}
+        if len(confirmation_numbers) != 1:
+            return JsonResponse({"success": False, "message": "Selected seats must belong to the same active reservation."}, status=409)
+        confirmation_number = confirmation_numbers.pop()
 
         return JsonResponse({
             "success": True,
-            "message": "Seat booked successfully.",
+            "message": "Seats reserved. Continue to payment.",
             "confirmation_number": confirmation_number,
             "seats": seats,
-            "remaining_today": MAX_TICKETS_PER_DAY - booked_count - len(seats),
+            "total_amount": str(sum(seat_prices[seat] for seat in seats)),
+            "expires_at": reservation_expiry(held_tickets).isoformat(),
+            "remaining_today": max(0, MAX_TICKETS_PER_DAY - booked_count),
         })
     finally:
         for lk in seat_locks:
             safe_release(lk)
         safe_release(user_lock)
+
+
+@login_required
+def start_ticket_payment(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method."}, status=405)
+
+    expire_pending_reservations()
+    normalize_pending_reservations(request.user)
+    confirmation_number = request.POST.get("confirmation_number", "").strip()
+    tickets = list(TrainTicket.objects.filter(
+        user=request.user,
+        confirmation_number=confirmation_number,
+        status="pending",
+        booking_time__gte=timezone.now() - RESERVATION_DURATION,
+    ).select_related("train_schedule__train"))
+    if not tickets:
+        return JsonResponse({"success": False, "expired": True, "message": "Reservation expired. Please select seats again."}, status=400)
+    if not settings.SSL_COMMERZ_STORE_ID or not settings.SSL_COMMERZ_STORE_PASSWORD:
+        return JsonResponse({"success": False, "message": "SSLCommerz credentials are not configured."}, status=503)
+
+    schedule = tickets[0].train_schedule
+    seat_prices = {
+        seat: klass["price"]
+        for klass in _build_classes(schedule.train.total_seats, schedule, set())
+        for coach in klass["coaches"]
+        for seat in coach["seats"]
+    }
+    amount = sum((Decimal(str(seat_prices[ticket.seat_number])) for ticket in tickets), Decimal("0.00"))
+    if amount <= 0:
+        return JsonResponse({"success": False, "message": "Unable to determine ticket fare."}, status=400)
+
+    payment = TicketPayment.objects.create(
+        user=request.user,
+        payment_id=uuid.uuid4().hex,
+        amount=amount,
+        status="pending",
+    )
+    payment.tickets.set(tickets)
+    expires_at = reservation_expiry(tickets)
+    callback_url = request.build_absolute_uri
+    payload = {
+        "store_id": settings.SSL_COMMERZ_STORE_ID,
+        "store_passwd": settings.SSL_COMMERZ_STORE_PASSWORD,
+        "total_amount": f"{amount:.2f}",
+        "currency": "BDT",
+        "tran_id": payment.payment_id,
+        "success_url": callback_url(reverse("payment_success")),
+        "fail_url": callback_url(reverse("payment_failure")),
+        "cancel_url": callback_url(reverse("payment_failure")),
+        "ipn_url": callback_url(reverse("payment_success")),
+        "cus_name": request.user.get_full_name() or request.user.username,
+        "cus_email": request.user.email or "customer@example.com",
+        "cus_phone": request.user.profile.phone_number,
+        "cus_add1": "Bangladesh",
+        "cus_city": "Dhaka",
+        "cus_country": "Bangladesh",
+        "shipping_method": "NO",
+        "product_name": f"Train ticket {confirmation_number}",
+        "product_category": "Ticket",
+        "product_profile": "non-physical-goods",
+    }
+    try:
+        response = requests.post(
+            settings.SSL_COMMERZ_GATEWAY_URL,
+            data=payload,
+            timeout=15,
+        )
+        response.raise_for_status()
+        gateway_response = response.json()
+    except (requests.RequestException, ValueError):
+        payment.status = "failed"
+        payment.save(update_fields=["status"])
+        return JsonResponse({"success": False, "message": "Could not connect to SSLCommerz. Please try again.", "expires_at": expires_at.isoformat()}, status=502)
+
+    gateway_url = gateway_response.get("GatewayPageURL")
+    if gateway_response.get("status") != "SUCCESS" or not gateway_url:
+        payment.status = "failed"
+        payment.save(update_fields=["status"])
+        return JsonResponse({"success": False, "message": "SSLCommerz could not start the payment.", "expires_at": expires_at.isoformat()}, status=502)
+
+    return JsonResponse({
+        "success": True,
+        "payment_url": gateway_url,
+        "payment_id": payment.payment_id,
+        "expires_at": expires_at.isoformat(),
+    })
+
+
+@login_required
+def abandon_ticket_payment(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method."}, status=405)
+
+    payment_id = request.POST.get("payment_id", "").strip()
+    payment = TicketPayment.objects.filter(
+        user=request.user,
+        payment_id=payment_id,
+        status="pending",
+    ).first()
+    if payment is None:
+        return JsonResponse({"success": True, "abandoned": False})
+
+    tickets = list(payment.tickets.filter(status="pending"))
+    if tickets and reservation_expiry(tickets) <= timezone.now():
+        expire_pending_reservations()
+        payment.status = "cancelled"
+        payment.save(update_fields=["status"])
+        return JsonResponse({"success": True, "abandoned": True, "expired": True})
+
+    payment.status = "cancelled"
+    payment.save(update_fields=["status"])
+    return JsonResponse({"success": True, "abandoned": True, "expired": False})
+
+
+@csrf_exempt
+def payment_success(request):
+    callback_data = request.POST if request.method == "POST" else request.GET
+    transaction_id = callback_data.get("tran_id", "").strip()
+    validation_id = callback_data.get("val_id", "").strip()
+    payment = get_object_or_404(TicketPayment, payment_id=transaction_id)
+
+    if payment.status == "paid":
+        ticket = payment.tickets.first()
+        return _payment_confirmation_url(payment, ticket)
+    if payment.status != "pending":
+        return redirect("ticket_page")
+    if not validation_id:
+        return redirect("ticket_page")
+
+    try:
+        validation_response = requests.get(
+            settings.SSL_COMMERZ_VALIDATION_URL,
+            params={
+                "val_id": validation_id,
+                "store_id": settings.SSL_COMMERZ_STORE_ID,
+                "store_passwd": settings.SSL_COMMERZ_STORE_PASSWORD,
+                "format": "json",
+            },
+            timeout=15,
+        )
+        validation_response.raise_for_status()
+        validation = validation_response.json()
+        validated_amount = Decimal(str(validation.get("amount", "0")))
+    except (requests.RequestException, ValueError, InvalidOperation):
+        return redirect("ticket_page")
+
+    if (
+        validation.get("status") not in {"VALID", "VALIDATED"}
+        or validation.get("tran_id") != payment.payment_id
+        or validation.get("currency") != "BDT"
+        or validated_amount != payment.amount
+    ):
+        return redirect("ticket_page")
+
+    expire_pending_reservations()
+    with transaction.atomic():
+        payment = TicketPayment.objects.select_for_update().get(pk=payment.pk)
+        if payment.status != "paid":
+            tickets = list(payment.tickets.select_for_update().filter(status="pending"))
+            if not tickets:
+                payment.status = "failed"
+                payment.save(update_fields=["status"])
+                return redirect("home_page")
+            confirmation_number = tickets[0].confirmation_number or generate_confirmation_number()
+            for ticket in tickets:
+                ticket.status = "booked"
+                ticket.confirmation_number = confirmation_number
+                ticket.save(update_fields=["status", "confirmation_number"])
+            payment.status = "paid"
+            payment.payment_time = timezone.now()
+            payment.save(update_fields=["status", "payment_time"])
+
+    channel_layer = get_channel_layer()
+    for ticket in payment.tickets.all():
+        async_to_sync(channel_layer.group_send)(
+            f"schedule_{ticket.train_schedule_id}",
+            {"type": "seat_update", "seat_number": ticket.seat_number, "status": "booked"},
+        )
+    return _payment_confirmation_url(payment, payment.tickets.first())
+
+
+def _payment_confirmation_url(payment, ticket):
+    if ticket is None:
+        return redirect("ticket_page")
+    return redirect(
+        f"{reverse('seat_confarmation', args=[ticket.train_schedule_id])}"
+        f"?c={ticket.confirmation_number or ''}"
+    )
+
+
+@csrf_exempt
+def payment_failure(request):
+    callback_data = request.POST if request.method == "POST" else request.GET
+    transaction_id = callback_data.get("tran_id", "").strip()
+    if transaction_id:
+        payment = TicketPayment.objects.filter(payment_id=transaction_id, status="pending").first()
+        if payment:
+            payment.status = "failed"
+            payment.save(update_fields=["status"])
+            tickets = list(payment.tickets.filter(status="pending"))
+            if tickets and reservation_expiry(tickets) <= timezone.now():
+                expire_pending_reservations()
+                return redirect("home_page")
+            if tickets:
+                schedule = tickets[0].train_schedule
+                query = urlencode({
+                    "source": schedule.source_station,
+                    "destination": schedule.destination_station,
+                    "date": timezone.localtime(schedule.departure_time).date().isoformat(),
+                })
+                return redirect(
+                    f"{reverse('ticket_page')}?{query}"
+                )
+    return redirect("ticket_page")
 
 
 
@@ -583,10 +1151,16 @@ def sit_confarmation_page(request, schedule_id):
 
 
 def get_remaining_today(user):
+    booking_start = get_booking_window_start()
     used = TrainTicket.objects.filter(
         user=user,
         status="booked",
-        booking_time__gte=get_booking_window_start(),
+        booking_time__gte=booking_start,
+    ).count()
+    used += TrainTicket.objects.filter(
+        user=user,
+        status="pending",
+        booking_time__gte=max(booking_start, timezone.now() - RESERVATION_DURATION),
     ).count()
     return max(0, MAX_TICKETS_PER_DAY - used)
 

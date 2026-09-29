@@ -14,6 +14,11 @@ urlpatterns = [
     path('ticket/', views.ticket_page, name='ticket_page'),
     path('train-schedule/', views.train_schedule, name='train_schedule'),
     path("book-seat/<int:schedule_id>/", views.book_seat, name="book_seat"),
+    path("seat-hold/<int:schedule_id>/", views.hold_seat, name="hold_seat"),
+    path("payment/start/", views.start_ticket_payment, name="start_ticket_payment"),
+    path("payment/abandon/", views.abandon_ticket_payment, name="abandon_ticket_payment"),
+    path("payment/success/", views.payment_success, name="payment_success"),
+    path("payment/failure/", views.payment_failure, name="payment_failure"),
     path("seat-confarmation/<int:schedule_id>/", views.sit_confarmation_page, name="seat_confarmation"),
 
     path("varification-ticket/", views.varification_ticket, name="varification_ticket"),
