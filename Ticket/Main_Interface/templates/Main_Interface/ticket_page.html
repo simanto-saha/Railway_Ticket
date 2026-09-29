@@ -131,6 +131,7 @@
         width: 58px; height: 40px; border-radius: 9px; font-size: .8rem; font-weight: 600;
         border: 1.5px solid var(--line); color: var(--charcoal); background: #fff;
         transition: all .15s ease;
+        touch-action: manipulation;
     }
     .seat-btn:hover { border-color: var(--flag-green); color: var(--flag-green); }
     .seat-btn.seat-selected {
@@ -404,7 +405,7 @@
 
                                         <div class="seat-legend">
                                             <span><span class="dot dot-available"></span>Available (click to select)</span>
-                                            <span><span class="dot dot-selected"></span>Selected (double-click to remove)</span>
+                                            <span><span class="dot dot-selected"></span>Selected (click again to remove)</span>
                                             <span><span class="dot dot-booked"></span>Already booked</span>
                                         </div>
                                     </div>
@@ -436,7 +437,7 @@
                                         <hr class="sidebar-divider">
 
                                         <div class="sidebar-title"><i class="bi bi-ticket-perforated"></i> Your Selection</div>
-                                        <p class="seat-limit-hint">Maximum {{ remaining_today|default_if_none:4 }} seat(s) can be booked at a time.</p>
+                                        <p class="seat-limit-hint">You can book up to <span class="limit-left">{{ remaining_today|default_if_none:4 }}</span> more seat(s) today.</p>
                                         <div class="selected-seats-list" id="selectedSeats{{ train_id }}_{{ klass.code }}">
                                             <span class="empty-hint">No seats selected yet</span>
                                         </div>
@@ -447,7 +448,7 @@
                                         <button class="btn btn-confirm w-100" type="button"
                                             id="confirmBtn{{ train_id }}_{{ klass.code }}"
                                             disabled
-                                            onclick="bookTrain('{{ train_id }}_{{ klass.code }}', {{ train.schedule_id }}, '{{ train.train_number }}')">
+                                            onclick="bookTrain('{{ train_id }}_{{ klass.code }}', {{ train.schedule_id }})">
                                             <i class="bi bi-check2-circle me-1"></i> Confirm Booking
                                         </button>
                                     </div>
@@ -484,12 +485,21 @@
 </div>
 
 <script>
-// Server theke asha limit (aj ar koyta ticket kinte parbe). 0 hole 0-i thakbe.
-const MAX_SEATS = {{ remaining_today|default_if_none:4 }};
-// Confirmation page URL template ("0" er jaygay schedule id boshbe)
+// Server theke asha limit (aj ar koyta ticket kinte parbe). Na ashle default 4, 0 hole 0-i thakbe.
+const _rem = parseInt("{{ remaining_today|default_if_none:'' }}", 10);
+const MAX_SEATS = Number.isNaN(_rem) ? 4 : _rem;
+
+// URL template ("0" er jaygay schedule id boshbe)
 const CONFIRM_URL_TEMPLATE = "{% url 'seat_confarmation' 0 %}";
+const BOOK_URL_TEMPLATE = "{% url 'book_seat' 0 %}";
 
 const selectedSeatsMap = {}; // { "trainId_classCode": { seatName: price } }
+
+// key = "<trainId>_<classCode>", classCode e underscore thakte pare (S_CHAIR), tai prothom "_" e bhag kori
+function splitKey(key) {
+    const i = key.indexOf('_');
+    return [key.slice(0, i), key.slice(i + 1)];
+}
 
 // ---------- Popup modal ----------
 let modalOkCallback = null;
@@ -541,12 +551,11 @@ function setActiveClass(card, trainId) {
     });
 }
 
-// ---------- Seat interaction: click = select, double click = deselect ----------
+// ---------- Seat interaction: click = toggle (select / deselect) ----------
 document.querySelectorAll('.seat-btn').forEach(btn => {
-    btn.addEventListener('click', () => selectSeat(btn));
-    btn.addEventListener('dblclick', (e) => {
-        e.preventDefault();
-        deselectSeat(btn);
+    btn.addEventListener('click', () => {
+        if (btn.classList.contains('seat-selected')) deselectSeat(btn);
+        else selectSeat(btn);
     });
 });
 
@@ -631,11 +640,11 @@ function selectSeat(btn) {
     const price = parseFloat(btn.dataset.price);
 
     if (!selectedSeatsMap[key]) selectedSeatsMap[key] = {};
-    if (selectedSeatsMap[key][seat]) return; // already selected
+    if (selectedSeatsMap[key][seat] !== undefined) return; // already selected
 
     if (totalSelectedCount() >= MAX_SEATS) {
         const msg = MAX_SEATS > 0
-            ? 'You can not book more than ' + MAX_SEATS + ' ticket' + (MAX_SEATS > 1 ? 's' : '') + '.'
+            ? 'You can not book more than ' + MAX_SEATS + ' ticket' + (MAX_SEATS > 1 ? 's' : '') + ' today.'
             : 'You have reached your daily ticket limit. Please try again after 8:00 AM tomorrow.';
         showModal('Limit reached', msg, 'error');
         return;
@@ -650,7 +659,7 @@ function deselectSeat(btn) {
     const key = btn.dataset.train + '_' + btn.dataset.class;
     const seat = btn.dataset.seat;
 
-    if (!selectedSeatsMap[key] || !selectedSeatsMap[key][seat]) return;
+    if (!selectedSeatsMap[key] || selectedSeatsMap[key][seat] === undefined) return;
 
     delete selectedSeatsMap[key][seat];
     btn.classList.remove('seat-selected');
@@ -671,14 +680,21 @@ function updateSummary(key) {
         seats.forEach(seat => {
             const chip = document.createElement('span');
             chip.className = 'seat-chip';
-            chip.innerHTML = seat + ' <button type="button" class="chip-remove" aria-label="Remove ' + seat + '">&times;</button>';
-            chip.querySelector('.chip-remove').addEventListener('click', () => {
-                const [trainId, classCode] = key.split('_');
+            chip.appendChild(document.createTextNode(seat + ' '));
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'chip-remove';
+            removeBtn.setAttribute('aria-label', 'Remove ' + seat);
+            removeBtn.innerHTML = '&times;';
+            removeBtn.addEventListener('click', () => {
+                const [trainId, classCode] = splitKey(key);
                 const seatBtn = document.querySelector(
                     '.seat-btn[data-train="' + trainId + '"][data-class="' + classCode + '"][data-seat="' + seat + '"]'
                 );
                 if (seatBtn) deselectSeat(seatBtn);
             });
+            chip.appendChild(removeBtn);
             listEl.appendChild(chip);
         });
     }
@@ -697,23 +713,25 @@ function connectSeatSocket(scheduleId, attempt = 0) {
     socket.onopen = () => { attempt = 0; };
 
     socket.onmessage = (e) => {
-        const data = JSON.parse(e.data);
-        const btn = document.querySelector(
+        let data;
+        try { data = JSON.parse(e.data); } catch (err) { return; }
+        if (data.status !== 'booked') return;
+
+        document.querySelectorAll(
             `.seat-btn[data-schedule="${scheduleId}"][data-seat="${data.seat_number}"]`
-        );
-        if (!btn || data.status !== 'booked') return;
+        ).forEach(btn => {
+            const key = btn.dataset.train + '_' + btn.dataset.class;
+            const seat = btn.dataset.seat;
 
-        const key = btn.dataset.train + '_' + btn.dataset.class;
-        const seat = btn.dataset.seat;
+            if (selectedSeatsMap[key] && selectedSeatsMap[key][seat] !== undefined) {
+                delete selectedSeatsMap[key][seat];
+                updateSummary(key);
+            }
 
-        if (selectedSeatsMap[key] && selectedSeatsMap[key][seat]) {
-            delete selectedSeatsMap[key][seat];
-            updateSummary(key);
-        }
-
-        btn.classList.remove('seat-selected');
-        btn.classList.add('seat-booked');
-        btn.disabled = true;
+            btn.classList.remove('seat-selected');
+            btn.classList.add('seat-booked');
+            btn.disabled = true;
+        });
     };
 
     socket.onerror = () => console.error('Seat socket error for schedule ' + scheduleId);
@@ -727,8 +745,13 @@ function connectSeatSocket(scheduleId, attempt = 0) {
     return socket;
 }
 
+// Ekii schedule_id ekbar-i connect hobe
+const connectedSchedules = new Set();
 document.querySelectorAll('.seat-panel-box[data-schedule]').forEach(box => {
-    connectSeatSocket(box.dataset.schedule);
+    const sid = box.dataset.schedule;
+    if (connectedSchedules.has(sid)) return;
+    connectedSchedules.add(sid);
+    connectSeatSocket(sid);
 });
 
 // ---------- CSRF ----------
@@ -740,14 +763,14 @@ function getCsrfToken() {
 }
 
 // ---------- Confirm booking (shob seat 1 ta request, 1 ta confirmation number) ----------
-function bookTrain(key, scheduleId, trainNumber) {
+function bookTrain(key, scheduleId) {
     const seats = Object.keys(selectedSeatsMap[key] || {});
     if (seats.length === 0) {
         showModal('No seat selected', 'Please select at least one seat.', 'error');
         return;
     }
 
-    const [trainId, classCode] = key.split('_');
+    const [trainId, classCode] = splitKey(key);
     const confirmBtn = document.getElementById('confirmBtn' + key);
     const originalLabel = confirmBtn ? confirmBtn.innerHTML : '';
     if (confirmBtn) {
@@ -761,7 +784,9 @@ function bookTrain(key, scheduleId, trainNumber) {
         confirmBtn.disabled = Object.keys(selectedSeatsMap[key] || {}).length === 0;
     };
 
-    fetch(`/book-seat/${scheduleId}/`, {
+    const bookUrl = BOOK_URL_TEMPLATE.replace('/0/', '/' + scheduleId + '/');
+
+    fetch(bookUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',

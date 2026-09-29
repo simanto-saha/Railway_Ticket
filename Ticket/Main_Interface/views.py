@@ -557,6 +557,10 @@ def sit_confarmation_page(request, schedule_id):
                     classes.append(label)
                 total_fare += price
 
+            confirmation_numbers = list(dict.fromkeys(
+                r.confirmation_number for r in rows if r.confirmation_number
+            ))
+
             verify_base = request.build_absolute_uri(reverse("varification_ticket"))
             ticket = {
                 "passenger_name": first.passenger_name,
@@ -566,8 +570,8 @@ def sit_confarmation_page(request, schedule_id):
                 "seat_count": len(rows),
                 "class_name": ", ".join(classes),
                 "total_fare": total_fare,
-                "verify_url": f"{verify_base}?confirmation_number={rows[0].confirmation_number}",
-                
+                "confirmation_numbers": confirmation_numbers,
+                "verify_url": f"{verify_base}?confirmation_number={confirmation_numbers[0]}",
             }
 
     return render(request, "Main_Interface/sit_confarmation.html", {
