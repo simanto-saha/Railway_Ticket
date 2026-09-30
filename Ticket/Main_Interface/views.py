@@ -1,6 +1,7 @@
 import random
 import string
 import uuid
+import logging
 from decimal import Decimal, InvalidOperation
 from django.shortcuts import redirect, render, get_object_or_404
 from django.http import JsonResponse
@@ -10,7 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.hashers import make_password
 from django.views.decorators.csrf import csrf_exempt
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage, send_mail
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
@@ -25,13 +26,19 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 
 from redis.exceptions import LockError
+from .ticket_pdf import create_ticket_pdf
+
+logger = logging.getLogger(__name__)
 
 
 def home_page(request):
     expire_pending_reservations()
-    schedules = TrainSchedule.objects.select_related('train').order_by('departure_time')
+    schedules = TrainSchedule.objects.select_related('train').filter(
+        departure_time__gte=timezone.now()
+    ).order_by('departure_time')
     return render(request, "Main_Interface/home_page.html", {
         'featured_schedules': schedules[:3],
         'has_more_schedules': schedules.count() > 3,
@@ -553,17 +560,37 @@ RESET_HOUR = 8  # 8:00 AM
 
 
 def expire_pending_reservations():
-    expired = list(TrainTicket.objects.filter(
+    expired_rows = list(TrainTicket.objects.filter(
         status="pending",
         booking_time__lt=timezone.now() - RESERVATION_DURATION,
-    ).values_list("train_schedule_id", "seat_number"))
-    if not expired:
+    ).values("id", "train_schedule_id", "user_id", "confirmation_number"))
+    if not expired_rows:
         return
 
-    TrainTicket.objects.filter(
-        status="pending",
-        booking_time__lt=timezone.now() - RESERVATION_DURATION,
-    ).update(status="cancelled")
+    expired_groups = set()
+    expired_ticket_ids = []
+    for row in expired_rows:
+        confirmation_number = row["confirmation_number"]
+        if confirmation_number:
+            expired_groups.add((
+                row["train_schedule_id"], row["user_id"], confirmation_number
+            ))
+        else:
+            expired_ticket_ids.append(row["id"])
+
+    expired_filter = Q(pk__in=expired_ticket_ids)
+    for schedule_id, user_id, confirmation_number in expired_groups:
+        expired_filter |= Q(
+            train_schedule_id=schedule_id,
+            user_id=user_id,
+            confirmation_number=confirmation_number,
+        )
+
+    expired_tickets = TrainTicket.objects.filter(
+        status="pending"
+    ).filter(expired_filter)
+    expired = list(expired_tickets.values_list("train_schedule_id", "seat_number"))
+    expired_tickets.update(status="cancelled")
     channel_layer = get_channel_layer()
     for schedule_id, seat_number in expired:
         async_to_sync(channel_layer.group_send)(
@@ -1019,6 +1046,7 @@ def payment_success(request):
         return redirect("ticket_page")
 
     expire_pending_reservations()
+    newly_booked_tickets = None
     with transaction.atomic():
         payment = TicketPayment.objects.select_for_update().get(pk=payment.pk)
         if payment.status != "paid":
@@ -1035,6 +1063,31 @@ def payment_success(request):
             payment.status = "paid"
             payment.payment_time = timezone.now()
             payment.save(update_fields=["status", "payment_time"])
+            newly_booked_tickets = tickets
+
+    if newly_booked_tickets and payment.user.email:
+        try:
+            schedule = newly_booked_tickets[0].train_schedule
+            ticket_data = _build_ticket_details(schedule, newly_booked_tickets, request)
+            profile = getattr(payment.user, "profile", None)
+            pdf_data = create_ticket_pdf(
+                ticket_data,
+                schedule,
+                _mask(profile.nid if profile else ""),
+            )
+            email = EmailMessage(
+                subject=f"Your RailwaySheba e-ticket - {ticket_data['confirmation_numbers'][0]}",
+                body="Your train ticket is confirmed. Your A4 e-ticket PDF is attached.",
+                to=[payment.user.email],
+            )
+            email.attach(
+                f"RailwaySheba-Ticket-{ticket_data['confirmation_numbers'][0]}.pdf",
+                pdf_data,
+                "application/pdf",
+            )
+            email.send()
+        except Exception:
+            logger.exception("Could not email ticket for payment %s", payment.payment_id)
 
     channel_layer = get_channel_layer()
     for ticket in payment.tickets.all():
@@ -1116,37 +1169,47 @@ def sit_confarmation_page(request, schedule_id):
         )
 
         if rows:
-            first = rows[0]
-            classes = []
-            total_fare = 0
-            for r in rows:
-                label, price = seat_info.get(r.seat_number, ("-", 0))
-                if label not in classes:
-                    classes.append(label)
-                total_fare += price
-
-            confirmation_numbers = list(dict.fromkeys(
-                r.confirmation_number for r in rows if r.confirmation_number
-            ))
-
-            verify_base = request.build_absolute_uri(reverse("varification_ticket"))
-            ticket = {
-                "passenger_name": first.passenger_name,
-                "phone_masked": _mask(first.passenger_phone_number),
-                "issue_time": min(r.booking_time for r in rows),
-                "seats": ", ".join(r.seat_number for r in rows),
-                "seat_count": len(rows),
-                "class_name": ", ".join(classes),
-                "total_fare": total_fare,
-                "confirmation_numbers": confirmation_numbers,
-                "verify_url": f"{verify_base}?confirmation_number={confirmation_numbers[0]}",
-            }
+            ticket = _build_ticket_details(schedule, rows, request, seat_info)
 
     return render(request, "Main_Interface/sit_confarmation.html", {
         "schedule": schedule,
         "ticket": ticket,
         "nid_masked": _mask(getattr(request.user.profile, "nid", "")),
     })
+
+
+def _build_ticket_details(schedule, rows, request, seat_info=None):
+    if seat_info is None:
+        seat_info = {}
+        for ticket_class in _build_classes(schedule.train.total_seats, schedule, set()):
+            for coach in ticket_class["coaches"]:
+                for seat in coach["seats"]:
+                    seat_info[seat] = (ticket_class["label"], ticket_class["price"])
+
+    classes = []
+    total_fare = 0
+    for row in rows:
+        label, price = seat_info.get(row.seat_number, ("-", 0))
+        if label not in classes:
+            classes.append(label)
+        total_fare += price
+
+    confirmation_numbers = list(dict.fromkeys(
+        row.confirmation_number for row in rows if row.confirmation_number
+    ))
+    verify_base = request.build_absolute_uri(reverse("varification_ticket"))
+    first = rows[0]
+    return {
+        "passenger_name": first.passenger_name,
+        "phone_masked": _mask(first.passenger_phone_number),
+        "issue_time": min(row.booking_time for row in rows),
+        "seats": ", ".join(row.seat_number for row in rows),
+        "seat_count": len(rows),
+        "class_name": ", ".join(classes),
+        "total_fare": total_fare,
+        "confirmation_numbers": confirmation_numbers,
+        "verify_url": f"{verify_base}?confirmation_number={confirmation_numbers[0]}",
+    }
 
 
 

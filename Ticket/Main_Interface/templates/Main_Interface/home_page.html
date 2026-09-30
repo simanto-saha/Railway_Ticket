@@ -1,7 +1,7 @@
 {% extends "Main_Interface/base.html" %}
 {% load static %}
 
-{% block title %}RailwaySheba, Your Journey Starts Here{% endblock %}
+{% block title %}Bangladesh Railway | Passenger Services{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -15,6 +15,13 @@
     grid-template-columns:1.05fr 0.95fr;
     gap:64px;
     align-items:center;
+  }
+
+  .hero-kicker{
+    display:inline-flex; align-items:center; gap:8px;
+    background:#e6f3ee; color:var(--flag-green);
+    font-size:.78rem; font-weight:700; text-transform:uppercase;
+    padding:7px 12px; border-radius:3px; margin-bottom:20px;
   }
 
   .hero-kicker{
@@ -46,6 +53,7 @@
     flex-wrap:wrap;
   }
   .hero-cta-row .btn i{ margin-left:8px; }
+  .hero-cta-row .btn-schedule{ box-shadow:none; }
   .secure-note{
     display:flex; align-items:center; gap:8px;
     font-size:0.88rem;
@@ -174,6 +182,11 @@
     border-radius:var(--radius-s);
     backdrop-filter:blur(8px);
   }
+  .panel-schedules-heading{
+    color:#fff; font-size:.76rem; font-weight:700;
+    padding:2px 0 7px; border-bottom:1px solid rgba(255,255,255,.18);
+    margin-bottom:2px;
+  }
   .panel-schedule-row{
     display:flex;
     align-items:center;
@@ -277,8 +290,9 @@
   <div class="wrap hero-grid">
 
     <div class="hero-copy">
-      <h1>Your Journey Starts Here</h1>
-      <p class="lede">Book train tickets in minutes with real-time seat availability, secure payments, and an instant e-ticket — no counters, no queues.</p>
+      <span class="hero-kicker"><i class="bi bi-train-front"></i> Bangladesh Railway Passenger Services</span>
+      <h1>Travel across Bangladesh by train.</h1>
+      <p class="lede">Find a train by route and travel date, choose from available seats, and keep your confirmed e-ticket ready for the journey.</p>
 
       <div class="hero-cta-row">
         {% if request.user.is_authenticated %}
@@ -286,23 +300,23 @@
         {% else %}
         <a href="#" data-requires-login="true" class="btn btn-accent btn-lg btn-icon-right">
         {% endif %}
-          Book Your Ticket <i class="bi bi-arrow-right"></i>
+          Search &amp; Book Tickets <i class="bi bi-arrow-right"></i>
         </a>
-        <span class="secure-note"><i class="bi bi-shield-check"></i> Bank-grade secure checkout</span>
+        <a href="{% url 'train_schedule' %}" class="btn btn-outline-ink btn-lg btn-schedule">View Train Schedule</a>
       </div>
 
       <div class="trust-row">
         <div class="trust-item">
-          <i class="bi bi-geo-alt"></i>
-          <div><strong>250+ Routes</strong><span>Across every division</span></div>
+          <i class="bi bi-signpost-2"></i>
+          <div><strong>Plan Your Route</strong><span>Search between stations by travel date</span></div>
         </div>
         <div class="trust-item">
-          <i class="bi bi-lightning-charge"></i>
-          <div><strong>Instant E-Ticket</strong><span>Delivered in seconds</span></div>
+          <i class="bi bi-clipboard-check"></i>
+          <div><strong>Choose Your Seat</strong><span>See availability before you book</span></div>
         </div>
         <div class="trust-item">
-          <i class="bi bi-headset"></i>
-          <div><strong>24/7 Support</strong><span>Real help, anytime</span></div>
+          <i class="bi bi-qr-code"></i>
+          <div><strong>Digital E-Ticket</strong><span>Keep your booking details in one place</span></div>
         </div>
       </div>
     </div>
@@ -381,6 +395,7 @@
 
       {% if featured_schedules %}
       <div class="panel-schedules">
+        <div class="panel-schedules-heading">Upcoming Departures</div>
         {% for schedule in featured_schedules %}
         <div class="panel-schedule-row">
           <span class="panel-schedule-route">{{ schedule.source_station }} → {{ schedule.destination_station }} <span>({{ schedule.train.train_name }})</span></span>
@@ -388,8 +403,14 @@
         </div>
         {% endfor %}
         {% if has_more_schedules %}
-        <a class="panel-schedule-link" href="{% url 'train_schedule' %}">Full Train Schedule <i class="bi bi-arrow-right"></i></a>
+        <a class="panel-schedule-link" href="{% url 'train_schedule' %}">View All Train Schedules <i class="bi bi-arrow-right"></i></a>
         {% endif %}
+      </div>
+      {% else %}
+      <div class="panel-schedules">
+        <div class="panel-schedules-heading">Upcoming Departures</div>
+        <div class="panel-schedule-row"><span>No upcoming departures are listed.</span></div>
+        <a class="panel-schedule-link" href="{% url 'train_schedule' %}">Browse Train Schedules <i class="bi bi-arrow-right"></i></a>
       </div>
       {% endif %}
     </div>
@@ -400,25 +421,25 @@
 <section class="features">
   <div class="wrap">
     <div class="features-head">
-      <span class="eyebrow">Why RailwaySheba</span>
-      <h2>Everything a modern rail traveler needs, nothing they don't</h2>
+      <span class="eyebrow">Passenger Services</span>
+      <h2>Plan, book, and manage your train journey</h2>
     </div>
 
     <div class="feature-grid">
       <div class="feature-card">
         <div class="feature-icon"><i class="bi bi-shield-lock"></i></div>
-        <h3>Secure Payments</h3>
-        <p>Encrypted checkout with support for cards, mobile banking, and wallets.</p>
+        <h3>Search Train Schedules</h3>
+        <p>Check departure times and find services for your route and travel date.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon"><i class="bi bi-qr-code"></i></div>
-        <h3>Instant E-Ticket</h3>
-        <p>Your QR-coded ticket lands in your account the moment payment clears.</p>
+        <h3>Select Available Seats</h3>
+        <p>Review seat availability and fares by class before confirming a booking.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon"><i class="bi bi-person-check"></i></div>
-        <h3>NID-Verified Booking</h3>
-        <p>Every seat is tied to a verified identity, keeping journeys safer for everyone.</p>
+        <h3>Ticket Verification</h3>
+        <p>Access your confirmed ticket and verify it using its confirmation number.</p>
       </div>
     </div>
   </div>

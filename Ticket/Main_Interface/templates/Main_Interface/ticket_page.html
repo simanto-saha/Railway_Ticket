@@ -176,7 +176,7 @@
     }
 
     /* ---- Booking Summary Sidebar ---- */
-    .seat-layout { display: grid; grid-template-columns: 1fr 300px; gap: 1.5rem; align-items: start; }
+    .seat-layout { display: grid; grid-template-columns: minmax(0, 1fr) 568px; gap: 1.5rem; align-items: start; }
     @media (max-width: 860px) { .seat-layout { grid-template-columns: 1fr; } }
 
     .coach-select-wrap { margin-bottom: 1.2rem; display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; }
@@ -197,20 +197,28 @@
 
     .summary-sidebar {
         background: #fff; border: 1px solid var(--line); border-radius: var(--radius-m);
-        padding: 1.3rem; position: sticky; top: 96px;
+        padding: 1rem; position: sticky; top: 96px;
     }
+    .journey-info-table {
+        width: 100%; border-collapse: collapse; table-layout: fixed;
+        color: var(--ink); font-size: .76rem; margin-bottom: 1rem;
+    }
+    .journey-info-table caption {
+        caption-side: top; padding: .65rem .75rem; background: var(--flag-green);
+        color: #fff; font-family: 'Merriweather', serif; font-size: .9rem;
+        font-weight: 700; text-align: left;
+    }
+    .journey-info-table th, .journey-info-table td {
+        border: 1px solid var(--line); padding: .48rem .55rem; vertical-align: middle;
+        overflow-wrap: anywhere;
+    }
+    .journey-info-table th { width: 47%; text-align: left; font-weight: 600; }
+    .journey-info-table td { font-weight: 600; }
     .summary-sidebar .sidebar-title {
         font-family: 'Merriweather', serif; font-weight: 700; color: var(--ink);
-        font-size: 1rem; margin-bottom: .9rem; display: flex; align-items: center; gap: .45rem;
+        font-size: 1rem; margin-bottom: .65rem; display: flex; align-items: center; gap: .45rem;
     }
     .summary-sidebar .sidebar-title i { color: var(--flag-green); }
-    .journey-mini-row {
-        display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem;
-        font-size: .84rem; padding: .4rem 0; border-bottom: 1px dashed var(--line);
-    }
-    .journey-mini-row:last-child { border-bottom: none; }
-    .journey-mini-row .jm-label { color: var(--charcoal-soft); white-space: nowrap; }
-    .journey-mini-row .jm-value { color: var(--ink); font-weight: 600; text-align: right; }
     .sidebar-divider { border: none; border-top: 1px solid var(--line); margin: 1.2rem 0; }
     .seat-limit-hint { font-size: .78rem; color: var(--charcoal-soft); margin-bottom: .6rem; }
 
@@ -402,6 +410,7 @@
                                                     class="seat-btn{% if seat in train.booked_seats %} seat-booked{% elif seat in train.pending_seats %} seat-pending{% endif %}"
                                                     data-train="{{ train_id }}"
                                                     data-class="{{ klass.code }}"
+                                                    data-class-label="{{ klass.label }}"
                                                     data-schedule="{{ train.schedule_id }}"
                                                     data-price="{{ klass.price }}"
                                                     data-seat="{{ seat }}"
@@ -423,27 +432,21 @@
 
                                     <!-- Right: live selection summary -->
                                     <div class="summary-sidebar">
-                                        <div class="sidebar-title"><i class="bi bi-signpost-2"></i> Journey Details</div>
-                                        <div class="journey-mini-row">
-                                            <span class="jm-label">Train</span>
-                                            <span class="jm-value">{{ train.train_name }} (#{{ train.train_number }})</span>
-                                        </div>
-                                        <div class="journey-mini-row">
-                                            <span class="jm-label">Route</span>
-                                            <span class="jm-value">{{ train.source_station }} → {{ train.destination_station }}</span>
-                                        </div>
-                                        <div class="journey-mini-row">
-                                            <span class="jm-label">Departure</span>
-                                            <span class="jm-value">{{ train.departure_time|date:"d M, H:i" }}</span>
-                                        </div>
-                                        <div class="journey-mini-row">
-                                            <span class="jm-label">Class</span>
-                                            <span class="jm-value">{{ klass.label }}</span>
-                                        </div>
-                                        <div class="journey-mini-row">
-                                            <span class="jm-label">Price / Seat</span>
-                                            <span class="jm-value">৳{{ klass.price }}</span>
-                                        </div>
+                                        <table class="journey-info-table" data-schedule="{{ train.schedule_id }}">
+                                            <caption>Journey Information</caption>
+                                            <tbody>
+                                                <tr><th>Issue Date &amp; Time</th><td>{% now "d-m-Y H:i" %}</td></tr>
+                                                <tr><th>Journey Date &amp; Time</th><td>{{ train.departure_time|date:"d-m-Y H:i" }}</td></tr>
+                                                <tr><th>Train Name &amp; Number</th><td>{{ train.train_name }} [{{ train.train_number }}]</td></tr>
+                                                <tr><th>From Station</th><td>{{ train.source_station }}</td></tr>
+                                                <tr><th>To Station</th><td>{{ train.destination_station }}</td></tr>
+                                                <tr><th>Class Name</th><td data-journey-detail="class" data-default-value="{{ klass.label }}">{{ klass.label }}</td></tr>
+                                                <tr><th>Seat(s)</th><td data-journey-detail="seats">-</td></tr>
+                                                <tr><th>No. of Seats</th><td data-journey-detail="count">0</td></tr>
+                                                <tr><th>No. of Adult Passenger(s)</th><td data-journey-detail="passengers">0</td></tr>
+                                                <tr><th>Total Fare</th><td data-journey-detail="fare">BDT 0.00</td></tr>
+                                            </tbody>
+                                        </table>
 
                                         <hr class="sidebar-divider">
 
@@ -810,7 +813,12 @@ function getScheduleSelection(scheduleId) {
     document.querySelectorAll('.seat-btn[data-schedule="' + scheduleId + '"]').forEach(btn => {
         const key = btn.dataset.train + '_' + btn.dataset.class;
         const price = selectedSeatsMap[key]?.[btn.dataset.seat];
-        if (price !== undefined) selection.push({ seat: btn.dataset.seat, price, key });
+        if (price !== undefined) selection.push({
+            seat: btn.dataset.seat,
+            price,
+            key,
+            classLabel: btn.dataset.classLabel,
+        });
     });
     return selection;
 }
@@ -818,6 +826,20 @@ function getScheduleSelection(scheduleId) {
 function updateScheduleConfirmButtons(scheduleId) {
     const selection = getScheduleSelection(scheduleId);
     const total = selection.reduce((sum, item) => sum + item.price, 0);
+    const selectedClasses = [...new Set(selection.map(item => item.classLabel))];
+    const selectedSeatNames = selection.map(item => item.seat);
+    document.querySelectorAll('.journey-info-table[data-schedule="' + scheduleId + '"]').forEach(table => {
+        const classCell = table.querySelector('[data-journey-detail="class"]');
+        classCell.textContent = selectedClasses.length
+            ? selectedClasses.join(', ')
+            : classCell.dataset.defaultValue;
+        table.querySelector('[data-journey-detail="seats"]').textContent = selectedSeatNames.length
+            ? selectedSeatNames.join(', ')
+            : '-';
+        table.querySelector('[data-journey-detail="count"]').textContent = selection.length;
+        table.querySelector('[data-journey-detail="passengers"]').textContent = selection.length;
+        table.querySelector('[data-journey-detail="fare"]').textContent = 'BDT ' + total.toFixed(2);
+    });
     document.querySelectorAll('.seat-panel-box[data-schedule="' + scheduleId + '"]').forEach(panel => {
         const list = panel.querySelector('.selected-seats-list');
         if (list) {

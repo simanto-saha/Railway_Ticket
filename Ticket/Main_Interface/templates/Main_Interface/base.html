@@ -244,8 +244,13 @@
     .brand-text{ font-size:1.15rem; }
   }
   @media (max-width:420px){
-    .nav-actions .btn{ padding:0.4rem 0.7rem; font-size:0.8rem; }
-    .brand-text{ font-size:1.02rem; }
+    .site-nav .wrap{ gap:7px; }
+    .brand{ gap:6px; }
+    .brand-logo-wrap{ width:38px; height:38px; }
+    .brand-logo{ width:30px; height:30px; }
+    .nav-actions{ gap:4px; }
+    .nav-actions .btn{ padding:0.32rem 0.48rem; font-size:0.72rem; }
+    .brand-text{ font-size:0.92rem; }
   }
 
   .modal-content{
@@ -413,7 +418,7 @@
         <a href="{% url 'ticket_page' %}" class="{% if request.resolver_match.url_name == 'ticket_page' %}active{% endif %}">Book Ticket</a>
       {% endif %}
       <a href="{% url 'train_schedule' %}" class="{% if request.resolver_match.url_name == 'train_schedule' %}active{% endif %}">Train Schedule</a>
-      <a href="{% url 'varification_ticket' %}" class="{% if request.resolver_match.url_name == 'varification_ticket' %}active{% endif %}">Ticket Varification</a>
+      <a href="{% url 'varification_ticket' %}" class="{% if request.resolver_match.url_name == 'varification_ticket' %}active{% endif %}">Ticket Verification</a>
     </div>
 
     <div class="nav-actions">
@@ -485,7 +490,7 @@
           <span class="brand-text"><span class="txt-railway">Railway</span><span class="txt-sheba">Sheba</span></span>
         </span>
       </div>
-      <p class="footer-note">An official e-service for real-time train schedule lookup and online ticket booking.</p>
+      <p class="footer-note">Check train schedules, reserve available seats, and access your ticket details.</p>
     </div>
 
     <div class="footer-links">

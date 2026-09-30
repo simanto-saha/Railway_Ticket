@@ -48,7 +48,7 @@
               <div><span>Train</span><strong>{{ ticket.train_schedule.train.train_name }}</strong></div>
               <div><span>Route</span><strong>{{ ticket.train_schedule.source_station }} → {{ ticket.train_schedule.destination_station }}</strong></div>
               <div><span>Departure</span><strong>{{ ticket.train_schedule.departure_time|date:"d M Y, h:i A" }}</strong></div>
-              <div><span>Seat</span><strong>{{ ticket.seat_number }}</strong></div>
+              
             </div>
           </div>
         {% else %}
