@@ -27,4 +27,8 @@ Dockerfile
 docker-entrypoint.sh
 pgbouncer
 nginx
+backup.sh
+Railway_Ticket_Docker.tar.gz
+restore.sh
+README_BACKUP.md
 
