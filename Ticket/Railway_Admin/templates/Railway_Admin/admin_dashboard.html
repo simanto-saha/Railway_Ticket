@@ -92,14 +92,18 @@
         <h2><i class="bi bi-calendar-week"></i> Train schedule</h2>
         <div class="card-tools">
             <label class="search"><i class="bi bi-search"></i><input type="search" placeholder="Search schedules" data-filter="scheduleTable" aria-label="Search schedules"></label>
+            <a class="btn btn-ghost btn-sm" href="{% url 'schedule_export' %}"><i class="bi bi-file-earmark-excel"></i> Export Excel</a>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('scheduleImportFile').click()"><i class="bi bi-upload"></i> Import Excel</button>
             <button class="btn btn-primary btn-sm" onclick="openCreateSchedule()"><i class="bi bi-plus-lg"></i> Add schedule</button>
+            <input type="file" id="scheduleImportFile" accept=".xlsx" hidden>
         </div>
     </div>
+    <div id="scheduleImportMessage" class="success-text" role="status" hidden></div>
     <div class="table-scroll">
     <table class="tbl" id="scheduleTable" style="min-width:860px;">
         <thead><tr><th>Train</th><th>Route</th><th>Departure</th><th>Arrival</th><th>Ticket prices</th><th>Actions</th></tr></thead>
         <tbody id="scheduleTableBody">
-        {% for s in schedules %}
+        {% for s in schedule_page %}
         <tr id="schedule-row-{{ s.pk }}">
             <td class="strong">{{ s.train.train_name }}</td>
             <td><span class="route">{{ s.source_station }} <i class="bi bi-arrow-right"></i> {{ s.destination_station }}</span></td>
@@ -123,6 +127,24 @@
         </tbody>
     </table>
     </div>
+    {% if schedule_page.has_other_pages %}
+    <nav class="train-pagination" aria-label="Schedule list pages">
+        <span class="pagination-summary">Showing {{ schedule_page.start_index }} to {{ schedule_page.end_index }} of {{ schedule_page.paginator.count }} schedules</span>
+        <div class="pagination-controls">
+            {% if schedule_page.has_previous %}
+            <a class="btn btn-ghost btn-sm" href="?schedule_page={{ schedule_page.previous_page_number }}#schedules">Previous</a>
+            {% else %}
+            <span class="btn btn-ghost btn-sm" aria-disabled="true">Previous</span>
+            {% endif %}
+            <span class="pagination-current">Page {{ schedule_page.number }} of {{ schedule_page.paginator.num_pages }}</span>
+            {% if schedule_page.has_next %}
+            <a class="btn btn-ghost btn-sm" href="?schedule_page={{ schedule_page.next_page_number }}#schedules">Next</a>
+            {% else %}
+            <span class="btn btn-ghost btn-sm" aria-disabled="true">Next</span>
+            {% endif %}
+        </div>
+    </nav>
+    {% endif %}
 </section>
 
 <!-- Drivers -->
@@ -397,6 +419,34 @@ document.getElementById('trainImportFile').addEventListener('change', async func
 
     try {
         const response = await fetch('{% url "train_import" %}', { method: 'POST', body: formData });
+        const result = await response.json();
+        message.classList.toggle('error-text', !response.ok || !result.success);
+        message.classList.toggle('success-text', response.ok && result.success);
+        message.textContent = result.success
+            ? `Import complete: ${result.created} added, ${result.updated} updated.`
+            : result.error;
+        message.hidden = false;
+        if (result.success) window.location.reload();
+    } catch {
+        message.classList.add('error-text');
+        message.classList.remove('success-text');
+        message.textContent = 'Import failed. Please try again.';
+        message.hidden = false;
+    } finally {
+        this.value = '';
+    }
+});
+
+document.getElementById('scheduleImportFile').addEventListener('change', async function() {
+    if (!this.files.length) return;
+    const message = document.getElementById('scheduleImportMessage');
+    const formData = new FormData();
+    formData.append('file', this.files[0]);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    message.hidden = true;
+
+    try {
+        const response = await fetch('{% url "schedule_import" %}', { method: 'POST', body: formData });
         const result = await response.json();
         message.classList.toggle('error-text', !response.ok || !result.success);
         message.classList.toggle('success-text', response.ok && result.success);

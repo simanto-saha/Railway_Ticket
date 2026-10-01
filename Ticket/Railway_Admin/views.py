@@ -1,5 +1,6 @@
 import secrets
 import string
+from datetime import date, datetime
 from io import BytesIO
 from zipfile import BadZipFile
 
@@ -238,10 +239,12 @@ def is_admin(user):
 
 def _admin_dashboard_context(request):
     trains = TrainInformation.objects.order_by('train_number')
+    schedules = TrainSchedule.objects.select_related('train').order_by('departure_time', 'pk')
     return {
         'trains': trains,
         'train_page': Paginator(trains, 10).get_page(request.GET.get('train_page')),
-        'schedules': TrainSchedule.objects.select_related('train').all(),
+        'schedules': schedules,
+        'schedule_page': Paginator(schedules, 10).get_page(request.GET.get('schedule_page')),
         'drivers': TrainDriverInformation.objects.select_related('train').all(),
     }
 
@@ -360,6 +363,194 @@ def train_import(request):
             if created:
                 created_count += 1
             else:
+                updated_count += 1
+
+    return JsonResponse({
+        'success': True,
+        'created': created_count,
+        'updated': updated_count,
+    })
+
+
+@user_passes_test(is_admin, login_url='superuser_login')
+@require_GET
+def schedule_export(request):
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = 'Schedules'
+    worksheet.append([
+        'Schedule ID', 'Train Number', 'Source Station', 'Destination Station',
+        'Departure Time', 'Arrival Time', 'AC Ticket Price',
+        'Snigdha Ticket Price', 'S. Chair Ticket Price',
+    ])
+    worksheet.freeze_panes = 'A2'
+    for schedule in TrainSchedule.objects.select_related('train').order_by('departure_time', 'pk'):
+        worksheet.append([
+            schedule.pk,
+            schedule.train.train_number,
+            schedule.source_station,
+            schedule.destination_station,
+            timezone.localtime(schedule.departure_time).replace(tzinfo=None),
+            timezone.localtime(schedule.arrival_time).replace(tzinfo=None),
+            schedule.ac_ticket_price,
+            schedule.singdha_ticket_price,
+            schedule.s_chair_ticket_price,
+        ])
+
+    output = BytesIO()
+    workbook.save(output)
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = 'attachment; filename="train-schedules.xlsx"'
+    return response
+
+
+@user_passes_test(is_admin, login_url='superuser_login')
+@require_POST
+def schedule_import(request):
+    uploaded_file = request.FILES.get('file')
+    if not uploaded_file or not uploaded_file.name.lower().endswith('.xlsx'):
+        return JsonResponse({'success': False, 'error': 'Choose an .xlsx Excel file.'}, status=400)
+
+    try:
+        workbook = load_workbook(uploaded_file, read_only=True, data_only=True)
+        worksheet = workbook.active
+        rows = worksheet.iter_rows(values_only=True)
+        headers = next(rows, None)
+        if not headers:
+            workbook.close()
+            return JsonResponse({'success': False, 'error': 'The Excel sheet is empty.'}, status=400)
+
+        header_indexes = {
+            str(value).strip().lower(): index
+            for index, value in enumerate(headers)
+            if value is not None
+        }
+        required_headers = (
+            'train number', 'source station', 'destination station',
+            'departure time', 'arrival time',
+        )
+        if any(header not in header_indexes for header in required_headers):
+            workbook.close()
+            return JsonResponse({
+                'success': False,
+                'error': 'Required headers: Train Number, Source Station, Destination Station, Departure Time, Arrival Time.',
+            }, status=400)
+
+        trains_by_number = {
+            train.train_number: train
+            for train in TrainInformation.objects.all()
+        }
+        valid_schedules = []
+        errors = []
+        seen_schedule_ids = set()
+
+        def cell_value(row, header):
+            index = header_indexes.get(header)
+            return row[index] if index is not None and index < len(row) else None
+
+        def parse_schedule_datetime(value):
+            if isinstance(value, datetime):
+                parsed = value
+            elif isinstance(value, date):
+                parsed = datetime.combine(value, datetime.min.time())
+            else:
+                parsed = parse_datetime(str(value or '').strip())
+            if parsed is None:
+                raise ValueError
+            if settings.USE_TZ and timezone.is_naive(parsed):
+                parsed = timezone.make_aware(parsed)
+            return parsed
+
+        def parse_schedule_price(value):
+            if value is None or str(value).strip() == '':
+                return None
+            numeric = float(value)
+            if not numeric.is_integer() or numeric < 0:
+                raise ValueError
+            return int(numeric)
+
+        for row_number, row in enumerate(rows, start=2):
+            if not any(value is not None and str(value).strip() for value in row):
+                continue
+
+            raw_train_number = cell_value(row, 'train number')
+            if isinstance(raw_train_number, float) and raw_train_number.is_integer():
+                train_number = str(int(raw_train_number))
+            else:
+                train_number = str(raw_train_number or '').strip()
+            train = trains_by_number.get(train_number)
+            source_station = str(cell_value(row, 'source station') or '').strip()
+            destination_station = str(cell_value(row, 'destination station') or '').strip()
+            try:
+                departure_time = parse_schedule_datetime(cell_value(row, 'departure time'))
+                arrival_time = parse_schedule_datetime(cell_value(row, 'arrival time'))
+                if arrival_time <= departure_time:
+                    raise ValueError
+                prices = {
+                    'ac_ticket_price': parse_schedule_price(cell_value(row, 'ac ticket price')),
+                    'singdha_ticket_price': parse_schedule_price(cell_value(row, 'snigdha ticket price')),
+                    's_chair_ticket_price': parse_schedule_price(cell_value(row, 's. chair ticket price')),
+                }
+            except (TypeError, ValueError, OverflowError):
+                errors.append(f'Row {row_number}: enter valid departure/arrival times and non-negative whole-number fares.')
+                continue
+
+            raw_schedule_id = cell_value(row, 'schedule id')
+            try:
+                schedule_id = int(raw_schedule_id) if raw_schedule_id not in (None, '') else None
+                if schedule_id is not None and (float(raw_schedule_id) != schedule_id or schedule_id <= 0):
+                    raise ValueError
+            except (TypeError, ValueError, OverflowError):
+                errors.append(f'Row {row_number}: Schedule ID must be a positive whole number or blank.')
+                continue
+
+            if not train:
+                errors.append(f'Row {row_number}: train number {train_number or "(blank)"} was not found.')
+            elif not source_station or not destination_station:
+                errors.append(f'Row {row_number}: source and destination stations are required.')
+            elif schedule_id is not None and schedule_id in seen_schedule_ids:
+                errors.append(f'Row {row_number}: duplicate Schedule ID {schedule_id}.')
+            else:
+                if schedule_id is not None:
+                    seen_schedule_ids.add(schedule_id)
+                valid_schedules.append({
+                    'id': schedule_id,
+                    'train': train,
+                    'source_station': source_station,
+                    'destination_station': destination_station,
+                    'departure_time': departure_time,
+                    'arrival_time': arrival_time,
+                    **prices,
+                })
+        workbook.close()
+    except (InvalidFileException, BadZipFile, OSError, ValueError, IndexError):
+        return JsonResponse({'success': False, 'error': 'Could not read this Excel file.'}, status=400)
+
+    existing_schedule_ids = set(TrainSchedule.objects.filter(
+        pk__in=[row['id'] for row in valid_schedules if row['id'] is not None]
+    ).values_list('pk', flat=True))
+    for row in valid_schedules:
+        if row['id'] is not None and row['id'] not in existing_schedule_ids:
+            errors.append(f'Schedule ID {row["id"]} was not found.')
+
+    if errors:
+        return JsonResponse({'success': False, 'error': ' '.join(errors[:10])}, status=400)
+    if not valid_schedules:
+        return JsonResponse({'success': False, 'error': 'The Excel sheet contains no schedule rows.'}, status=400)
+
+    created_count = 0
+    updated_count = 0
+    with transaction.atomic():
+        for row in valid_schedules:
+            schedule_id = row.pop('id')
+            if schedule_id is None:
+                TrainSchedule.objects.create(**row)
+                created_count += 1
+            else:
+                TrainSchedule.objects.filter(pk=schedule_id).update(**row)
                 updated_count += 1
 
     return JsonResponse({

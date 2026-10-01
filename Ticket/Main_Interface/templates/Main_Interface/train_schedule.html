@@ -111,6 +111,24 @@
 
 	/* ===== Journey Cards ===== */
 	.journey-list { display: flex; flex-direction: column; gap: 20px; }
+	.journey-pagination{
+		display:flex; justify-content:space-between; align-items:center; gap:12px 20px; flex-wrap:wrap;
+		margin-top:24px; padding:16px 18px; background:var(--paper); border:1px solid var(--line);
+		border-radius:var(--radius-m); box-shadow:var(--shadow-1);
+	}
+	.journey-pagination-summary, .journey-pagination-current{ color:var(--charcoal-soft); font-size:.84rem; font-weight:600; }
+	.journey-pagination-controls{ display:flex; align-items:center; gap:12px; }
+	.journey-page-link{
+		display:inline-flex; align-items:center; gap:7px; padding:8px 13px; border:1px solid var(--line);
+		border-radius:var(--radius-s); color:var(--flag-green); font-size:.84rem; font-weight:700;
+		text-decoration:none; transition:background .15s ease, border-color .15s ease;
+	}
+	.journey-page-link:hover{ background:#e6f3ee; border-color:var(--flag-green); }
+	.journey-page-link.is-disabled{ color:#9aa59f; pointer-events:none; }
+	@media (max-width:600px){
+		.journey-pagination{ align-items:flex-start; flex-direction:column; }
+		.journey-pagination-controls{ width:100%; justify-content:space-between; }
+	}
 
 	.journey-card {
 		background: var(--paper);
@@ -350,22 +368,7 @@
 		{% if search_error %}
 		<div class="empty-state"><i class="bi bi-exclamation-circle"></i>{{ search_error }}</div>
 		{% elif schedules %}
-		<div class="section-label">{% if searched %}Available Trains{% else %}Today's Upcoming Trains{% endif %}</div>
-		<div class="train-strip">
-			{% for train in trains %}
-			<div class="train-strip-card" data-schedule-search-item>
-				<div class="train-strip-icon"><i class="bi bi-train-front"></i></div>
-				<div class="train-strip-info">
-					<div class="name">{{ train.train_name }}</div>
-					<div class="meta">No. {{ train.train_number }} · {{ train.total_seats }} seats</div>
-				</div>
-			</div>
-			{% empty %}
-			<div class="empty-state" style="grid-column:1/-1;"><i class="bi bi-train-front"></i>No train information available.</div>
-			{% endfor %}
-		</div>
-
-		<div class="section-label">Upcoming Journeys</div>
+		<div class="section-label" id="upcoming-journeys">Upcoming Journeys</div>
 		<div class="journey-list">
 			{% for schedule in schedules %}
 			<div class="journey-card" data-schedule-search-item>
@@ -407,6 +410,24 @@
 			<div class="empty-state"><i class="bi bi-calendar-x"></i>No train schedules available.</div>
 			{% endfor %}
 		</div>
+		{% if schedule_page.has_other_pages %}
+		<nav class="journey-pagination" aria-label="Upcoming journey pages">
+			<span class="journey-pagination-summary">Showing {{ schedule_page.start_index }} to {{ schedule_page.end_index }} of {{ schedule_page.paginator.count }} journeys</span>
+			<div class="journey-pagination-controls">
+				{% if schedule_page.has_previous %}
+				<a class="journey-page-link" href="{{ previous_page_url }}"><i class="bi bi-arrow-left"></i> Previous</a>
+				{% else %}
+				<span class="journey-page-link is-disabled" aria-disabled="true"><i class="bi bi-arrow-left"></i> Previous</span>
+				{% endif %}
+				<span class="journey-pagination-current">Page {{ schedule_page.number }} of {{ schedule_page.paginator.num_pages }}</span>
+				{% if schedule_page.has_next %}
+				<a class="journey-page-link" href="{{ next_page_url }}">Next <i class="bi bi-arrow-right"></i></a>
+				{% else %}
+				<span class="journey-page-link is-disabled" aria-disabled="true">Next <i class="bi bi-arrow-right"></i></span>
+				{% endif %}
+			</div>
+		</nav>
+		{% endif %}
 		{% elif searched %}
 		<div class="empty-state"><i class="bi bi-calendar-x"></i>No trains found for this route and date.</div>
 		{% else %}

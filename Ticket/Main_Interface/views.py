@@ -12,6 +12,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.hashers import make_password
 from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import EmailMessage, send_mail
+from django.core.paginator import Paginator
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
@@ -536,12 +537,18 @@ def train_schedule(request):
             departure_time__gte=now,
         ).order_by("departure_time")
 
-    trains = TrainInformation.objects.filter(
-        id__in=schedules.values_list("train_id", flat=True)
-    ).order_by("train_number").distinct()
+    schedule_page = Paginator(schedules, 10).get_page(request.GET.get("page"))
+
+    def page_url(page_number):
+        query = request.GET.copy()
+        query["page"] = page_number
+        return f"?{query.urlencode()}#upcoming-journeys"
+
     return render(request, "Main_Interface/train_schedule.html", {
-        "trains": trains,
-        "schedules": schedules,
+        "schedules": schedule_page.object_list,
+        "schedule_page": schedule_page,
+        "previous_page_url": page_url(schedule_page.previous_page_number()) if schedule_page.has_previous() else None,
+        "next_page_url": page_url(schedule_page.next_page_number()) if schedule_page.has_next() else None,
         "stations": stations,
         "searched": searched,
         "search_error": search_error,
