@@ -184,6 +184,10 @@
         .search input:focus{ outline: none; border-color: var(--flag-green); background: #fff; box-shadow: 0 0 0 4px rgba(0,106,78,.1); }
 
         .table-scroll{ overflow-x: auto; }
+        .train-pagination{ display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 22px; border-top: 1px solid var(--line); }
+        .pagination-summary, .pagination-current{ color: var(--charcoal-soft); font-size: .82rem; font-weight: 600; }
+        .pagination-controls{ display: flex; align-items: center; gap: 10px; }
+        .btn[aria-disabled="true"]{ opacity: .45; pointer-events: none; }
         .tbl{ width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 620px; }
         .tbl th{ background: #f5f9f7; color: var(--charcoal-soft); font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; text-align: left; padding: 12px 22px; white-space: nowrap; border-bottom: 1px solid var(--line); }
         .tbl td{ padding: 14px 22px; border-bottom: 1px solid #e9f0ec; vertical-align: middle; color: var(--charcoal); }
@@ -295,7 +299,7 @@
 
         <div class="topbar-right">
         {% if user.is_authenticated %}
-            <a class="hdr-btn" href="{% if user.is_superuser %}{% url 'superuser_dashboard' %}{% else %}{% url 'admin_dashboard' %}{% endif %}">Dashboard</a>
+            
             <div class="user-menu" id="userMenu">
                 <button type="button" class="user-trigger" onclick="toggleUserMenu()" aria-haspopup="true">
                     <span class="avatar sm">{{ user.username|slice:":2" }}</span>
@@ -303,9 +307,7 @@
                 </button>
                 <div class="user-dropdown">
                     <div class="who"><b>{{ user.username }}</b><span>{% if user.is_superuser %}Superuser{% else %}Administrator{% endif %}</span></div>
-                    {% if user.is_superuser %}
-                        <a href="{% url 'superuser_dashboard' %}"><i class="bi bi-person"></i> Profile</a>
-                    {% else %}
+                    {% if not user.is_superuser %}
                         <a href="{% url 'admin_profile' %}"><i class="bi bi-person"></i> Profile</a>
                     {% endif %}
                     <form method="post" action="{% url 'superuser_logout' %}">

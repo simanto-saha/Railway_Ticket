@@ -37,14 +37,18 @@
         <h2><i class="bi bi-train-front"></i> Train information</h2>
         <div class="card-tools">
             <label class="search"><i class="bi bi-search"></i><input type="search" placeholder="Search trains" data-filter="trainTable" aria-label="Search trains"></label>
+            <a class="btn btn-ghost btn-sm" href="{% url 'train_export' %}"><i class="bi bi-file-earmark-excel"></i> Export Excel</a>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('trainImportFile').click()"><i class="bi bi-upload"></i> Import Excel</button>
             <button class="btn btn-primary btn-sm" onclick="openCreateTrain()"><i class="bi bi-plus-lg"></i> Add train</button>
+            <input type="file" id="trainImportFile" accept=".xlsx" hidden>
         </div>
     </div>
+    <div id="trainImportMessage" class="success-text" role="status" hidden></div>
     <div class="table-scroll">
     <table class="tbl" id="trainTable">
         <thead><tr><th>Train number</th><th>Train name</th><th>Total seats</th><th>Actions</th></tr></thead>
         <tbody id="trainTableBody">
-        {% for train in trains %}
+        {% for train in train_page %}
         <tr id="train-row-{{ train.pk }}">
             <td class="num"><span class="badge">{{ train.train_number }}</span></td>
             <td class="strong">{{ train.train_name }}</td>
@@ -62,6 +66,24 @@
         </tbody>
     </table>
     </div>
+    {% if train_page.has_other_pages %}
+    <nav class="train-pagination" aria-label="Train list pages">
+        <span class="pagination-summary">Showing {{ train_page.start_index }} to {{ train_page.end_index }} of {{ train_page.paginator.count }} trains</span>
+        <div class="pagination-controls">
+            {% if train_page.has_previous %}
+            <a class="btn btn-ghost btn-sm" href="?train_page={{ train_page.previous_page_number }}#trains">Previous</a>
+            {% else %}
+            <span class="btn btn-ghost btn-sm" aria-disabled="true">Previous</span>
+            {% endif %}
+            <span class="pagination-current">Page {{ train_page.number }} of {{ train_page.paginator.num_pages }}</span>
+            {% if train_page.has_next %}
+            <a class="btn btn-ghost btn-sm" href="?train_page={{ train_page.next_page_number }}#trains">Next</a>
+            {% else %}
+            <span class="btn btn-ghost btn-sm" aria-disabled="true">Next</span>
+            {% endif %}
+        </div>
+    </nav>
+    {% endif %}
 </section>
 
 <!-- Schedules -->
@@ -364,6 +386,34 @@ function openCreateTrain() {
     document.getElementById('trainError').style.display = 'none';
     openModal('trainModal');
 }
+
+document.getElementById('trainImportFile').addEventListener('change', async function() {
+    if (!this.files.length) return;
+    const message = document.getElementById('trainImportMessage');
+    const formData = new FormData();
+    formData.append('file', this.files[0]);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    message.hidden = true;
+
+    try {
+        const response = await fetch('{% url "train_import" %}', { method: 'POST', body: formData });
+        const result = await response.json();
+        message.classList.toggle('error-text', !response.ok || !result.success);
+        message.classList.toggle('success-text', response.ok && result.success);
+        message.textContent = result.success
+            ? `Import complete: ${result.created} added, ${result.updated} updated.`
+            : result.error;
+        message.hidden = false;
+        if (result.success) window.location.reload();
+    } catch {
+        message.classList.add('error-text');
+        message.classList.remove('success-text');
+        message.textContent = 'Import failed. Please try again.';
+        message.hidden = false;
+    } finally {
+        this.value = '';
+    }
+});
 
 function openCreateSchedule() {
     const form = document.getElementById('scheduleForm');

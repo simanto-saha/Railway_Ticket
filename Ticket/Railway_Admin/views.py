@@ -1,19 +1,25 @@
 import secrets
 import string
+from io import BytesIO
+from zipfile import BadZipFile
 
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import PasswordChangeForm
 from django.core.mail import send_mail
 from django.conf import settings
 from django.db import transaction
+from django.core.paginator import Paginator
 from django.urls import reverse
 from django.shortcuts import render, redirect
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.dateparse import parse_datetime
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_GET, require_POST
+from openpyxl import Workbook, load_workbook
+from openpyxl.utils.exceptions import InvalidFileException
 from .models import TrainInformation, TrainSchedule, TrainDriverInformation
 from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
@@ -36,12 +42,11 @@ def superuser_dashboard(request):
             return redirect('superuser_login')
         if not request.user.adminprofile.one_time_password:
             return redirect('admin_password_change')
-        context = {
-            'trains': TrainInformation.objects.all(),
-            'schedules': TrainSchedule.objects.select_related('train').all(),
-            'drivers': TrainDriverInformation.objects.select_related('train').all(),
-        }
-        return render(request, 'Railway_Admin/admin_dashboard.html', context)
+        return render(
+            request,
+            'Railway_Admin/admin_dashboard.html',
+            _admin_dashboard_context(request),
+        )
 
     profiles = AdminProfile.objects.select_related('user').all()
     return render(request, 'Railway_Admin/superuser_dashboard.html', {'profiles': profiles})
@@ -231,16 +236,137 @@ def is_admin(user):
     return user.is_authenticated and hasattr(user, 'adminprofile')
 
 
+def _admin_dashboard_context(request):
+    trains = TrainInformation.objects.order_by('train_number')
+    return {
+        'trains': trains,
+        'train_page': Paginator(trains, 10).get_page(request.GET.get('train_page')),
+        'schedules': TrainSchedule.objects.select_related('train').all(),
+        'drivers': TrainDriverInformation.objects.select_related('train').all(),
+    }
+
+
 @user_passes_test(is_admin, login_url='superuser_login')
 def admin_dashboard(request):
     if not request.user.adminprofile.one_time_password:
         return redirect('admin_password_change')
-    context = {
-        'trains': TrainInformation.objects.all(),
-        'schedules': TrainSchedule.objects.select_related('train').all(),
-        'drivers': TrainDriverInformation.objects.select_related('train').all(),
-    }
-    return render(request, 'Railway_Admin/admin_dashboard.html', context)
+    return render(request, 'Railway_Admin/admin_dashboard.html', _admin_dashboard_context(request))
+
+
+@user_passes_test(is_admin, login_url='superuser_login')
+@require_GET
+def train_export(request):
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = 'Trains'
+    worksheet.append(['Train Number', 'Train Name', 'Total Seats'])
+
+    for train in TrainInformation.objects.order_by('train_number'):
+        worksheet.append([train.train_number, train.train_name, train.total_seats])
+
+    output = BytesIO()
+    workbook.save(output)
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = 'attachment; filename="trains.xlsx"'
+    return response
+
+
+@user_passes_test(is_admin, login_url='superuser_login')
+@require_POST
+def train_import(request):
+    uploaded_file = request.FILES.get('file')
+    if not uploaded_file or not uploaded_file.name.lower().endswith('.xlsx'):
+        return JsonResponse({'success': False, 'error': 'Choose an .xlsx Excel file.'}, status=400)
+
+    try:
+        workbook = load_workbook(uploaded_file, read_only=True, data_only=True)
+        worksheet = workbook.active
+        rows = worksheet.iter_rows(values_only=True)
+        headers = next(rows, None)
+        if not headers:
+            return JsonResponse({'success': False, 'error': 'The Excel sheet is empty.'}, status=400)
+
+        header_indexes = {
+            str(value).strip().lower(): index
+            for index, value in enumerate(headers)
+            if value is not None
+        }
+        required_headers = ('train number', 'train name', 'total seats')
+        if any(header not in header_indexes for header in required_headers):
+            return JsonResponse({
+                'success': False,
+                'error': 'Required headers: Train Number, Train Name, Total Seats.',
+            }, status=400)
+
+        valid_trains = []
+        errors = []
+        seen_train_numbers = set()
+        for row_number, row in enumerate(rows, start=2):
+            if not any(value is not None and str(value).strip() for value in row):
+                continue
+
+            def value_for(header):
+                index = header_indexes[header]
+                return row[index] if index < len(row) else None
+
+            raw_number = value_for('train number')
+            if isinstance(raw_number, float) and raw_number.is_integer():
+                train_number = str(int(raw_number))
+            else:
+                train_number = str(raw_number or '').strip()
+            train_name = str(value_for('train name') or '').strip()
+            try:
+                seats_value = float(value_for('total seats'))
+                total_seats = int(seats_value)
+                if not seats_value.is_integer() or total_seats <= 0:
+                    raise ValueError
+            except (TypeError, ValueError, OverflowError):
+                total_seats = 0
+
+            if not train_number or not train_name or total_seats <= 0:
+                errors.append(f'Row {row_number}: train number, train name, and positive whole-number seats are required.')
+            elif train_number in seen_train_numbers:
+                errors.append(f'Row {row_number}: duplicate train number {train_number}.')
+            else:
+                seen_train_numbers.add(train_number)
+                valid_trains.append({
+                    'train_number': train_number,
+                    'train_name': train_name,
+                    'total_seats': total_seats,
+                })
+        workbook.close()
+    except (InvalidFileException, BadZipFile, OSError, ValueError, IndexError):
+        return JsonResponse({'success': False, 'error': 'Could not read this Excel file.'}, status=400)
+
+    if errors:
+        return JsonResponse({'success': False, 'error': ' '.join(errors[:10])}, status=400)
+    if not valid_trains:
+        return JsonResponse({'success': False, 'error': 'The Excel sheet contains no train rows.'}, status=400)
+
+    created_count = 0
+    updated_count = 0
+    with transaction.atomic():
+        for train_data in valid_trains:
+            _, created = TrainInformation.objects.update_or_create(
+                train_number=train_data['train_number'],
+                defaults={
+                    'train_name': train_data['train_name'],
+                    'total_seats': train_data['total_seats'],
+                },
+            )
+            if created:
+                created_count += 1
+            else:
+                updated_count += 1
+
+    return JsonResponse({
+        'success': True,
+        'created': created_count,
+        'updated': updated_count,
+    })
 
 
 @user_passes_test(is_admin, login_url='superuser_login')

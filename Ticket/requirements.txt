@@ -8,3 +8,4 @@ channels-redis
 redis
 requests>=2.32,<3
 reportlab>=4.4,<5
+openpyxl>=3.1,<4
