@@ -5,6 +5,7 @@
 {% block page_sub %}Manage trains, schedules, and drivers for RailwaySheba.{% endblock %}
 {% block content %}
 
+<section id="panel-overview">
 <div class="kpis">
     <div class="kpi">
         <div class="kpi-top"><span>Total trains</span><em>TR</em></div>
@@ -28,9 +29,10 @@
     <div class="qlink"><b>Train schedule</b><a href="#schedules">Open schedules</a></div>
     <div class="qlink"><b>Train drivers</b><a href="#drivers">Open desk</a></div>
 </div>
+</section>
 
 <!-- Trains -->
-<section class="card" id="panel-trains">
+<section class="card" id="panel-trains" hidden>
     <div class="card-head">
         <h2><i class="bi bi-train-front"></i> Train information</h2>
         <div class="card-tools">
@@ -218,17 +220,22 @@
 </div>
 
 <script>
-/* ---------- Sidebar panel switching (#trains / #schedules / #drivers) ---------- */
-const PANELS = ['trains', 'schedules', 'drivers'];
+/* ---------- Sidebar panel switching ---------- */
+const PANELS = ['overview', 'trains', 'schedules', 'drivers'];
 function showPanel(name) {
-    if (!PANELS.includes(name)) name = 'trains';
-    PANELS.forEach(p => { document.getElementById('panel-' + p).hidden = (p !== name); });
+    if (!PANELS.includes(name)) name = 'overview';
+    const showOverview = name === 'overview';
+    document.getElementById('panel-overview').hidden = !showOverview;
+    ['trains', 'schedules', 'drivers'].forEach(panel => {
+        document.getElementById('panel-' + panel).hidden = !showOverview && panel !== name;
+    });
+    document.querySelector('.page-card').hidden = !showOverview;
     document.querySelectorAll('.rs-link[data-panel]').forEach(a => {
         a.classList.toggle('is-active', a.dataset.panel === name);
     });
 }
 window.addEventListener('hashchange', () => showPanel(location.hash.slice(1)));
-showPanel(location.hash.slice(1));
+showPanel(location.hash.slice(1) || 'overview');
 
 /* ---------- Counters (stat cards + sidebar badges) ---------- */
 function refreshCounts() {

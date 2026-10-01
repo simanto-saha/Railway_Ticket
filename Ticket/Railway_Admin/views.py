@@ -11,6 +11,7 @@ from django.db import transaction
 from django.urls import reverse
 from django.shortcuts import render, redirect
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.dateparse import parse_datetime
 from django.contrib.auth.decorators import login_required
 from .models import TrainInformation, TrainSchedule, TrainDriverInformation
@@ -24,8 +25,24 @@ def is_superuser(user):
     return user.is_authenticated and user.is_superuser
 
 
-@user_passes_test(is_superuser, login_url='superuser_login')
 def superuser_dashboard(request):
+    if not request.user.is_authenticated:
+        return render(request, 'Railway_Admin/superuser_base.html', {
+            'login_landing': True,
+            'next': reverse('superuser_dashboard'),
+        })
+    if not request.user.is_superuser:
+        if not hasattr(request.user, 'adminprofile'):
+            return redirect('superuser_login')
+        if not request.user.adminprofile.one_time_password:
+            return redirect('admin_password_change')
+        context = {
+            'trains': TrainInformation.objects.all(),
+            'schedules': TrainSchedule.objects.select_related('train').all(),
+            'drivers': TrainDriverInformation.objects.select_related('train').all(),
+        }
+        return render(request, 'Railway_Admin/admin_dashboard.html', context)
+
     profiles = AdminProfile.objects.select_related('user').all()
     return render(request, 'Railway_Admin/superuser_dashboard.html', {'profiles': profiles})
 
@@ -38,10 +55,23 @@ def superuser_login(request):
 
         if user and user.check_password(password) and (user.is_superuser or hasattr(user, 'adminprofile')):
             login(request, user)
+            requested_next = request.POST.get('next', '')
             if user.is_superuser:
-                redirect_url = request.POST.get('next') or reverse('superuser_dashboard')
+                redirect_url = (
+                    requested_next
+                    if url_has_allowed_host_and_scheme(
+                        requested_next,
+                        allowed_hosts={request.get_host()},
+                        require_https=request.is_secure(),
+                    )
+                    else reverse('superuser_dashboard')
+                )
             elif user.adminprofile.one_time_password:
-                redirect_url = reverse('admin_dashboard')
+                redirect_url = (
+                    requested_next
+                    if requested_next == reverse('superuser_dashboard')
+                    else reverse('admin_dashboard')
+                )
             else:
                 redirect_url = reverse('admin_password_change')
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
