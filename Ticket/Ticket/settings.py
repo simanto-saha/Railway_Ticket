@@ -28,7 +28,7 @@ env = environ.Env()
 SECRET_KEY = 'django-insecure-w5surd)!!b6ge3u_orh9m+6lky(t*a^9w)&qt=p5udasi+k$k*'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = ["192.168.0.112", "localhost", "127.0.0.1"]
 
@@ -52,6 +52,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -136,6 +137,12 @@ STATICFILES_DIRS = [
     BASE_DIR / 'Main_Interface' / 'static',
 ]
 
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -184,3 +191,14 @@ SSL_COMMERZ_VALIDATION_URL = os.getenv(
     "SSL_COMMERZ_VALIDATION_URL",
     "https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php",
 )
+
+# settings.py
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+    }
+}
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+SESSION_CACHE_ALIAS = "default"

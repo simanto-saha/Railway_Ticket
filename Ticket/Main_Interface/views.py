@@ -33,16 +33,45 @@ from redis.exceptions import LockError
 from .ticket_pdf import create_ticket_pdf
 
 logger = logging.getLogger(__name__)
+from django.core.cache import cache
+
+def expire_pending_throttled():
+    if cache.add("expire_pending:lock", 1, 10):
+        expire_pending_reservations()
+
+
+def get_stations():
+    stations = cache.get("stations:all")
+    if stations is None:
+        stations = sorted(
+            {
+                s.strip()
+                for s in (
+                    set(TrainSchedule.objects.values_list('source_station', flat=True))
+                    | set(TrainSchedule.objects.values_list('destination_station', flat=True))
+                )
+                if s and s.strip()
+            },
+            key=str.casefold,
+        )
+        cache.set("stations:all", stations, 600)
+    return stations
 
 
 def home_page(request):
-    expire_pending_reservations()
-    schedules = TrainSchedule.objects.select_related('train').filter(
-        departure_time__gte=timezone.now()
-    ).order_by('departure_time')
+    expire_pending_throttled()
+    data = cache.get("home:featured")
+    if data is None:
+        upcoming = list(
+            TrainSchedule.objects.select_related('train')
+            .filter(departure_time__gte=timezone.now())
+            .order_by('departure_time')[:4]
+        )
+        data = {"featured": upcoming[:3], "more": len(upcoming) > 3}
+        cache.set("home:featured", data, 30)
     return render(request, "Main_Interface/home_page.html", {
-        'featured_schedules': schedules[:3],
-        'has_more_schedules': schedules.count() > 3,
+        'featured_schedules': data["featured"],
+        'has_more_schedules': data["more"],
     })
 
 
@@ -401,6 +430,18 @@ def ticket_page(request):
     ).select_related("train"):
         schedules_by_id.setdefault(pending_schedule.id, pending_schedule)
     schedules = sorted(schedules_by_id.values(), key=lambda schedule: schedule.departure_time)
+
+    #Checking only 
+    cutoff = timezone.now() - RESERVATION_DURATION
+    seat_rows = TrainTicket.objects.filter(
+        train_schedule__in=schedules,
+    ).filter(
+        Q(status="booked") | Q(status="pending", booking_time__gte=cutoff)
+    ).values_list("train_schedule_id", "seat_number", "status")
+
+    booked_map, pending_map = {}, {}
+    for sid, seat, st in seat_rows:
+        (booked_map if st == "booked" else pending_map).setdefault(sid, set()).add(seat)
 
     train_list = []
     for sched in schedules:

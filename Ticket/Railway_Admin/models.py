@@ -38,8 +38,14 @@ class TrainSchedule(models.Model):
     singdha_ticket_price = models.IntegerField(blank=True, null=True)
     s_chair_ticket_price = models.IntegerField(blank=True, null=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["departure_time"], name="ts_departure_idx"),
+        ]
+
     def __str__(self):
         return f"{self.train.train_name} - {self.source_station} to {self.destination_station}"
+    
 
 
 class TrainDriverInformation(models.Model):
@@ -86,12 +92,15 @@ class TrainTicket(models.Model):
 
     class Meta:
         constraints = [
-            # DB level e double booking ekdom rokhbe
             models.UniqueConstraint(
                 fields=["train_schedule", "seat_number"],
                 condition=Q(status__in=("pending", "booked")),
                 name="unique_booked_seat_per_schedule",
             ),
+        ]
+        indexes = [
+            models.Index(fields=["status", "booking_time"], name="tt_status_btime_idx"),
+            models.Index(fields=["user", "status", "booking_time"], name="tt_user_status_btime_idx"),
         ]
 
     def save(self, *args, **kwargs):
