@@ -352,11 +352,17 @@ def ticket_page(request):
     destination = request.GET.get('destination', '').strip()
     date_str = request.GET.get('date', '').strip()
 
-    stations = sorted(set(
-        TrainSchedule.objects.values_list('source_station', flat=True)
-    ) | set(
-        TrainSchedule.objects.values_list('destination_station', flat=True)
-    ))
+    stations = sorted(
+        {
+            station.strip()
+            for station in (
+                set(TrainSchedule.objects.values_list('source_station', flat=True))
+                | set(TrainSchedule.objects.values_list('destination_station', flat=True))
+            )
+            if station and station.strip()
+        },
+        key=str.casefold,
+    )
 
     search_error = None
     searched = bool(source or destination or date_str)
@@ -497,11 +503,17 @@ def train_schedule(request):
     source = request.GET.get("source", "").strip()
     destination = request.GET.get("destination", "").strip()
     date_str = request.GET.get("date", "").strip()
-    stations = sorted(set(
-        TrainSchedule.objects.values_list("source_station", flat=True)
-    ) | set(
-        TrainSchedule.objects.values_list("destination_station", flat=True)
-    ))
+    stations = sorted(
+        {
+            station.strip()
+            for station in (
+                set(TrainSchedule.objects.values_list("source_station", flat=True))
+                | set(TrainSchedule.objects.values_list("destination_station", flat=True))
+            )
+            if station and station.strip()
+        },
+        key=str.casefold,
+    )
 
     searched = bool(source or destination or date_str)
     search_error = None

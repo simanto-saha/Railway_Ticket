@@ -9,27 +9,17 @@
 
     /* ---- Search Hero ---- */
     .rs-search-hero {
-        background: linear-gradient(155deg, #0b1f16 0%, #0f2d20 55%, #0a1a12 100%);
-        border-radius: var(--radius-l);
-        padding: 2.5rem 2rem;
-        color: #fff;
+        background: transparent;
+        padding: 0;
+        color: var(--ink);
         margin-bottom: 2rem;
-        box-shadow: var(--shadow-2);
-        position: relative;
-        overflow: hidden;
-        border-top: 4px solid var(--gold);
-    }
-    .rs-search-hero::after{
-        content:"";
-        position:absolute; right:-60px; top:-60px;
-        width:220px; height:220px; border-radius:50%;
-        background: radial-gradient(circle, rgba(212,175,55,0.25), transparent 70%);
+        box-shadow: none;
     }
     .rs-search-hero h2 {
         font-family:'Merriweather',serif; font-weight: 700; font-size: 1.9rem;
-        color: #fff; margin-bottom: .3rem; position: relative;
+        color: var(--ink); margin-bottom: .3rem;
     }
-    .rs-search-hero p.subtitle { opacity: .78; margin-bottom: 1.75rem; font-size: .96rem; position: relative; }
+    .rs-search-hero p.subtitle { color: var(--charcoal-soft); margin-bottom: 1.75rem; font-size: .96rem; }
     .rs-search-card {
         background: #fff; border-radius: var(--radius-m); padding: 1.5rem;
         box-shadow: var(--shadow-2); position: relative;
@@ -50,6 +40,19 @@
         outline: none; border-color: var(--flag-green); background: #fff;
         box-shadow: 0 0 0 4px rgba(0,106,78,0.12);
     }
+    .ticket-station-autocomplete{ position:relative; }
+    .ticket-station-suggestions{
+        position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:20; max-height:240px; overflow-y:auto;
+        padding:4px; margin:0; list-style:none; background:#fff; border:1px solid var(--line);
+        border-radius:var(--radius-s); box-shadow:var(--shadow-2);
+    }
+    .ticket-station-suggestions[hidden]{ display:none; }
+    .ticket-station-suggestion{
+        display:block; width:100%; padding:9px 11px; border:0; border-radius:4px; background:transparent;
+        color:var(--ink); text-align:left; font:inherit; cursor:pointer;
+    }
+    .ticket-station-suggestion:hover, .ticket-station-suggestion.is-active{ background:#e6f3ee; color:var(--flag-green); }
+    .ticket-station-suggestion-empty{ padding:9px 11px; color:var(--charcoal-soft); font-size:.88rem; }
 
     /* ---- Train Result Cards ---- */
     .rs-results-heading{
@@ -302,22 +305,18 @@
         <div class="rs-search-card">
             <form method="get" class="row g-3 align-items-end">
                 <div class="col-md-3">
-                    <label class="form-label fw-semibold">From</label>
-                    <select name="source" class="form-select" required>
-                        <option value="">Select Station</option>
-                        {% for st in stations %}
-                        <option value="{{ st }}" {% if request.GET.source == st %}selected{% endif %}>{{ st }}</option>
-                        {% endfor %}
-                    </select>
+                    <label class="form-label fw-semibold" for="ticketSource">From</label>
+                    <div class="ticket-station-autocomplete">
+                        <input id="ticketSource" name="source" type="text" class="form-control" value="{{ request.GET.source }}" placeholder="Type station name" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ticketSourceSuggestions" required>
+                        <ul class="ticket-station-suggestions" id="ticketSourceSuggestions" role="listbox" hidden></ul>
+                    </div>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label fw-semibold">To</label>
-                    <select name="destination" class="form-select" required>
-                        <option value="">Select Station</option>
-                        {% for st in stations %}
-                        <option value="{{ st }}" {% if request.GET.destination == st %}selected{% endif %}>{{ st }}</option>
-                        {% endfor %}
-                    </select>
+                    <label class="form-label fw-semibold" for="ticketDestination">To</label>
+                    <div class="ticket-station-autocomplete">
+                        <input id="ticketDestination" name="destination" type="text" class="form-control" value="{{ request.GET.destination }}" placeholder="Type station name" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ticketDestinationSuggestions" required>
+                        <ul class="ticket-station-suggestions" id="ticketDestinationSuggestions" role="listbox" hidden></ul>
+                    </div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Date of Journey</label>
@@ -503,6 +502,10 @@
     </div>
 </div>
 
+<div id="ticketStationOptions" hidden aria-hidden="true">
+    {% for st in stations %}<button type="button" data-station="{{ st }}">{{ st }}</button>{% endfor %}
+</div>
+
 <script>
 // Server theke asha limit (aj ar koyta ticket kinte parbe). Na ashle default 4, 0 hole 0-i thakbe.
 const _rem = parseInt("{{ remaining_today|default_if_none:'' }}", 10);
@@ -518,6 +521,87 @@ const HOLD_URL_TEMPLATE = "{% url 'hold_seat' 0 %}";
 const PAYMENT_URL = "{% url 'start_ticket_payment' %}";
 const ABANDON_PAYMENT_URL = "{% url 'abandon_ticket_payment' %}";
 const HOME_URL = "{% url 'home_page' %}";
+
+// Preloaded station data is filtered only after a user starts typing.
+const ticketStationNames = Array.from(document.querySelectorAll('#ticketStationOptions [data-station]'))
+    .map(option => option.dataset.station);
+
+document.querySelectorAll('.ticket-station-autocomplete').forEach(wrapper => {
+    const input = wrapper.querySelector('input');
+    const list = wrapper.querySelector('.ticket-station-suggestions');
+    let activeIndex = -1;
+
+    function closeSuggestions() {
+        list.hidden = true;
+        input.setAttribute('aria-expanded', 'false');
+        input.removeAttribute('aria-activedescendant');
+        activeIndex = -1;
+    }
+
+    function chooseStation(value) {
+        input.value = value;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        closeSuggestions();
+    }
+
+    function renderSuggestions() {
+        const query = input.value.trim().toLocaleLowerCase();
+        list.replaceChildren();
+        activeIndex = -1;
+        if (!query) {
+            closeSuggestions();
+            return;
+        }
+
+        const matches = ticketStationNames.filter(station => station.toLocaleLowerCase().includes(query)).slice(0, 5);
+        if (!matches.length) {
+            const empty = document.createElement('li');
+            empty.className = 'ticket-station-suggestion-empty';
+            empty.textContent = 'No matching stations';
+            list.appendChild(empty);
+        } else {
+            matches.forEach((station, index) => {
+                const item = document.createElement('li');
+                const option = document.createElement('button');
+                option.type = 'button';
+                option.className = 'ticket-station-suggestion';
+                option.id = input.id + '-option-' + index;
+                option.setAttribute('role', 'option');
+                option.setAttribute('aria-selected', 'false');
+                option.textContent = station;
+                option.addEventListener('mousedown', event => event.preventDefault());
+                option.addEventListener('click', () => chooseStation(station));
+                item.appendChild(option);
+                list.appendChild(item);
+            });
+        }
+        list.hidden = false;
+        input.setAttribute('aria-expanded', 'true');
+    }
+
+    input.addEventListener('input', renderSuggestions);
+    input.addEventListener('keydown', event => {
+        const options = list.querySelectorAll('[role="option"]');
+        if (event.key === 'Escape') {
+            closeSuggestions();
+        } else if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && options.length) {
+            event.preventDefault();
+            activeIndex = event.key === 'ArrowDown'
+                ? (activeIndex + 1) % options.length
+                : (activeIndex - 1 + options.length) % options.length;
+            options.forEach((option, index) => {
+                const active = index === activeIndex;
+                option.classList.toggle('is-active', active);
+                option.setAttribute('aria-selected', String(active));
+            });
+            input.setAttribute('aria-activedescendant', options[activeIndex].id);
+        } else if (event.key === 'Enter' && activeIndex >= 0 && options[activeIndex]) {
+            event.preventDefault();
+            chooseStation(options[activeIndex].textContent);
+        }
+    });
+    input.addEventListener('blur', () => window.setTimeout(closeSuggestions, 120));
+});
 
 const selectedSeatsMap = {}; // { "trainId_classCode": { seatName: price } }
 const reservationState = {};
