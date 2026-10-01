@@ -1,1 +1,9 @@
 http://localhost:8000/superuser-dashboard/IT-Division/   (This is for super user and officer url)
+
+http://localhost:8089/
+locust -f locustfile.py
+
+daphne -b 127.0.0.1 -p 8000 Ticket.asgi:application
+daphne -b 127.0.0.1 -p 8001 Ticket.asgi:application
+daphne -b 127.0.0.1 -p 8002 Ticket.asgi:application
+daphne -b 127.0.0.1 -p 8003 Ticket.asgi:application

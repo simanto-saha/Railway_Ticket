@@ -334,6 +334,42 @@ daphne RailwaySheba.asgi:application
 
 Make sure Redis and PostgreSQL are running before testing WebSocket and database-dependent features.
 
+## Local Async Load Balancer
+
+The lightweight asyncio proxy in `Ticket/load_balancer.py` distributes HTTP and WebSocket connections across the two local Daphne processes. It checks backend TCP health every two seconds by default, uses round-robin selection among healthy backends, and re-adds a backend after it responds to a later health check. HTTP requests are streamed and the aiohttp client reuses upstream keep-alive connections.
+
+Install the proxy dependency from the Django project directory:
+
+```bash
+cd Ticket
+pip install -r requirements.txt
+```
+
+Run each process in a separate terminal from `Ticket/`:
+
+```bash
+daphne -b 127.0.0.1 -p 8000 Ticket.asgi:application
+daphne -b 127.0.0.1 -p 8001 Ticket.asgi:application
+python load_balancer.py
+```
+
+Browse to `http://127.0.0.1:9000`. Check proxy/backend availability at `/health` and request/backend counters at `/stats`. To load test the balancer, run `locust -f locustfile.py` from `Ticket/`; the included Locust user targets port `9000`.
+
+Optional environment variables:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `BALANCER_HOST` | `127.0.0.1` | Listener address |
+| `BALANCER_PORT` | `9000` | Listener port |
+| `BALANCER_BACKENDS` | `http://127.0.0.1:8000,http://127.0.0.1:8001` | Comma-separated backend URLs |
+| `BALANCER_HEALTH_INTERVAL` | `2` | Seconds between health checks |
+| `BALANCER_CONNECT_TIMEOUT` | `2` | Backend connection timeout, seconds |
+| `BALANCER_READ_TIMEOUT` | `60` | Backend request/read timeout, seconds |
+| `BALANCER_MAX_CONNECTIONS` | `4096` | Maximum pooled upstream connections |
+| `BALANCER_LOG_LEVEL` | `INFO` | Proxy log level |
+
+This listener is intentionally bound to loopback and is a local development/load-test proxy, not a hardened public edge proxy. For production internet traffic, use a maintained reverse proxy or load balancer with TLS termination, access controls, and deployment-grade monitoring.
+
 ## Project Goals
 
 RailwaySheba is designed around the following goals:

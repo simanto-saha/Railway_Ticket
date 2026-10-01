@@ -538,23 +538,55 @@ def ticket_page(request):
     })
 
 
+# Main_Interface/views.py
+#
+# Imports: views.py-te ager import gulo thakle shudhu ei duto add koro:
+#   from datetime import datetime, timedelta
+#   from django.core.cache import cache
+# (Paginator, render, timezone, TrainSchedule ager moto-i thakbe.)
+
+STATIONS_CACHE_KEY = "train_schedule:stations"
+STATIONS_CACHE_SECONDS = 600  # 10 min
+
+
+def get_stations():
+    """Distinct station names, cached. DB-te distinct hoy, Python-e full table ane na."""
+    stations = cache.get(STATIONS_CACHE_KEY)
+    if stations is None:
+        # order_by() dorkar: model-e Meta.ordering thakle distinct() bhenge jay.
+        names = set(
+            TrainSchedule.objects.order_by().values_list("source_station", flat=True).distinct()
+        )
+        names |= set(
+            TrainSchedule.objects.order_by().values_list("destination_station", flat=True).distinct()
+        )
+        stations = sorted(
+            {name.strip() for name in names if name and name.strip()},
+            key=str.casefold,
+        )
+        cache.set(STATIONS_CACHE_KEY, stations, STATIONS_CACHE_SECONDS)
+    return stations
+
+
+def day_bounds(day):
+    """[start, end) of a local calendar day, as aware datetimes.
+
+    departure_time__date=... use korle Django DATE(col AT TIME ZONE ...) banay,
+    jar upor index kaj kore na. Range query-te index kaj kore.
+    """
+    tz = timezone.get_current_timezone()
+    start = timezone.make_aware(datetime.combine(day, datetime.min.time()), tz)
+    end = timezone.make_aware(datetime.combine(day + timedelta(days=1), datetime.min.time()), tz)
+    return start, end
+
+
 def train_schedule(request):
     now = timezone.now()
     today = timezone.localdate()
     source = request.GET.get("source", "").strip()
     destination = request.GET.get("destination", "").strip()
     date_str = request.GET.get("date", "").strip()
-    stations = sorted(
-        {
-            station.strip()
-            for station in (
-                set(TrainSchedule.objects.values_list("source_station", flat=True))
-                | set(TrainSchedule.objects.values_list("destination_station", flat=True))
-            )
-            if station and station.strip()
-        },
-        key=str.casefold,
-    )
+    stations = get_stations()
 
     searched = bool(source or destination or date_str)
     search_error = None
@@ -571,24 +603,27 @@ def train_schedule(request):
             if journey_date and journey_date < today:
                 search_error = "Journey date cannot be in the past."
             elif journey_date:
-                schedule_filters = {
-                    "source_station__iexact": source,
-                    "destination_station__iexact": destination,
-                    "departure_time__date": journey_date,
-                }
-                schedules = TrainSchedule.objects.select_related("train").filter(
-                    **schedule_filters
+                day_start, day_end = day_bounds(journey_date)
+                lower = max(day_start, now) if journey_date == today else day_start
+                schedules = (
+                    TrainSchedule.objects.select_related("train")
+                    .filter(
+                        source_station__iexact=source,
+                        destination_station__iexact=destination,
+                        departure_time__gte=lower,
+                        departure_time__lt=day_end,
+                    )
+                    .order_by("departure_time")
                 )
-                if journey_date == today:
-                    schedules = schedules.filter(departure_time__gte=now)
-                schedules = schedules.order_by("departure_time")
             else:
                 search_error = "Invalid date."
     else:
-        schedules = TrainSchedule.objects.select_related("train").filter(
-            departure_time__date=today,
-            departure_time__gte=now,
-        ).order_by("departure_time")
+        _, day_end = day_bounds(today)
+        schedules = (
+            TrainSchedule.objects.select_related("train")
+            .filter(departure_time__gte=now, departure_time__lt=day_end)
+            .order_by("departure_time")
+        )
 
     schedule_page = Paginator(schedules, 10).get_page(request.GET.get("page"))
 
