@@ -21,3 +21,10 @@ media/
 # OS
 .DS_Store
 Train.session.sql
+.dockerignore
+docker-compose.yml
+Dockerfile
+docker-entrypoint.sh
+pgbouncer
+nginx
+
