@@ -5,11 +5,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Superuser Panel{% endblock %}</title>
+    <title>{% block title %}Superuser Panel{% endblock %} | RailwaySheba</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <style>
@@ -21,144 +21,237 @@
             --flag-red-2:   #cc1f34;
             --gold:         #b8860b;
             --gold-light:   #d4af37;
+            --nav:          #0a3a2a;
+            --nav-2:        #0d4733;
             --ink:          #12241d;
             --charcoal:     #3c4a44;
             --charcoal-soft:#6b7770;
             --paper:        #ffffff;
-            --mist:         #f4f7f5;
-            --line:         #d8e2dd;
-            --radius-s: 6px; --radius-m: 10px; --radius-l: 14px;
-            --shadow-1: 0 2px 8px rgba(0,60,40,0.08);
-            --shadow-2: 0 16px 40px rgba(0,40,25,0.18);
+            --mist:         #f0f4f2;
+            --line:         #dbe5e0;
+            --radius-s: 6px; --radius-m: 12px; --radius-l: 16px;
+            --shadow-1: 0 1px 2px rgba(0,50,35,.05), 0 6px 18px rgba(0,50,35,.05);
+            --shadow-2: 0 20px 50px rgba(0,40,25,.25);
+            --hdr-h: 76px;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', Arial, sans-serif; background: var(--mist); color: var(--charcoal); }
-        h1, h2, h3 { font-family: 'Merriweather', serif; color: var(--ink); }
+        body { min-height: 100vh; display: flex; flex-direction: column; font-family: 'Inter', Arial, sans-serif; background: var(--mist); color: var(--charcoal); -webkit-font-smoothing: antialiased; }
+        h1, h2, h3 { font-family: 'Inter', sans-serif; color: var(--ink); letter-spacing: -.01em; }
+        a { color: inherit; }
+        :focus-visible { outline: 2px solid var(--flag-green-3); outline-offset: 2px; }
 
-        /* ===== Identity strip ===== */
-        .gov-strip{
-            background: var(--ink);
-            color: #dfe8e4;
-            font-size: 0.76rem;
-            padding: 7px 30px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        /* ================= Identity strip ================= */
+        .gov-strip{ background: #07271c; color: #dfe8e4; font-size: .76rem; padding: 7px 30px; display: flex; align-items: center; gap: 8px; }
         .gov-strip i{ color: var(--gold-light); }
         .tri-rule{ height: 4px; background: linear-gradient(90deg, var(--flag-green) 0 66%, var(--flag-red) 66% 100%); }
 
-        /* ===== Nav ===== */
-        nav {
-            background: #ffffff;
-            border-bottom: 1px solid var(--line);
-            color: var(--ink);
-            padding: 14px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        /* ================= Header ================= */
+        .topbar{
+            position: sticky; top: 0; z-index: 30; height: var(--hdr-h);
+            display: flex; justify-content: space-between; align-items: center; padding: 0 28px;
+            background: linear-gradient(180deg, var(--nav-2), var(--nav));
+            border-bottom: 3px solid var(--gold-light); color: #fff;
         }
-        nav .brand { display: flex; align-items: center; gap: 12px; color: var(--ink); text-decoration: none; font-family:'Merriweather',serif; font-size: 19px; font-weight: 700; }
-        nav .brand img { width: 42px; height: 42px; object-fit: cover; background: var(--mist); border-radius: 50%; border: 2px solid var(--flag-green); padding: 2px; }
-        nav .brand span:first-of-type{ color: var(--ink); }
-        nav .panel-name {
-            margin-left: 4px;
-            color: var(--flag-green);
-            font-size: 12px;
-            font-weight: 700;
-            font-family: 'Inter', sans-serif;
-            text-transform: uppercase;
-            letter-spacing: .05em;
-            background: #e6f3ee;
-            padding: 4px 10px;
-            border-radius: 999px;
-        }
-        nav a, nav button {
-            color: #fff;
-            text-decoration: none;
-            background: var(--flag-green);
-            padding: 9px 18px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
+        .brand{ display: flex; align-items: center; gap: 14px; text-decoration: none; color: #fff; }
+        .brand img{ width: 46px; height: 46px; object-fit: cover; background: #fff; border-radius: 50%; padding: 3px; }
+        .brand .sep{ width: 1px; height: 38px; background: rgba(255,255,255,.22); }
+        .brand strong{ display: block; font-size: 1.28rem; font-weight: 700; line-height: 1.15; }
+        .brand small{ display: block; font-size: .82rem; color: #e7c66b; font-weight: 500; margin-top: 2px; }
+
+        .topbar-right{ display: flex; align-items: center; gap: 12px; }
+        .hdr-btn{
+            color: #fff; text-decoration: none; border: 1px solid rgba(255,255,255,.35); border-radius: 6px;
+            padding: 9px 16px; font-size: .8rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
             transition: background .15s ease;
         }
-        nav button:hover, nav a:hover { background: var(--flag-green-2); }
+        .hdr-btn:hover{ background: rgba(255,255,255,.12); }
 
-        .user-menu { position: relative; }
-        .user-trigger { background: var(--mist) !important; color: var(--ink) !important; padding: 8px 14px !important; border: 1px solid var(--line) !important; display:flex; align-items:center; gap:8px; }
-        .user-trigger:hover { background: #ecf1ef !important; }
-        .user-dropdown { display: none; position: absolute; right: 0; top: calc(100% + 10px); min-width: 180px; padding: 6px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-s); box-shadow: var(--shadow-2); z-index: 20; }
-        .user-menu.open .user-dropdown { display: block; }
-        .user-dropdown a, .user-dropdown button {
-            display: block; width: 100%; padding: 10px 12px;
-            color: var(--ink) !important; background: transparent !important;
-            border-radius: 5px; text-align: left; font-weight: 500; font-size: .9rem;
-        }
-        .user-dropdown a:hover { background: var(--mist) !important; color: var(--flag-green) !important; }
-        .user-dropdown button:hover { background: #fff2f0 !important; color: var(--flag-red-2) !important; }
-        .user-dropdown form { margin: 0; }
-
-        /* ===== Modal ===== */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(10,26,18,0.55);
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        .modal-overlay.active { display: flex; }
-        .modal-box {
-            background: #fff;
-            padding: 32px;
-            border-radius: var(--radius-m);
-            border-top: 4px solid var(--flag-green);
-            box-shadow: var(--shadow-2);
-            width: 340px;
-        }
-        .modal-box h2 { margin-bottom: 6px; font-size: 1.3rem; }
-        .modal-box .modal-sub { color: var(--charcoal-soft); font-size: .85rem; margin-bottom: 18px; }
-        .modal-box input {
-            width: 100%;
-            padding: 11px 13px;
-            margin-bottom: 12px;
-            border: 1.5px solid var(--line);
-            border-radius: var(--radius-s);
-            background: var(--mist);
-            font-family: 'Inter', sans-serif;
-            font-size: .92rem;
-            color: var(--ink);
-            transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
-        }
-        .modal-box input:focus {
-            outline: none;
-            border-color: var(--flag-green);
-            background: #fff;
-            box-shadow: 0 0 0 4px rgba(0,106,78,0.12);
-        }
-        .modal-box button.submit-btn {
-            width: 100%;
-            background: var(--flag-green);
-            color: #fff;
-            padding: 11px;
-            border: none;
-            border-radius: 999px;
-            font-weight: 700;
-            font-size: .92rem;
-            cursor: pointer;
+        .user-menu{ position: relative; }
+        .user-trigger{
+            display: flex; align-items: center; gap: 10px; cursor: pointer; color: #fff;
+            background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.35); border-radius: 6px;
+            padding: 6px 12px 6px 7px; font: 700 .8rem 'Inter', sans-serif; letter-spacing: .04em; text-transform: uppercase;
             transition: background .15s ease;
         }
-        .modal-box button.submit-btn:hover { background: var(--flag-green-2); }
-        .modal-box .close-btn { float: right; background: none !important; color: var(--charcoal-soft) !important; font-size: 20px; padding: 0 !important; line-height: 1; }
-        .modal-box .close-btn:hover { color: var(--ink) !important; }
-        .error-text { color: var(--flag-red-2); font-size: 13px; margin-bottom: 12px; background: #fbe4e6; padding: 8px 12px; border-radius: var(--radius-s); }
+        .user-trigger:hover{ background: rgba(255,255,255,.16); }
+        .avatar{ width: 34px; height: 34px; border-radius: 50%; background: #e7c66b; color: #3a2a00; display: grid; place-items: center; font-weight: 800; font-size: .82rem; flex-shrink: 0; text-transform: uppercase; }
+        .avatar.sm{ width: 28px; height: 28px; font-size: .74rem; }
+        .avatar.soft{ background: #e6f3ee; color: var(--flag-green); }
+        .user-dropdown{
+            display: none; position: absolute; right: 0; top: calc(100% + 10px); min-width: 220px; padding: 6px;
+            background: #fff; border: 1px solid var(--line); border-radius: var(--radius-m); box-shadow: var(--shadow-2); z-index: 40;
+        }
+        .user-menu.open .user-dropdown{ display: block; }
+        .user-dropdown .who{ padding: 10px 12px 8px; border-bottom: 1px solid var(--line); margin-bottom: 6px; }
+        .user-dropdown .who b{ display: block; color: var(--ink); font-size: .9rem; }
+        .user-dropdown .who span{ color: var(--charcoal-soft); font-size: .76rem; }
+        .user-dropdown a, .user-dropdown button{
+            display: flex; align-items: center; gap: 9px; width: 100%; padding: 9px 12px; border: 0; background: transparent;
+            color: var(--ink); border-radius: 6px; text-align: left; font: 500 .88rem 'Inter', sans-serif; text-decoration: none; cursor: pointer;
+        }
+        .user-dropdown a:hover{ background: var(--mist); color: var(--flag-green); }
+        .user-dropdown button:hover{ background: #fff2f0; color: var(--flag-red-2); }
+        .user-dropdown form{ margin: 0; }
 
-        .content { padding: 34px 30px 60px; max-width: 1200px; margin: 0 auto; }
+        /* ================= Shell + sidebar (full width) ================= */
+        .admin-shell{ flex: 1; display: grid; grid-template-columns: 268px minmax(0, 1fr); }
+        .admin-shell.solo{ grid-template-columns: 1fr; }
+        .admin-main{ min-width: 0; padding: 28px 32px 64px; }
+
+        .rs-sidebar{ background: var(--nav); color: #fff; }
+        .rs-inner{ position: sticky; top: var(--hdr-h); padding: 26px 18px 24px; max-height: calc(100vh - var(--hdr-h)); overflow-y: auto; }
+        .rs-title{ padding: 0 8px; }
+        .rs-title strong{ display: block; font-size: 1.12rem; font-weight: 700; }
+        .rs-title small{ color: rgba(255,255,255,.55); font-size: .8rem; }
+        .rs-rule{ height: 1px; background: rgba(255,255,255,.12); margin: 20px 0 18px; }
+        .rs-group{ padding: 0 10px; margin-bottom: 10px; font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.5); }
+        .rs-link{
+            display: flex; align-items: center; gap: 12px; padding: 11px 12px; margin-bottom: 4px; border-radius: 8px;
+            color: rgba(255,255,255,.88); font-size: .93rem; font-weight: 600; text-decoration: none;
+            transition: background .15s ease, color .15s ease;
+        }
+        .rs-link::before{ content: ""; width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.38); flex-shrink: 0; }
+        .rs-link span{ flex: 1; }
+        .rs-link:hover{ background: rgba(255,255,255,.07); color: #fff; }
+        .rs-link.is-active{ background: rgba(255,255,255,.14); color: #fff; }
+        .rs-link.is-active::before{ background: #e7c66b; box-shadow: 0 0 0 3px rgba(231,198,107,.25); }
+        .rs-count{ font-style: normal; font-size: .72rem; font-weight: 700; min-width: 26px; text-align: center; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.14); }
+
+        /* ================= Page header card ================= */
+        .page-card{
+            position: relative; display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap;
+            background: #fff; border: 1px solid var(--line); border-radius: var(--radius-l); padding: 24px 28px 24px;
+            box-shadow: var(--shadow-1); margin-bottom: 22px; overflow: hidden;
+        }
+        .page-card::before{ content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: linear-gradient(90deg, var(--flag-green), var(--gold-light) 70%, var(--flag-red)); }
+        .crumbs{ font-size: .76rem; font-weight: 600; color: var(--charcoal-soft); margin-bottom: 8px; display: flex; gap: 8px; align-items: center; }
+        .crumbs i{ font-style: normal; color: #b6c4bd; }
+        .crumbs span:last-child{ color: var(--ink); }
+        .page-card h1{ font-size: clamp(1.5rem, 2.4vw, 2.05rem); font-weight: 800; line-height: 1.15; }
+        .page-sub{ margin-top: 6px; color: var(--charcoal-soft); font-size: .92rem; }
+        .page-meta{ display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .clock{
+            display: inline-flex; align-items: center; gap: 8px; background: #f2f8f5; border: 1px solid #cfe3d9; color: var(--ink);
+            padding: 8px 14px; border-radius: 999px; font: 600 .82rem 'Inter', sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap;
+        }
+        .clock .dot{ width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.2); }
+
+        /* ================= KPI + quick links ================= */
+        .kpis{ display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-bottom: 18px; }
+        .kpi{ --c: var(--flag-green); --c-bg: #e6f3ee; background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: var(--radius-m); padding: 18px 20px 18px; box-shadow: var(--shadow-1); }
+        .kpi.gold{ --c: #b8860b; --c-bg: #fbf3dc; }
+        .kpi.blue{ --c: #2563eb; --c-bg: #e8efff; }
+        .kpi.red{ --c: var(--flag-red-2); --c-bg: #fde8ea; }
+        .kpi-top{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .kpi-top span{ font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--charcoal-soft); }
+        .kpi-top em{ font-style: normal; font-size: .72rem; font-weight: 800; color: var(--c); background: var(--c-bg); width: 34px; height: 30px; border-radius: 8px; display: grid; place-items: center; }
+        .kpi b{ display: block; font-size: 2.3rem; font-weight: 800; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; margin-bottom: 10px; }
+        .kpi p{ font-size: .85rem; color: var(--charcoal-soft); }
+
+        .qlinks{ display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-bottom: 24px; }
+        .qlink{ background: #fff; border: 1px solid var(--line); border-radius: var(--radius-m); padding: 16px 20px; }
+        .qlink b{ display: block; font-size: .86rem; font-weight: 700; color: var(--charcoal); margin-bottom: 14px; }
+        .qlink a, .qlink button{ background: none; border: 0; padding: 0; cursor: pointer; font: 700 .9rem 'Inter', sans-serif; color: var(--flag-green); text-decoration: none; }
+        .qlink a:hover, .qlink button:hover{ color: var(--flag-green-2); text-decoration: underline; }
+
+        /* ================= Cards + tables ================= */
+        .card{ background: #fff; border: 1px solid var(--line); border-radius: var(--radius-m); box-shadow: var(--shadow-1); overflow: hidden; margin-bottom: 22px; }
+        .card-head{ display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 18px 22px; border-bottom: 1px solid var(--line); }
+        .card-head h2{ font-size: 1.02rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .card-head h2 i{ width: 32px; height: 32px; border-radius: 8px; background: #e6f3ee; color: var(--flag-green); display: grid; place-items: center; font-size: .95rem; }
+        .card-body{ padding: 22px; }
+        .card-tools{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+        .search{ position: relative; }
+        .search i{ position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--charcoal-soft); font-size: .8rem; }
+        .search input{ width: 220px; padding: 8px 12px 8px 33px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--mist); font: .85rem 'Inter', sans-serif; color: var(--ink); }
+        .search input:focus{ outline: none; border-color: var(--flag-green); background: #fff; box-shadow: 0 0 0 4px rgba(0,106,78,.1); }
+
+        .table-scroll{ overflow-x: auto; }
+        .tbl{ width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 620px; }
+        .tbl th{ background: #f5f9f7; color: var(--charcoal-soft); font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; text-align: left; padding: 12px 22px; white-space: nowrap; border-bottom: 1px solid var(--line); }
+        .tbl td{ padding: 14px 22px; border-bottom: 1px solid #e9f0ec; vertical-align: middle; color: var(--charcoal); }
+        .tbl tbody tr:last-child td{ border-bottom: 0; }
+        .tbl tbody tr:hover td{ background: #f8fbf9; }
+        .tbl .strong{ font-weight: 600; color: var(--ink); }
+        .tbl .num{ font-variant-numeric: tabular-nums; }
+        .tbl .muted{ color: var(--charcoal-soft); font-size: .82rem; }
+        .tbl .route{ display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: var(--ink); }
+        .tbl .route i{ color: var(--charcoal-soft); font-size: .8rem; }
+        .tbl .empty-row td{ text-align: center; padding: 44px 16px; color: var(--charcoal-soft); }
+        .tbl .empty-row i{ display: block; font-size: 1.5rem; margin-bottom: 6px; color: var(--flag-green); }
+        .actions{ display: flex; gap: 8px; }
+        .cell-user{ display: flex; align-items: center; gap: 12px; }
+
+        .btn{ display: inline-flex; align-items: center; gap: 7px; border: 1.5px solid transparent; border-radius: 999px; padding: 9px 18px; font: 600 .86rem 'Inter', sans-serif; cursor: pointer; text-decoration: none; transition: background .15s ease, border-color .15s ease, color .15s ease, transform .15s ease; }
+        .btn-primary{ background: var(--flag-green); color: #fff; box-shadow: 0 6px 14px rgba(0,106,78,.2); }
+        .btn-primary:hover{ background: var(--flag-green-2); transform: translateY(-1px); }
+        .btn-sm{ padding: 5px 12px; font-size: .78rem; }
+        .btn-ghost{ background: #fff; border-color: var(--line); color: var(--charcoal); }
+        .btn-ghost:hover{ border-color: var(--flag-green); color: var(--flag-green); background: #e6f3ee; }
+        .btn-danger{ background: #fff; border-color: #f2b4bb; color: var(--flag-red-2); }
+        .btn-danger:hover{ background: #fbe4e6; }
+
+        .badge{ display: inline-flex; align-items: center; background: #e6f3ee; color: var(--flag-green); padding: 3px 10px; border-radius: 999px; font-size: .74rem; font-weight: 700; margin: 0 4px 3px 0; white-space: nowrap; }
+
+        /* ================= Forms ================= */
+        .field{ margin-bottom: 16px; }
+        .field label, .modal-box label{ display: block; font-size: .78rem; font-weight: 600; color: var(--charcoal); margin-bottom: 5px; }
+        .field input, .field select, .modal-box input, .modal-box select{
+            width: 100%; padding: 10px 13px; margin-bottom: 12px; border: 1.5px solid var(--line); border-radius: var(--radius-s);
+            background: var(--mist); font: .92rem 'Inter', sans-serif; color: var(--ink); transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+        }
+        .field input, .field select{ margin-bottom: 0; }
+        .field input:focus, .field select:focus, .modal-box input:focus, .modal-box select:focus{ outline: none; border-color: var(--flag-green); background: #fff; box-shadow: 0 0 0 4px rgba(0,106,78,.12); }
+        .field input:disabled{ background: #eceff0; color: var(--charcoal-soft); cursor: not-allowed; }
+        .form-grid{ display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+        .form-grid .span-2{ grid-column: 1 / -1; }
+        .price-row{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        @media (max-width: 640px){ .form-grid{ grid-template-columns: 1fr; } .form-grid .span-2{ grid-column: auto; } }
+
+        .error-text{ color: var(--flag-red-2); font-size: .85rem; margin-bottom: 14px; background: #fbe4e6; padding: 9px 12px; border-radius: var(--radius-s); }
+        .success-text{ color: var(--flag-green); font-size: .85rem; margin-bottom: 14px; background: #e6f3ee; padding: 9px 12px; border-radius: var(--radius-s); }
+
+        /* ================= Modal ================= */
+        .modal-overlay{ display: none; position: fixed; inset: 0; padding: 16px; background: rgba(7,30,21,.58); backdrop-filter: blur(3px); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.active{ display: flex; }
+        .modal-box{ position: relative; background: #fff; padding: 28px; width: 400px; max-width: 100%; max-height: 92vh; overflow-y: auto; border-radius: var(--radius-l); border-top: 4px solid var(--flag-green); box-shadow: var(--shadow-2); }
+        .modal-box h2{ margin-bottom: 4px; font-size: 1.2rem; font-weight: 700; padding-right: 30px; }
+        .modal-box .modal-sub{ color: var(--charcoal-soft); font-size: .85rem; margin-bottom: 18px; }
+        .modal-box h2 + form, .modal-box h2 + .error-text{ margin-top: 16px; }
+        .modal-box .close-btn{ position: absolute; top: 14px; right: 14px; width: 30px; height: 30px; border-radius: 50%; background: var(--mist); border: 0; color: var(--charcoal-soft); font-size: 18px; line-height: 1; cursor: pointer; }
+        .modal-box .close-btn:hover{ background: #e4ece8; color: var(--ink); }
+        .submit-btn, .modal-box button.submit-btn{ width: 100%; background: var(--flag-green); color: #fff; padding: 11px; border: 0; border-radius: 999px; font: 700 .92rem 'Inter', sans-serif; cursor: pointer; transition: background .15s ease; }
+        .submit-btn:hover{ background: var(--flag-green-2); }
+        .submit-btn.inline{ width: auto; padding: 11px 26px; }
+
+        /* ================= Footer ================= */
+        .site-footer{
+            display: flex; justify-content: space-between; align-items: center; gap: 12px 24px; flex-wrap: wrap;
+            padding: 18px 28px; background: #07271c; color: rgba(255,255,255,.72); font-size: .78rem;
+            border-top: 3px solid var(--gold-light);
+        }
+        .site-footer strong{ color: #fff; font-weight: 700; }
+        .site-footer .footer-note{ display: inline-flex; align-items: center; gap: 7px; }
+        .site-footer .footer-note i{ color: var(--gold-light); }
+
+        /* ================= Responsive ================= */
+        @media (max-width: 1000px){
+            .admin-shell{ grid-template-columns: 1fr; }
+            .rs-inner{ position: static; padding: 12px 14px; max-height: none; }
+            .rs-title, .rs-rule, .rs-group{ display: none; }
+            .rs-sidebar nav{ display: flex; gap: 6px; overflow-x: auto; }
+            .rs-link{ white-space: nowrap; margin: 0; }
+            .admin-main{ padding: 20px 16px 48px; }
+            .topbar{ padding: 0 16px; }
+            .brand .sep, .hdr-btn{ display: none; }
+            .brand strong{ font-size: 1.05rem; }
+            .search input{ width: 160px; }
+        }
+        @media (max-width: 600px){
+            .site-footer{ padding: 16px; align-items: flex-start; flex-direction: column; gap: 8px; }
+        }
+        @media (prefers-reduced-motion: reduce){ *{ transition: none !important; } }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -167,46 +260,108 @@
     <div class="gov-strip"><i class="bi bi-shield-lock-fill"></i> Restricted Access — Authorized Personnel Only</div>
     <div class="tri-rule"></div>
 
-    <nav>
-        {% if user.is_authenticated and user.is_superuser %}
-            <a class="brand" href="{% url 'superuser_dashboard' %}">
-                <img src="{% static 'image/RailwaySheba.png' %}" alt="RailwaySheba logo">
-                <span>RailwaySheba <span class="panel-name">Superuser Panel</span></span>
-            </a>
-        {% else %}
-            <a class="brand" href="{% url 'admin_dashboard' %}">
-                <img src="{% static 'image/RailwaySheba.png' %}" alt="RailwaySheba logo">
-                <span>RailwaySheba <span class="panel-name">Admin Panel</span></span>
-            </a>
-        {% endif %}
+    <header class="topbar">
+        <a class="brand" href="{% if user.is_authenticated and user.is_superuser %}{% url 'superuser_dashboard' %}{% else %}{% url 'admin_dashboard' %}{% endif %}">
+            <img src="{% static 'image/RailwaySheba.png' %}" alt="RailwaySheba logo">
+            <span class="sep"></span>
+            <span>
+                <strong>RailwaySheba</strong>
+                <small>{% if user.is_authenticated and user.is_superuser %}Superuser Portal{% else %}Admin Portal{% endif %}</small>
+            </span>
+        </a>
+
+        <div class="topbar-right">
         {% if user.is_authenticated %}
+            <a class="hdr-btn" href="{% if user.is_superuser %}{% url 'superuser_dashboard' %}{% else %}{% url 'admin_dashboard' %}{% endif %}">Dashboard</a>
             <div class="user-menu" id="userMenu">
-                <button type="button" class="user-trigger" onclick="toggleUserMenu()"><i class="bi bi-person-circle"></i> {{ user.username }} <i class="bi bi-chevron-down" style="font-size:11px;"></i></button>
+                <button type="button" class="user-trigger" onclick="toggleUserMenu()" aria-haspopup="true">
+                    <span class="avatar sm">{{ user.username|slice:":2" }}</span>
+                    {{ user.username }} <i class="bi bi-chevron-down" style="font-size:11px;"></i>
+                </button>
                 <div class="user-dropdown">
+                    <div class="who"><b>{{ user.username }}</b><span>{% if user.is_superuser %}Superuser{% else %}Administrator{% endif %}</span></div>
                     {% if user.is_superuser %}
-                        <a href="{% url 'superuser_dashboard' %}"><i class="bi bi-person me-1"></i> Profile</a>
+                        <a href="{% url 'superuser_dashboard' %}"><i class="bi bi-person"></i> Profile</a>
                     {% else %}
-                        <a href="{% url 'admin_profile' %}"><i class="bi bi-person me-1"></i> Profile</a>
+                        <a href="{% url 'admin_profile' %}"><i class="bi bi-person"></i> Profile</a>
                     {% endif %}
                     <form method="post" action="{% url 'superuser_logout' %}">
                         {% csrf_token %}
-                        <button type="submit"><i class="bi bi-box-arrow-right me-1"></i> Logout</button>
+                        <button type="submit"><i class="bi bi-box-arrow-right"></i> Logout</button>
                     </form>
                 </div>
             </div>
         {% else %}
-            <button onclick="openLoginModal()"><i class="bi bi-box-arrow-in-right me-1"></i> Login</button>
+            <button class="hdr-btn" style="background:transparent;cursor:pointer;" onclick="openLoginModal()"><i class="bi bi-box-arrow-in-right"></i> Login</button>
         {% endif %}
-    </nav>
+        </div>
+    </header>
 
-    <div class="content">
-        {% block content %}{% endblock %}
+    <div class="admin-shell{% if not user.is_authenticated %} solo{% endif %}">
+        {% if user.is_authenticated %}
+        {% with name=request.resolver_match.url_name %}
+        <aside class="rs-sidebar" aria-label="Admin navigation">
+            <div class="rs-inner">
+                <div class="rs-title">
+                    <strong>{% if user.is_superuser %}Superuser{% else %}Admin Officer{% endif %}</strong>
+                    <small>Bangladesh Railway</small>
+                </div>
+                <div class="rs-rule"></div>
+                <nav>
+                    <p class="rs-group">Navigation</p>
+                    {% if user.is_superuser %}
+                    <a class="rs-link{% if name == 'superuser_dashboard' %} is-active{% endif %}" href="{% url 'superuser_dashboard' %}">
+                        <span>Admin accounts</span>
+                        {% if name == 'superuser_dashboard' %}<em class="rs-count" id="count-admins">{{ profiles|length }}</em>{% endif %}
+                    </a>
+                    {% endif %}
+                    <a class="rs-link{% if name == 'admin_dashboard' %} is-active{% endif %}" data-panel="trains" href="{% url 'admin_dashboard' %}#trains">
+                        <span>Trains</span>
+                        {% if name == 'admin_dashboard' %}<em class="rs-count" id="count-trains">{{ trains|length }}</em>{% endif %}
+                    </a>
+                    <a class="rs-link" data-panel="schedules" href="{% url 'admin_dashboard' %}#schedules">
+                        <span>Schedules</span>
+                        {% if name == 'admin_dashboard' %}<em class="rs-count" id="count-schedules">{{ schedules|length }}</em>{% endif %}
+                    </a>
+                    <a class="rs-link" data-panel="drivers" href="{% url 'admin_dashboard' %}#drivers">
+                        <span>Drivers</span>
+                        {% if name == 'admin_dashboard' %}<em class="rs-count" id="count-drivers">{{ drivers|length }}</em>{% endif %}
+                    </a>
+                    {% if not user.is_superuser %}
+                    <a class="rs-link{% if name == 'admin_profile' %} is-active{% endif %}" href="{% url 'admin_profile' %}"><span>My profile</span></a>
+                    {% endif %}
+                </nav>
+            </div>
+        </aside>
+        {% endwith %}
+        {% endif %}
+
+        <main class="admin-main">
+            <section class="page-card">
+                <div>
+                    <div class="crumbs"><span>RailwaySheba</span><i>/</i><span>{% block crumb %}Admin{% endblock %}</span></div>
+                    <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+                    <p class="page-sub">{% block page_sub %}{% endblock %}</p>
+                </div>
+                <div class="page-meta">
+                    {% block page_actions %}{% endblock %}
+                    <span class="clock"><i class="dot"></i><span id="liveClock">--</span></span>
+                </div>
+            </section>
+
+            {% block content %}{% endblock %}
+        </main>
     </div>
+
+    <footer class="site-footer">
+        <span><strong>RailwaySheba</strong> &copy; {% now "Y" %} Bangladesh Railway</span>
+        <span class="footer-note"><i class="bi bi-shield-lock-fill" aria-hidden="true"></i> Authorized personnel only</span>
+    </footer>
 
     <!-- Login Modal -->
     <div class="modal-overlay" id="loginModal">
         <div class="modal-box">
-            <button class="close-btn" onclick="closeLoginModal()">&times;</button>
+            <button class="close-btn" onclick="closeLoginModal()" aria-label="Close">&times;</button>
             <h2>Superuser Login</h2>
             <p class="modal-sub">Sign in with your administrator credentials.</p>
             <div class="error-text" id="loginError" style="display:none;"></div>
@@ -221,44 +376,49 @@
     </div>
 
     <script>
-        function toggleUserMenu() {
-            document.getElementById('userMenu').classList.toggle('open');
-        }
-
+        function toggleUserMenu() { document.getElementById('userMenu').classList.toggle('open'); }
         document.addEventListener('click', function(event) {
             const menu = document.getElementById('userMenu');
             if (menu && !menu.contains(event.target)) menu.classList.remove('open');
         });
 
-        function openLoginModal() {
-            document.getElementById('loginModal').classList.add('active');
-        }
-        function closeLoginModal() {
-            document.getElementById('loginModal').classList.remove('active');
-        }
+        function openLoginModal() { document.getElementById('loginModal').classList.add('active'); }
+        function closeLoginModal() { document.getElementById('loginModal').classList.remove('active'); }
 
-        if ({{ open_login|yesno:"true,false" }}) {
-            openLoginModal();
-        }
+        if ({{ open_login|yesno:"true,false" }}) { openLoginModal(); }
 
         document.getElementById('loginForm')?.addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
             const errorBox = document.getElementById('loginError');
-
-            fetch("{% url 'superuser_login' %}", {
-                method: 'POST',
-                body: formData,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            })
+            fetch("{% url 'superuser_login' %}", { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    window.location.href = data.redirect_url;
-                } else {
-                    errorBox.textContent = data.error;
-                    errorBox.style.display = 'block';
-                }
+                if (data.success) { window.location.href = data.redirect_url; }
+                else { errorBox.textContent = data.error; errorBox.style.display = 'block'; }
+            });
+        });
+
+        /* Live date and time chip, e.g. 2026-Oct-01 11:04 */
+        (function () {
+            const el = document.getElementById('liveClock');
+            const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const pad = n => String(n).padStart(2, '0');
+            function tick() {
+                const d = new Date();
+                el.textContent = `${d.getFullYear()}-${mon[d.getMonth()]}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            }
+            tick(); setInterval(tick, 20000);
+        })();
+
+        /* Table search: <input data-filter="tableId"> filters rows of #tableId */
+        document.querySelectorAll('[data-filter]').forEach(input => {
+            input.addEventListener('input', () => {
+                const q = input.value.trim().toLowerCase();
+                document.querySelectorAll(`#${input.dataset.filter} tbody tr`).forEach(tr => {
+                    if (tr.classList.contains('empty-row')) return;
+                    tr.hidden = q !== '' && !tr.textContent.toLowerCase().includes(q);
+                });
             });
         });
     </script>

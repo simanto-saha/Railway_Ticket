@@ -1,0 +1,116 @@
+{# Shared left sidebar. Include with:  {% include "Railway_Admin/_admin_sidebar.html" with active='trains' %} #}
+{# These resolve silently to "" if the URL name doesn't exist - change the names to match your urls.py #}
+{% url 'superuser_dashboard' as su_url %}
+{% url 'admin_dashboard' as ad_url %}
+{% url 'logout' as logout_url %}
+<style>
+    .admin-shell{
+        display: grid;
+        grid-template-columns: 252px minmax(0, 1fr);
+        gap: 28px;
+        align-items: start;
+    }
+    .rs-sidebar{
+        position: sticky; top: 16px;
+        background: linear-gradient(170deg, #0b1f16 0%, #10291d 100%);
+        border-radius: var(--radius-m);
+        border-top: 3px solid var(--gold, #c9a227);
+        padding: 18px 12px 12px;
+        color: #fff;
+        box-shadow: var(--shadow-1);
+    }
+    .rs-brand{
+        display: flex; align-items: center; gap: 11px;
+        padding: 4px 10px 16px;
+        border-bottom: 1px solid rgba(255,255,255,.1);
+        margin-bottom: 10px;
+    }
+    .rs-brand i{
+        width: 36px; height: 36px; border-radius: 9px;
+        display: grid; place-items: center;
+        background: rgba(231,198,107,.14); color: #e7c66b; font-size: 1.05rem;
+    }
+    .rs-brand strong{ display: block; font-size: .95rem; line-height: 1.2; }
+    .rs-brand small{ color: rgba(255,255,255,.5); font-size: .74rem; }
+
+    .rs-group{
+        margin: 14px 10px 6px;
+        font-size: .7rem; font-weight: 700; letter-spacing: .06em;
+        text-transform: uppercase; color: rgba(255,255,255,.4);
+    }
+    .rs-link{
+        display: flex; align-items: center; gap: 11px;
+        padding: 10px 12px; margin-bottom: 2px;
+        border-radius: 8px; border-left: 3px solid transparent;
+        color: rgba(255,255,255,.78); font-size: .9rem; font-weight: 500;
+        text-decoration: none;
+        transition: background .15s ease, color .15s ease;
+    }
+    .rs-link i{ width: 18px; text-align: center; font-size: 1rem; }
+    .rs-link span{ flex: 1; }
+    .rs-link:hover{ background: rgba(255,255,255,.07); color: #fff; }
+    .rs-link.is-active{
+        background: rgba(255,255,255,.1); color: #fff; font-weight: 700;
+        border-left-color: #e7c66b;
+    }
+    .rs-link.is-active i{ color: #e7c66b; }
+    .rs-count{
+        font-style: normal; font-size: .72rem; font-weight: 700;
+        min-width: 24px; text-align: center; padding: 2px 7px; border-radius: 999px;
+        background: rgba(255,255,255,.12); color: rgba(255,255,255,.85);
+    }
+    .rs-user{
+        margin-top: 14px; padding: 12px 10px 4px;
+        border-top: 1px solid rgba(255,255,255,.1);
+        display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        font-size: .82rem; color: rgba(255,255,255,.7);
+    }
+    .rs-user b{ color: #fff; display: block; font-size: .86rem; }
+    .rs-user a{ color: #7fd6ac; text-decoration: none; font-weight: 600; }
+    .rs-user a:hover{ color: #a6edc9; }
+
+    .admin-main{ min-width: 0; }
+
+    @media (max-width: 900px){
+        .admin-shell{ grid-template-columns: 1fr; gap: 18px; }
+        .rs-sidebar{ position: static; padding: 12px; }
+        .rs-brand, .rs-group, .rs-user{ display: none; }
+        .rs-sidebar nav{ display: flex; gap: 6px; overflow-x: auto; }
+        .rs-link{ white-space: nowrap; margin: 0; border-left: 0; border-bottom: 3px solid transparent; }
+        .rs-link.is-active{ border-bottom-color: #e7c66b; }
+    }
+</style>
+
+<aside class="rs-sidebar" aria-label="Admin navigation">
+    <div class="rs-brand">
+        <i class="bi bi-train-front"></i>
+        <div><strong>Railway Admin</strong><small>Control panel</small></div>
+    </div>
+
+    <nav>
+        <p class="rs-group">Administration</p>
+        <a class="rs-link{% if active == 'admins' %} is-active{% endif %}" href="{{ su_url|default:'#' }}">
+            <i class="bi bi-shield-lock"></i><span>Admin accounts</span>
+            {% if profiles %}<em class="rs-count">{{ profiles|length }}</em>{% endif %}
+        </a>
+
+        <p class="rs-group">Railway data</p>
+        <a class="rs-link{% if active == 'trains' %} is-active{% endif %}" data-panel="trains" href="{{ ad_url }}#trains">
+            <i class="bi bi-train-front"></i><span>Trains</span>
+            {% if trains %}<em class="rs-count">{{ trains|length }}</em>{% endif %}
+        </a>
+        <a class="rs-link{% if active == 'schedules' %} is-active{% endif %}" data-panel="schedules" href="{{ ad_url }}#schedules">
+            <i class="bi bi-calendar-week"></i><span>Schedules</span>
+            {% if schedules %}<em class="rs-count">{{ schedules|length }}</em>{% endif %}
+        </a>
+        <a class="rs-link{% if active == 'drivers' %} is-active{% endif %}" data-panel="drivers" href="{{ ad_url }}#drivers">
+            <i class="bi bi-person-badge"></i><span>Drivers</span>
+            {% if drivers %}<em class="rs-count">{{ drivers|length }}</em>{% endif %}
+        </a>
+    </nav>
+
+    <div class="rs-user">
+        <div><span>Signed in as</span><b>{{ user.username }}</b></div>
+        {% if logout_url %}<a href="{{ logout_url }}"><i class="bi bi-box-arrow-right"></i> Log out</a>{% endif %}
+    </div>
+</aside>

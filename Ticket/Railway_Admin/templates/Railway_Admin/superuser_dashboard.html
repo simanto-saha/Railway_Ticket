@@ -1,148 +1,107 @@
 {% extends 'Railway_Admin/superuser_base.html' %}
+{% block title %}Admin Accounts{% endblock %}
+{% block crumb %}Admin accounts{% endblock %}
+{% block page_title %}Superuser Dashboard{% endblock %}
+{% block page_sub %}Welcome, {{ user.username }}. Create, edit, and remove administrator accounts.{% endblock %}
+{% block page_actions %}<button class="btn btn-primary" onclick="openCreateModal()"><i class="bi bi-person-plus-fill"></i> Add admin</button>{% endblock %}
 {% block content %}
-<style>
-    .dash-head{
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        flex-wrap: wrap;
-        gap: 16px;
-        margin-bottom: 26px;
-    }
-    .dash-head h1{ font-size: 1.7rem; margin-bottom: 4px; }
-    .dash-head p{ color: var(--charcoal-soft); font-size: .92rem; }
-    .btn-add{
-        display: inline-flex; align-items: center; gap: 8px;
-        background: var(--flag-green);
-        color: #fff;
-        padding: 11px 20px;
-        border: none;
-        border-radius: 999px;
-        font-weight: 700;
-        font-size: .9rem;
-        cursor: pointer;
-        box-shadow: 0 10px 22px rgba(0,106,78,0.25);
-        transition: background .15s ease, transform .15s ease;
-    }
-    .btn-add:hover{ background: var(--flag-green-2); transform: translateY(-1px); }
 
-    .table-card{
-        background: #fff;
-        border: 1px solid var(--line);
-        border-radius: var(--radius-m);
-        box-shadow: var(--shadow-1);
-        overflow: hidden;
-    }
-    table.admin-table{ width: 100%; border-collapse: collapse; }
-    table.admin-table thead tr{ background: var(--flag-green); }
-    table.admin-table th{
-        padding: 14px 16px;
-        color: #fff;
-        font-size: .78rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: .04em;
-        text-align: left;
-    }
-    table.admin-table td{
-        padding: 14px 16px;
-        border-bottom: 1px solid var(--line);
-        font-size: .92rem;
-        color: var(--charcoal);
-    }
-    table.admin-table tbody tr:last-child td{ border-bottom: none; }
-    table.admin-table tbody tr:hover{ background: var(--mist); }
-    table.admin-table td.username-cell{ font-weight: 700; color: var(--ink); }
-
-    .actions-cell{ display: flex; gap: 8px; }
-    .btn-pill{
-        border: 1.5px solid var(--line);
-        background: #fff;
-        color: var(--charcoal);
-        padding: 6px 14px;
-        border-radius: 999px;
-        font-size: .8rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all .15s ease;
-    }
-    .btn-pill.edit:hover{ border-color: var(--flag-green); color: var(--flag-green); background: #e6f3ee; }
-    .btn-pill.remove{ color: var(--flag-red-2); border-color: #f2b4bb; }
-    .btn-pill.remove:hover{ background: #fbe4e6; }
-
-    .empty-row td{ text-align: center; padding: 40px 16px; color: var(--charcoal-soft); }
-
-    #profileModal .modal-box{ width: 380px; }
-</style>
-
-<div class="dash-head">
-    <div>
-        <h1>Superuser Dashboard</h1>
-        <p>Welcome, {{ user.username }} — manage admin accounts below.</p>
+<div class="kpis">
+    <div class="kpi">
+        <div class="kpi-top"><span>Administrators</span><em>AD</em></div>
+        <b id="stat-admins">{{ profiles|length }}</b>
+        <p>Admin accounts with portal access</p>
     </div>
-    <button class="btn-add" onclick="openCreateModal()"><i class="bi bi-person-plus-fill"></i> Add Admin</button>
 </div>
 
-<div class="table-card">
-    <table class="admin-table">
-        <thead>
-            <tr>
-                <th>Username</th>
-                <th>Full Name</th>
-                <th>Email</th>
-                <th>Designation</th>
-                <th>Phone</th>
-                <th>Actions</th>
+<div class="qlinks">
+    <div class="qlink"><b>Add administrator</b><button type="button" onclick="openCreateModal()">Open form</button></div>
+    <div class="qlink"><b>Railway data</b><a href="{% url 'admin_dashboard' %}">Open dashboard</a></div>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <h2><i class="bi bi-shield-lock"></i> Administrators</h2>
+        <div class="card-tools">
+            <label class="search"><i class="bi bi-search"></i><input type="search" placeholder="Search admins" data-filter="adminTable" aria-label="Search admins"></label>
+        </div>
+    </div>
+    <div class="table-scroll">
+        <table class="tbl" id="adminTable">
+            <thead>
+                <tr>
+                    <th>Administrator</th>
+                    <th>Email</th>
+                    <th>Designation</th>
+                    <th>Phone</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for profile in profiles %}
+            <tr id="row-{{ profile.pk }}">
+                <td>
+                    <div class="cell-user">
+                        <span class="avatar">{{ profile.user.username|slice:":1"|upper }}</span>
+                        <div>
+                            <div class="strong">{{ profile.full_name }}</div>
+                            <div class="muted">@{{ profile.user.username }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>{{ profile.email }}</td>
+                <td><span class="badge">{{ profile.designation }}</span></td>
+                <td class="num">{{ profile.phone_number }}</td>
+                <td>
+                    <div class="actions">
+                        <button class="btn btn-ghost btn-sm" onclick="openEditModal({{ profile.pk }})"><i class="bi bi-pencil-square"></i> Edit</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteProfile({{ profile.pk }})"><i class="bi bi-trash3"></i> Remove</button>
+                    </div>
+                </td>
             </tr>
-        </thead>
-        <tbody>
-        {% for profile in profiles %}
-        <tr id="row-{{ profile.pk }}">
-            <td class="username-cell">{{ profile.user.username }}</td>
-            <td>{{ profile.full_name }}</td>
-            <td>{{ profile.email }}</td>
-            <td>{{ profile.designation }}</td>
-            <td>{{ profile.phone_number }}</td>
-            <td>
-                <div class="actions-cell">
-                    <button class="btn-pill edit" onclick="openEditModal({{ profile.pk }})"><i class="bi bi-pencil-square"></i> Edit</button>
-                    <button class="btn-pill remove" onclick="deleteProfile({{ profile.pk }})"><i class="bi bi-trash3"></i> Remove</button>
-                </div>
-            </td>
-        </tr>
-        {% empty %}
-        <tr class="empty-row"><td colspan="6"><i class="bi bi-inbox" style="font-size:1.4rem; display:block; margin-bottom:6px; color:var(--flag-green);"></i>No admin profiles found.</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
+            {% empty %}
+            <tr class="empty-row"><td colspan="5"><i class="bi bi-inbox"></i>No admin profiles found.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <!-- Create/Edit Modal -->
 <div class="modal-overlay" id="profileModal">
     <div class="modal-box">
-        <button class="close-btn" onclick="closeProfileModal()">&times;</button>
-        <h2 id="modalTitle">Add Admin</h2>
+        <button class="close-btn" onclick="closeProfileModal()" aria-label="Close">&times;</button>
+        <h2 id="modalTitle">Add admin</h2>
         <p class="modal-sub">Fill in the administrator's details.</p>
         <div class="error-text" id="profileError" style="display:none;"></div>
         <form id="profileForm">
             {% csrf_token %}
             <input type="hidden" name="profile_id" id="profile_id">
-            <input type="text" name="username" id="f_username" placeholder="Username" required>
-            <input type="text" name="full_name" id="f_full_name" placeholder="Full Name" required>
-            <input type="email" name="email" id="f_email" placeholder="Email" required>
-            <input type="text" name="designation" id="f_designation" placeholder="Designation" required>
-            <input type="text" name="phone_number" id="f_phone_number" placeholder="Phone Number" required>
+            <label for="f_username">Username</label>
+            <input type="text" name="username" id="f_username" placeholder="e.g. rahim.admin" required>
+            <label for="f_full_name">Full name</label>
+            <input type="text" name="full_name" id="f_full_name" placeholder="Full name" required>
+            <label for="f_email">Email</label>
+            <input type="email" name="email" id="f_email" placeholder="name@example.com" required>
+            <label for="f_designation">Designation</label>
+            <input type="text" name="designation" id="f_designation" placeholder="e.g. Station Manager" required>
+            <label for="f_phone_number">Phone number</label>
+            <input type="text" name="phone_number" id="f_phone_number" placeholder="Phone number" required>
             <button type="submit" class="submit-btn">Save</button>
         </form>
     </div>
 </div>
 
 <script>
+function removePasswordField() {
+    document.getElementById('f_password_wrap')?.remove();
+}
+
 function openCreateModal() {
-    document.getElementById('modalTitle').textContent = 'Add Admin';
+    document.getElementById('modalTitle').textContent = 'Add admin';
     document.getElementById('profileForm').reset();
     document.getElementById('profile_id').value = '';
-    document.getElementById('f_password')?.remove();
+    removePasswordField();
     document.getElementById('profileError').style.display = 'none';
     document.getElementById('profileModal').classList.add('active');
 }
@@ -151,16 +110,14 @@ function openEditModal(pk) {
     fetch(`/superuser/admin-profiles/${pk}/`)
         .then(res => res.json())
         .then(data => {
-            document.getElementById('modalTitle').textContent = 'Edit Admin';
+            document.getElementById('modalTitle').textContent = 'Edit admin';
             document.getElementById('profile_id').value = data.id;
             document.getElementById('f_username').value = data.username;
             if (!document.getElementById('f_password')) {
-                const passwordInput = document.createElement('input');
-                passwordInput.type = 'password';
-                passwordInput.name = 'password';
-                passwordInput.id = 'f_password';
-                passwordInput.placeholder = 'New Password';
-                document.getElementById('f_username').after(passwordInput);
+                const wrap = document.createElement('div');
+                wrap.id = 'f_password_wrap';
+                wrap.innerHTML = '<label for="f_password">New password</label><input type="password" name="password" id="f_password" placeholder="Leave blank to keep current">';
+                document.getElementById('f_username').after(wrap);
             }
             document.getElementById('f_password').value = '';
             document.getElementById('f_full_name').value = data.full_name;
@@ -203,7 +160,13 @@ function deleteProfile(pk) {
     fetch(`/superuser/admin-profiles/${pk}/delete/`, { method: 'POST', body: formData })
         .then(res => res.json())
         .then(data => {
-            if (data.success) document.getElementById(`row-${pk}`).remove();
+            if (data.success) {
+                document.getElementById(`row-${pk}`).remove();
+                const n = document.querySelectorAll('#adminTable tbody tr[id^="row-"]').length;
+                document.getElementById('stat-admins').textContent = n;
+                const badge = document.getElementById('count-admins');
+                if (badge) badge.textContent = n;
+            }
         });
 }
 </script>

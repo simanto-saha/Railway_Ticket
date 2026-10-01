@@ -1,40 +1,76 @@
 {% extends 'Railway_Admin/superuser_base.html' %}
+{% block title %}My Profile{% endblock %}
+{% block crumb %}My profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block page_sub %}Update your contact details and password.{% endblock %}
 {% block content %}
-<h1>My Profile</h1>
+
+<div class="card">
+    <div class="card-body" style="display:flex; align-items:center; gap:18px;">
+        <span class="avatar soft" style="width:64px; height:64px; font-size:1.5rem;">{{ request.user.username|slice:":1" }}</span>
+        <div>
+            <div style="font-size:1.2rem; font-weight:700; color: var(--ink);">{{ profile.full_name|default:request.user.username }}</div>
+            <div style="color: var(--charcoal-soft); font-size:.88rem; margin-top:3px;">
+                @{{ request.user.username }}{% if profile.designation %} &middot; {{ profile.designation }}{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="error-text" id="profileError" style="display:none;"></div>
-<div style="color:#2a9d8f; font-size:13px; margin-bottom:10px; display:none;" id="profileSuccess"></div>
+<div class="success-text" id="profileSuccess" style="display:none;"></div>
 
-<form id="profileForm" style="max-width:400px;">
+<form id="profileForm">
     {% csrf_token %}
-    <label style="font-size:12px;">Username</label>
-    <input type="text" value="{{ request.user.username }}" disabled style="background:#eee;">
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 22px; align-items:start;">
 
-    <label style="font-size:12px;">Full Name</label>
-    <input type="text" name="full_name" value="{{ profile.full_name }}" required>
+        <div class="card" style="margin-bottom:0;">
+            <div class="card-head"><h2><i class="bi bi-person-lines-fill"></i> Personal details</h2></div>
+            <div class="card-body">
+                <div class="field">
+                    <label for="p_username">Username</label>
+                    <input id="p_username" type="text" value="{{ request.user.username }}" disabled>
+                </div>
+                <div class="field">
+                    <label for="p_full_name">Full name</label>
+                    <input id="p_full_name" type="text" name="full_name" value="{{ profile.full_name }}" required>
+                </div>
+                <div class="field">
+                    <label for="p_email">Email</label>
+                    <input id="p_email" type="email" name="email" value="{{ profile.email }}" required>
+                </div>
+                <div class="field">
+                    <label for="p_designation">Designation</label>
+                    <input id="p_designation" type="text" name="designation" value="{{ profile.designation }}" required>
+                </div>
+                <div class="field" style="margin-bottom:0;">
+                    <label for="p_phone">Phone number</label>
+                    <input id="p_phone" type="text" name="phone_number" value="{{ profile.phone_number }}" required>
+                </div>
+            </div>
+        </div>
 
-    <label style="font-size:12px;">Email</label>
-    <input type="email" name="email" value="{{ profile.email }}" required>
+        <div class="card" style="margin-bottom:0;">
+            <div class="card-head"><h2><i class="bi bi-key"></i> Change password</h2></div>
+            <div class="card-body">
+                <p style="font-size:.85rem; color: var(--charcoal-soft); margin-bottom:16px;">Leave these fields blank to keep your current password.</p>
+                <div class="field">
+                    <label for="p_current">Current password</label>
+                    <input id="p_current" type="password" name="current_password" autocomplete="current-password">
+                </div>
+                <div class="field">
+                    <label for="p_new">New password</label>
+                    <input id="p_new" type="password" name="new_password" autocomplete="new-password">
+                </div>
+                <div class="field" style="margin-bottom:0;">
+                    <label for="p_confirm">Confirm new password</label>
+                    <input id="p_confirm" type="password" name="confirm_password" autocomplete="new-password">
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <label style="font-size:12px;">Designation</label>
-    <input type="text" name="designation" value="{{ profile.designation }}" required>
-
-    <label style="font-size:12px;">Phone Number</label>
-    <input type="text" name="phone_number" value="{{ profile.phone_number }}" required>
-
-    <hr style="margin:15px 0;">
-    <p style="font-size:13px; color:#666; margin-bottom:10px;">Password change korte na chaile niche fields blank rakho</p>
-
-    <label style="font-size:12px;">Current Password</label>
-    <input type="password" name="current_password">
-
-    <label style="font-size:12px;">New Password</label>
-    <input type="password" name="new_password">
-
-    <label style="font-size:12px;">Confirm New Password</label>
-    <input type="password" name="confirm_password">
-
-    <button type="submit" class="submit-btn" style="margin-top:10px;">Save Changes</button>
+    <button type="submit" class="submit-btn inline" style="margin-top:22px;"><i class="bi bi-check2-circle"></i> Save changes</button>
 </form>
 
 <script>
@@ -55,8 +91,9 @@ document.getElementById('profileForm').addEventListener('submit', function(e) {
     .then(data => {
         if (data.success) {
             if (data.password_changed) {
-                alert('Password changed. Please login again.');
-                window.location.href = data.redirect_url;
+                successBox.textContent = 'Password changed. Redirecting to login...';
+                successBox.style.display = 'block';
+                setTimeout(() => { window.location.href = data.redirect_url; }, 1500);
             } else {
                 successBox.textContent = 'Profile updated successfully.';
                 successBox.style.display = 'block';
@@ -65,6 +102,7 @@ document.getElementById('profileForm').addEventListener('submit', function(e) {
             errorBox.textContent = data.error;
             errorBox.style.display = 'block';
         }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 });
 </script>
