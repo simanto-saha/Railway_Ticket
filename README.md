@@ -118,6 +118,8 @@ PostgreSQL is used as the primary relational database.
 
 PgBouncer sits between the application and PostgreSQL and manages database connections through connection pooling.
 
+For the project's 10,000-client PgBouncer example, backend-pool sizing guidance, and host file-descriptor requirements, see [Ticket/PGBOUNCER.md](Ticket/PGBOUNCER.md) and [Ticket/pgbouncer.ini.example](Ticket/pgbouncer.ini.example). The client limit is not a guarantee of 10,000 simultaneous database queries; validate capacity gradually against the deployed database and host.
+
 ```text
 Django
    |

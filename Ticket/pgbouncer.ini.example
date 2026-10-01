@@ -1,0 +1,28 @@
+[databases]
+Train_Ticket = host=127.0.0.1 port=5432 dbname=Train_Ticket
+
+[pgbouncer]
+listen_addr = 127.0.0.1
+listen_port = 6432
+
+; Configure this auth file with SCRAM verifier entries for the application DB user.
+auth_type = scram-sha-256
+auth_file = /etc/pgbouncer/userlist.txt
+
+; Accept many app-side clients, but keep PostgreSQL backend connections bounded.
+pool_mode = transaction
+max_client_conn = 10000
+default_pool_size = 40
+min_pool_size = 5
+reserve_pool_size = 10
+reserve_pool_timeout = 3
+max_db_connections = 60
+max_user_connections = 60
+
+; Django is configured for PgBouncer transaction pooling.
+ignore_startup_parameters = extra_float_digits
+server_idle_timeout = 60
+server_lifetime = 3600
+client_idle_timeout = 600
+
+; Increase the PgBouncer service's OS LimitNOFILE to at least 12000.
