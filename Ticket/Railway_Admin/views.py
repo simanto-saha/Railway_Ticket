@@ -85,6 +85,7 @@ def superuser_login(request):
             'error': error,
             'next': request.POST.get('next', ''),
             'open_login': True,
+            'login_landing': request.POST.get('next') == reverse('superuser_dashboard'),
         })
 
     return render(request, 'Railway_Admin/superuser_base.html', {

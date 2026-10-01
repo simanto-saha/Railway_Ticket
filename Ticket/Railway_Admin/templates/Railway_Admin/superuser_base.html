@@ -343,6 +343,7 @@
                         <span>Dashboard</span>
                     </a>
                     {% endif %}
+                    {% if not user.is_superuser %}
                     <a class="rs-link{% if name == 'admin_dashboard' %} is-active{% endif %}" data-panel="trains" href="{% url 'admin_dashboard' %}#trains">
                         <span>Trains</span>
                         {% if name == 'admin_dashboard' %}<em class="rs-count" id="count-trains">{{ trains|length }}</em>{% endif %}
@@ -355,6 +356,7 @@
                         <span>Drivers</span>
                         {% if name == 'admin_dashboard' %}<em class="rs-count" id="count-drivers">{{ drivers|length }}</em>{% endif %}
                     </a>
+                    {% endif %}
                     {% if not user.is_superuser %}
                     <a class="rs-link{% if name == 'admin_profile' %} is-active{% endif %}" href="{% url 'admin_profile' %}"><span>My profile</span></a>
                     {% endif %}
@@ -396,20 +398,6 @@
         function openLoginModal() { document.getElementById('loginModal').classList.add('active'); }
         function closeLoginModal() { document.getElementById('loginModal').classList.remove('active'); }
 
-        if ({{ open_login|yesno:"true,false" }}) { openLoginModal(); }
-
-        document.getElementById('loginForm')?.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            const errorBox = document.getElementById('loginError');
-            fetch("{% url 'superuser_login' %}", { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) { window.location.href = data.redirect_url; }
-                else { errorBox.textContent = data.error; errorBox.style.display = 'block'; }
-            });
-        });
-
         /* Live date and time chip, e.g. 2026-Oct-01 11:04 */
         (function () {
             const el = document.getElementById('liveClock');
@@ -441,7 +429,7 @@
             <button class="close-btn" onclick="document.getElementById('loginModal').classList.remove('active')" aria-label="Close">&times;</button>
             <h2>Superuser Login</h2>
             <p class="modal-sub">Sign in with your administrator credentials.</p>
-            <div class="error-text" id="loginError" style="display:none;"></div>
+            <div class="error-text" id="loginError"{% if not error %} style="display:none;"{% endif %}>{{ error }}</div>
             <form id="loginForm" method="post" action="{% url 'superuser_login' %}">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ next }}">
@@ -451,5 +439,37 @@
             </form>
         </div>
     </div>
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const loginError = document.getElementById('loginError');
+
+        if ({{ open_login|yesno:"true,false" }}) {
+            document.getElementById('loginModal').classList.add('active');
+        }
+
+        loginForm?.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            loginError.textContent = '';
+            loginError.style.display = 'none';
+
+            try {
+                const response = await fetch(this.action, {
+                    method: 'POST',
+                    body: new FormData(this),
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    window.location.assign(result.redirect_url);
+                    return;
+                }
+                loginError.textContent = result.error || 'Invalid username or password.';
+                loginError.style.display = 'block';
+            } catch {
+                loginError.textContent = 'Login failed. Please try again.';
+                loginError.style.display = 'block';
+            }
+        });
+    </script>
 </body>
 </html>
