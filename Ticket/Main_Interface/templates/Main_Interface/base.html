@@ -197,23 +197,19 @@
 
   .profile-menu{ position:relative; }
   .profile-trigger{
-    display:flex; align-items:center; gap:9px;
-    border:0; background:transparent; color:var(--ink);
-    padding:4px 0 4px 8px; cursor:pointer;
+    display:flex; align-items:center;
+    border:0; border-radius:8px; background:transparent; color:var(--ink);
+    padding:8px 12px; cursor:pointer;
+    transition:background .18s ease, box-shadow .18s ease, color .18s ease;
   }
-  .profile-avatar{
-    width:36px; height:36px; border-radius:50%; overflow:hidden;
-    display:grid; place-items:center;
-    background:#fff;
-    color:var(--flag-green);
-    font-weight:800; font-size:0.95rem;
-    box-shadow:0 4px 12px rgba(0,0,0,0.2);
-  }
-  .profile-avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
   .profile-trigger .profile-name{ font-size:0.9rem; font-weight:600; }
-  .profile-trigger i{ color:var(--charcoal-soft); font-size:0.8rem; }
+  .profile-trigger[aria-expanded="true"]{
+    background:#e8f4ed;
+    color:var(--flag-green-2);
+    box-shadow:0 0 0 3px rgba(0,106,78,.12), 0 4px 14px rgba(0,106,78,.12);
+  }
   .profile-dropdown{
-    position:absolute; top:calc(100% + 13px); right:0;
+    position:absolute; top:calc(100% + 6px); right:0;
     min-width:210px; padding:8px;
     background:#fff; border:1px solid var(--line);
     border-radius:var(--radius-s); box-shadow:var(--shadow-2);
@@ -244,7 +240,6 @@
   .profile-dropdown button:hover{ background:#fff2f0; }
   .profile-dropdown button i{ width:16px; }
   @media (max-width:520px){
-    .profile-trigger .profile-name, .profile-trigger > i{ display:none; }
     .profile-dropdown{ right:-8px; }
     .nav-create-btn{ display:none; }
   }
@@ -475,18 +470,8 @@
     <div class="nav-actions">
       {% if request.user.is_authenticated and not request.user.is_superuser %}
         <div class="profile-menu dropdown">
-          <button type="button" class="profile-trigger" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open profile menu">
-            <span class="profile-avatar">
-              {% if request.user.profile.profile_image %}
-                <img src="{{ request.user.profile.profile_image.url }}" alt="{{ request.user.first_name|default:request.user.username }}">
-              {% elif request.user.first_name %}
-                {{ request.user.first_name|first|upper }}
-              {% else %}
-                {{ request.user.username|first|upper }}
-              {% endif %}
-            </span>
-            <span class="profile-name">{{ request.user.first_name|default:request.user.username }}</span>
-            <i class="bi bi-chevron-down"></i>
+          <button type="button" class="profile-trigger" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <span class="profile-name">{{ request.user.get_full_name|default:request.user.username|upper }}</span>
           </button>
           <div class="dropdown-menu profile-dropdown">
             <div class="dropdown-heading">Signed in as {{ request.user.email }}</div>
@@ -721,6 +706,26 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+  var profileTrigger = document.querySelector('.profile-trigger[data-bs-toggle="dropdown"]');
+  if (profileTrigger) {
+    var profileMenu = profileTrigger.closest('.profile-menu');
+    var profileDropdown = profileMenu.querySelector('.profile-dropdown');
+    var dropdownCloseTimer;
+
+    profileMenu.addEventListener('shown.bs.dropdown', function () {
+      window.clearTimeout(dropdownCloseTimer);
+      dropdownCloseTimer = window.setTimeout(function () {
+        bootstrap.Dropdown.getOrCreateInstance(profileTrigger).hide();
+      }, 5000);
+    });
+    profileMenu.addEventListener('hide.bs.dropdown', function () {
+      window.clearTimeout(dropdownCloseTimer);
+    });
+    profileDropdown.addEventListener('click', function () {
+      window.clearTimeout(dropdownCloseTimer);
+    });
+  }
 
   document.querySelectorAll('[data-password-toggle]').forEach(function (toggle) {
     toggle.addEventListener('click', function () {
