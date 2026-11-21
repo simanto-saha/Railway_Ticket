@@ -19,7 +19,7 @@ from datetime import timedelta
 from django.urls import reverse
 from urllib.parse import urlencode
 from .models import Profile, VarificationCode
-from Railway_Admin.models import TrainInformation, TrainSchedule, TrainTicket, TicketPayment, generate_confirmation_number
+from Railway_Admin.models import AdminProfile, TrainInformation, TrainSchedule, TrainTicket, TicketPayment, generate_confirmation_number
 import requests
 import redis
 from django.db import transaction
@@ -36,8 +36,11 @@ logger = logging.getLogger(__name__)
 from django.core.cache import cache
 
 def expire_pending_throttled():
-    if cache.add("expire_pending:lock", 1, 10):
-        expire_pending_reservations()
+    try:
+        if cache.add("expire_pending:lock", 1, 10):
+            expire_pending_reservations()
+    except redis.exceptions.ConnectionError:
+        logger.warning("Redis is unavailable; skipping homepage reservation cleanup.")
 
 
 def get_stations():
@@ -60,7 +63,11 @@ def get_stations():
 
 def home_page(request):
     expire_pending_throttled()
-    data = cache.get("home:featured")
+    try:
+        data = cache.get("home:featured")
+    except redis.exceptions.ConnectionError:
+        logger.warning("Redis is unavailable; loading homepage schedules without cache.")
+        data = None
     if data is None:
         upcoming = list(
             TrainSchedule.objects.select_related('train')
@@ -68,7 +75,10 @@ def home_page(request):
             .order_by('departure_time')[:4]
         )
         data = {"featured": upcoming[:3], "more": len(upcoming) > 3}
-        cache.set("home:featured", data, 30)
+        try:
+            cache.set("home:featured", data, 30)
+        except redis.exceptions.ConnectionError:
+            logger.warning("Redis is unavailable; skipping homepage schedule caching.")
     return render(request, "Main_Interface/home_page.html", {
         'featured_schedules': data["featured"],
         'has_more_schedules': data["more"],
@@ -119,6 +129,8 @@ def register(request):
         return JsonResponse({'success': False, 'message': 'Email already exists.'})
     if Profile.objects.filter(phone_number=phone_number).exists():
         return JsonResponse({'success': False, 'message': 'Phone number already exists.'})
+    if AdminProfile.objects.filter(phone_number=phone_number).exists():
+        return JsonResponse({'success': False, 'message': 'Phone number already belongs to an admin account.'})
     if Profile.objects.filter(nid=nid).exists():
         return JsonResponse({'success': False, 'message': 'NID already exists.'})
 
@@ -159,6 +171,14 @@ def varification_code(request):
 
     if entry.created_at < timezone.now() - timedelta(minutes=2):
         return JsonResponse({'success': False, 'message': 'Verification code expired. Please resend.'})
+
+    if AdminProfile.objects.filter(
+        phone_number=pending_data['phone_number'],
+    ).exists():
+        return JsonResponse({
+            'success': False,
+            'message': 'Phone number already belongs to an admin account.',
+        })
 
     entry.is_used = True
     entry.save()
@@ -551,7 +571,14 @@ STATIONS_CACHE_SECONDS = 600  # 10 min
 
 def get_stations():
     """Distinct station names, cached. DB-te distinct hoy, Python-e full table ane na."""
-    stations = cache.get(STATIONS_CACHE_KEY)
+    cache_available = True
+    try:
+        stations = cache.get(STATIONS_CACHE_KEY)
+    except redis.exceptions.ConnectionError:
+        logger.warning("Redis is unavailable; loading station names without cache.")
+        cache_available = False
+        stations = None
+
     if stations is None:
         # order_by() dorkar: model-e Meta.ordering thakle distinct() bhenge jay.
         names = set(
@@ -564,7 +591,11 @@ def get_stations():
             {name.strip() for name in names if name and name.strip()},
             key=str.casefold,
         )
-        cache.set(STATIONS_CACHE_KEY, stations, STATIONS_CACHE_SECONDS)
+        if cache_available:
+            try:
+                cache.set(STATIONS_CACHE_KEY, stations, STATIONS_CACHE_SECONDS)
+            except redis.exceptions.ConnectionError:
+                logger.warning("Redis is unavailable; skipping station-name caching.")
     return stations
 
 

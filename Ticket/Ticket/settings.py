@@ -187,7 +187,13 @@ REDIS_URL = os.getenv("REDIS_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}/1")
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": [(REDIS_HOST, REDIS_PORT)]},
+        "CONFIG": {
+            "hosts": [{
+                "host": REDIS_HOST,
+                "port": REDIS_PORT,
+                "socket_timeout": 10,
+            }],
+        },
     },
 }
 
@@ -217,5 +223,4 @@ CACHES = {
     }
 }
 
-SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
-SESSION_CACHE_ALIAS = "default"
+SESSION_ENGINE = "django.contrib.sessions.backends.db"

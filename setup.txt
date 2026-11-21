@@ -7,3 +7,49 @@ daphne -b 127.0.0.1 -p 8000 Ticket.asgi:application
 daphne -b 127.0.0.1 -p 8001 Ticket.asgi:application
 daphne -b 127.0.0.1 -p 8002 Ticket.asgi:application
 daphne -b 127.0.0.1 -p 8003 Ticket.asgi:application
+
+
+Activate virtual environment:
+.\venv\Scripts\Activate\ps1
+
+
+Redis (required for cache, seat locks, and WebSockets)
+Install the Memurai Windows service from https://www.memurai.com/get-memurai.
+In the installer, keep the Windows service option enabled and use port 6379.
+
+Check that Redis is ready (PONG means it is working):
+& "C:\Program Files\Memurai\memurai-cli.exe" ping
+
+If the service is stopped, start it from an elevated PowerShell:
+Start-Service Memurai
+
+Keep REDIS_HOST=127.0.0.1 and REDIS_PORT=6379 in Ticket\.env when running Django on this computer.
+
+
+postgres Connection
+psql -U postgres -h localhost -p 5432
+
+
+Role Create
+CREATE USER "Train_Ticket_User" WITH PASSWORD '123456';
+
+Dtabase Create
+CREATE DATABASE "Train_Ticket" OWNER "Train_Ticket_User";
+
+Allow All Permission to User
+GRANT ALL PRIVILEGES ON DATABASE "Train_Ticket" TO "Train_Ticket_User";
+
+Superuser gmail:
+simanto@gmail.com
+
+
+1st terminal that runs the Django server and ngrok:
+python manage.py runserver 8000
+
+2nd terminal that runs ngrok:
+ngrok http 8000
+
+
+Free ngrok doman
+https://untapped-arrogance-handsaw.ngrok-free.dev/
+

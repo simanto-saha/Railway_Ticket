@@ -7,11 +7,11 @@
 
 <div class="card">
     <div class="card-body" style="display:flex; align-items:center; gap:18px;">
-        <span class="avatar soft" style="width:64px; height:64px; font-size:1.5rem;">{{ request.user.username|slice:":1" }}</span>
+        <span class="avatar soft" style="width:64px; height:64px; font-size:1.5rem;">{{ profile.full_name|slice:":1" }}</span>
         <div>
-            <div style="font-size:1.2rem; font-weight:700; color: var(--ink);">{{ profile.full_name|default:request.user.username }}</div>
+            <div style="font-size:1.2rem; font-weight:700; color: var(--ink);">{{ profile.full_name }}</div>
             <div style="color: var(--charcoal-soft); font-size:.88rem; margin-top:3px;">
-                @{{ request.user.username }}{% if profile.designation %} &middot; {{ profile.designation }}{% endif %}
+                {{ profile.designation }}
             </div>
         </div>
     </div>
@@ -27,10 +27,6 @@
         <div class="card" style="margin-bottom:0;">
             <div class="card-head"><h2><i class="bi bi-person-lines-fill"></i> Personal details</h2></div>
             <div class="card-body">
-                <div class="field">
-                    <label for="p_username">Username</label>
-                    <input id="p_username" type="text" value="{{ request.user.username }}" disabled>
-                </div>
                 <div class="field">
                     <label for="p_full_name">Full name</label>
                     <input id="p_full_name" type="text" name="full_name" value="{{ profile.full_name }}" required>

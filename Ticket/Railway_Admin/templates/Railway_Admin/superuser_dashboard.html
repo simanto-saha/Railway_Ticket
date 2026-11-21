@@ -42,10 +42,9 @@
             <tr id="row-{{ profile.pk }}">
                 <td>
                     <div class="cell-user">
-                        <span class="avatar">{{ profile.user.username|slice:":1"|upper }}</span>
+                        <span class="avatar">{{ profile.full_name|slice:":1"|upper }}</span>
                         <div>
                             <div class="strong">{{ profile.full_name }}</div>
-                            <div class="muted">@{{ profile.user.username }}</div>
                         </div>
                     </div>
                 </td>
@@ -77,8 +76,6 @@
         <form id="profileForm">
             {% csrf_token %}
             <input type="hidden" name="profile_id" id="profile_id">
-            <label for="f_username">Username</label>
-            <input type="text" name="username" id="f_username" placeholder="e.g. rahim.admin" required>
             <label for="f_full_name">Full name</label>
             <input type="text" name="full_name" id="f_full_name" placeholder="Full name" required>
             <label for="f_email">Email</label>
@@ -112,12 +109,11 @@ function openEditModal(pk) {
         .then(data => {
             document.getElementById('modalTitle').textContent = 'Edit admin';
             document.getElementById('profile_id').value = data.id;
-            document.getElementById('f_username').value = data.username;
             if (!document.getElementById('f_password')) {
                 const wrap = document.createElement('div');
                 wrap.id = 'f_password_wrap';
                 wrap.innerHTML = '<label for="f_password">New password</label><input type="password" name="password" id="f_password" placeholder="Leave blank to keep current">';
-                document.getElementById('f_username').after(wrap);
+                document.getElementById('f_email').after(wrap);
             }
             document.getElementById('f_password').value = '';
             document.getElementById('f_full_name').value = data.full_name;

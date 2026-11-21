@@ -110,7 +110,7 @@
     </nav>
 
     <div class="rs-user">
-        <div><span>Signed in as</span><b>{{ user.username }}</b></div>
+        <div><span>Signed in as</span><b>{{ user.adminprofile.full_name }}</b></div>
         {% if logout_url %}<a href="{{ logout_url }}"><i class="bi bi-box-arrow-right"></i> Log out</a>{% endif %}
     </div>
 </aside>

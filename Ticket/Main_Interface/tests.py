@@ -4,13 +4,85 @@ from uuid import uuid4
 
 from django.contrib.auth.models import User
 from django.core import mail
+from django.http import HttpResponse
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from Main_Interface.models import Profile
+from Main_Interface.models import Profile, VarificationCode
 from Main_Interface import views
-from Railway_Admin.models import TrainInformation, TrainSchedule, TrainTicket, TicketPayment
+from Railway_Admin.models import AdminProfile, TrainInformation, TrainSchedule, TrainTicket, TicketPayment
+
+
+class SharedPhoneNumberAccountTests(TestCase):
+	def test_passenger_registration_rejects_admin_phone_number(self):
+		admin_user = User.objects.create_user(
+			username="admin-with-phone",
+			password="test-password",
+		)
+		AdminProfile.objects.create(
+			user=admin_user,
+			full_name="Admin",
+			email="admin-with-phone@example.com",
+			designation="Officer",
+			phone_number="01700000020",
+		)
+
+		response = self.client.post(
+			reverse("register"),
+			{
+				"full_name": "New Passenger",
+				"email": "new-passenger@example.com",
+				"phone_number": "01700000020",
+				"nid_number": "1234567892",
+				"password": "test-password",
+				"confirm_password": "test-password",
+			},
+		)
+
+		self.assertFalse(response.json()["success"])
+		self.assertIn("admin account", response.json()["message"])
+
+	def test_verification_rejects_admin_phone_added_after_registration(self):
+		registration_data = {
+			"full_name": "New Passenger",
+			"email": "pending-passenger@example.com",
+			"phone_number": "01700000021",
+			"nid_number": "1234567893",
+			"password": "test-password",
+			"confirm_password": "test-password",
+		}
+		with patch("Main_Interface.views.send_mail"):
+			register_response = self.client.post(
+				reverse("register"),
+				registration_data,
+			)
+
+		self.assertTrue(register_response.json()["success"])
+		admin_user = User.objects.create_user(
+			username="admin-claimed-phone",
+			password="test-password",
+		)
+		AdminProfile.objects.create(
+			user=admin_user,
+			full_name="Admin",
+			email="admin-claimed-phone@example.com",
+			designation="Officer",
+			phone_number=registration_data["phone_number"],
+		)
+		code = VarificationCode.objects.get(email=registration_data["email"])
+
+		response = self.client.post(
+			reverse("varification_code"),
+			{"code": code.code},
+		)
+
+		self.assertFalse(response.json()["success"])
+		self.assertFalse(Profile.objects.filter(
+			phone_number=registration_data["phone_number"],
+		).exists())
+		code.refresh_from_db()
+		self.assertFalse(code.is_used)
 
 
 class SeatReservationTests(TestCase):
@@ -50,6 +122,54 @@ class SeatReservationTests(TestCase):
 		featured_ids = [schedule.id for schedule in response.context["featured_schedules"]]
 		self.assertIn(self.schedule.id, featured_ids)
 		self.assertNotIn(past_schedule.id, featured_ids)
+
+	def test_home_page_remains_available_when_redis_is_unavailable(self):
+		connection_error = views.redis.exceptions.ConnectionError("Redis unavailable")
+		with patch.object(views.cache, "add", side_effect=connection_error), patch.object(
+			views.cache, "get", side_effect=connection_error
+		), patch.object(views.cache, "set", side_effect=connection_error), patch(
+			"Main_Interface.views.render", return_value=HttpResponse(status=200)
+		) as render:
+			response = self.client.get(reverse("home_page"))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(
+			[schedule.id for schedule in render.call_args.args[2]["featured_schedules"]],
+			[self.schedule.id],
+		)
+
+	def test_train_schedule_loads_stations_when_redis_is_unavailable(self):
+		connection_error = views.redis.exceptions.ConnectionError("Redis unavailable")
+		with patch.object(views.cache, "get", side_effect=connection_error), patch.object(
+			views.cache, "set", side_effect=connection_error
+		), patch(
+			"Main_Interface.views.render", return_value=HttpResponse(status=200)
+		) as render:
+			response = self.client.get(reverse("train_schedule"))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(render.call_args.args[2]["stations"], ["Chattogram", "Dhaka"])
+
+	def test_register_saves_session_when_redis_is_unavailable(self):
+		with patch.object(
+			views.cache,
+			"has_key",
+			side_effect=views.redis.exceptions.ConnectionError("Redis unavailable"),
+		), patch("Main_Interface.views.send_mail"):
+			response = self.client.post(
+				reverse("register"),
+				{
+					"full_name": "New Rider",
+					"email": "new-rider@example.com",
+					"phone_number": "01700000002",
+					"nid_number": "1234567891",
+					"password": "test-password",
+					"confirm_password": "test-password",
+				},
+			)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(self.client.session["pending_email"], "new-rider@example.com")
 
 	def test_seat_hold_deadline_is_five_minutes_from_server_timestamp(self):
 		with patch.object(views.redis_client, "lock") as lock_factory, patch(

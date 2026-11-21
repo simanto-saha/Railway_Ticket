@@ -1,6 +1,7 @@
 import secrets
 import string
-from datetime import date, datetime
+from datetime import date, datetime, time, timedelta
+from decimal import Decimal, InvalidOperation
 from io import BytesIO
 from zipfile import BadZipFile
 
@@ -25,6 +26,81 @@ from .models import TrainInformation, TrainSchedule, TrainDriverInformation
 from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import AdminProfile
+from Main_Interface.models import Profile
+from openpyxl.utils.datetime import from_excel
+
+
+def _parse_excel_travel_date(value, epoch):
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if isinstance(value, (int, float, Decimal)) and not isinstance(value, bool):
+        parsed = from_excel(float(value), epoch)
+        if isinstance(parsed, datetime):
+            return parsed.date()
+        if isinstance(parsed, date):
+            return parsed
+        raise ValueError
+    if isinstance(value, str):
+        text = value.strip()
+        parsed = parse_datetime(text)
+        if parsed is not None:
+            return parsed.date()
+        try:
+            return date.fromisoformat(text)
+        except ValueError:
+            for date_format in (
+                "%d/%m/%Y",
+                "%d-%m-%Y",
+                "%d.%m.%Y",
+                "%m/%d/%Y",
+                "%Y/%m/%d",
+            ):
+                try:
+                    return datetime.strptime(text, date_format).date()
+                except ValueError:
+                    continue
+    raise ValueError
+
+
+def _parse_excel_datetime_or_time(value, epoch):
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, date):
+        return datetime.combine(value, time.min)
+    if isinstance(value, time):
+        return value
+    if isinstance(value, (int, float, Decimal)) and not isinstance(value, bool):
+        parsed = from_excel(float(value), epoch)
+        if isinstance(parsed, (datetime, time)):
+            return parsed
+        raise ValueError
+    if isinstance(value, str):
+        text = value.strip()
+        parsed = parse_datetime(text)
+        if parsed is not None:
+            return parsed
+        for time_format in (
+            "%H:%M",
+            "%H:%M:%S",
+            "%H:%M:%S.%f",
+            "%I:%M %p",
+            "%I:%M:%S %p",
+            "%I:%M%p",
+            "%I:%M:%S%p",
+        ):
+            try:
+                return datetime.strptime(text, time_format).time()
+            except ValueError:
+                continue
+    raise ValueError
+
+
+def _make_schedule_datetime_aware(value):
+    if settings.USE_TZ and timezone.is_naive(value):
+        return timezone.make_aware(value)
+    return value
 
 
 
@@ -32,6 +108,7 @@ def is_superuser(user):
     return user.is_authenticated and user.is_superuser
 
 
+#superuser dashboard view
 def superuser_dashboard(request):
     if not request.user.is_authenticated:
         return render(request, 'Railway_Admin/superuser_base.html', {
@@ -43,11 +120,7 @@ def superuser_dashboard(request):
             return redirect('superuser_login')
         if not request.user.adminprofile.one_time_password:
             return redirect('admin_password_change')
-        return render(
-            request,
-            'Railway_Admin/admin_dashboard.html',
-            _admin_dashboard_context(request),
-        )
+        return redirect('admin_dashboard')
 
     profiles = AdminProfile.objects.select_related('user').all()
     return render(request, 'Railway_Admin/superuser_dashboard.html', {'profiles': profiles})
@@ -55,11 +128,22 @@ def superuser_dashboard(request):
 
 def superuser_login(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
+        login_identifier = (
+            request.POST.get('phone_number')
+            or request.POST.get('username')
+            or ''
+        ).strip()
         password = request.POST.get('password')
-        user = User.objects.filter(username=username).first()
+        profile = AdminProfile.objects.select_related('user').filter(
+            phone_number=login_identifier,
+        ).first()
+        user = (
+            profile.user
+            if profile
+            else User.objects.filter(username=login_identifier, is_superuser=True).first()
+        )
 
-        if user and user.check_password(password) and (user.is_superuser or hasattr(user, 'adminprofile')):
+        if user and user.check_password(password):
             login(request, user)
             requested_next = request.POST.get('next', '')
             if user.is_superuser:
@@ -72,12 +156,8 @@ def superuser_login(request):
                     )
                     else reverse('superuser_dashboard')
                 )
-            elif user.adminprofile.one_time_password:
-                redirect_url = (
-                    requested_next
-                    if requested_next == reverse('superuser_dashboard')
-                    else reverse('admin_dashboard')
-                )
+            elif profile.one_time_password:
+                redirect_url = reverse('admin_dashboard')
             else:
                 redirect_url = reverse('admin_password_change')
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -131,23 +211,28 @@ def admin_password_change(request):
 @user_passes_test(is_superuser, login_url='superuser_login')
 def admin_profile_create(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
         full_name = request.POST.get('full_name')
         email = request.POST.get('email')
         designation = request.POST.get('designation')
         phone_number = request.POST.get('phone_number')
 
-        if User.objects.filter(username=username).exists():
-            return JsonResponse({'success': False, 'error': 'Username already exists.'})
         if AdminProfile.objects.filter(email=email).exists():
             return JsonResponse({'success': False, 'error': 'Email already exists.'})
         if AdminProfile.objects.filter(phone_number=phone_number).exists():
             return JsonResponse({'success': False, 'error': 'Phone number already exists.'})
+        if Profile.objects.filter(phone_number=phone_number).exists():
+            return JsonResponse({
+                'success': False,
+                'error': 'Phone number already belongs to a passenger account.',
+            })
 
         temporary_password = ''.join(
             secrets.choice(string.ascii_letters + string.digits)
             for _ in range(12)
         )
+        username = f'admin_{secrets.token_hex(16)}'
+        while User.objects.filter(username=username).exists():
+            username = f'admin_{secrets.token_hex(16)}'
 
         try:
             with transaction.atomic():
@@ -165,7 +250,7 @@ def admin_profile_create(request):
                     (
                         f'Hello {full_name},\n\n'
                         f'Your admin account has been created.\n'
-                        f'Username: {username}\n'
+                        f'Login phone number: {phone_number}\n'
                         f'One-time password: {temporary_password}\n\n'
                         'Please log in and change this password immediately.'
                     ),
@@ -189,7 +274,6 @@ def admin_profile_get(request, pk):
     profile = get_object_or_404(AdminProfile, pk=pk)
     return JsonResponse({
         'id': profile.pk,
-        'username': profile.user.username,
         'full_name': profile.full_name,
         'email': profile.email,
         'designation': profile.designation,
@@ -202,21 +286,23 @@ def admin_profile_edit(request, pk):
     profile = get_object_or_404(AdminProfile, pk=pk)
 
     if request.method == 'POST':
-        username = request.POST.get('username')
         password = request.POST.get('password')
 
-        if User.objects.filter(username=username).exclude(pk=profile.user.pk).exists():
-            return JsonResponse({'success': False, 'error': 'Username already exists.'})
+        phone_number = request.POST.get('phone_number')
+        if Profile.objects.filter(phone_number=phone_number).exists():
+            return JsonResponse({
+                'success': False,
+                'error': 'Phone number already belongs to a passenger account.',
+            })
 
-        profile.user.username = username
         if password:
             profile.user.set_password(password)
-        profile.user.save()
+            profile.user.save()
 
         profile.full_name = request.POST.get('full_name')
         profile.email = request.POST.get('email')
         profile.designation = request.POST.get('designation')
-        profile.phone_number = request.POST.get('phone_number')
+        profile.phone_number = phone_number
         profile.save()
 
         return JsonResponse({'success': True})
@@ -428,6 +514,7 @@ def schedule_import(request):
             for index, value in enumerate(headers)
             if value is not None
         }
+        has_travel_date = 'travel date' in header_indexes
         required_headers = (
             'train number', 'source station', 'destination station',
             'departure time', 'arrival time',
@@ -445,30 +532,26 @@ def schedule_import(request):
         }
         valid_schedules = []
         errors = []
-        seen_schedule_ids = set()
+        seen_schedule_identifiers = set()
 
         def cell_value(row, header):
             index = header_indexes.get(header)
             return row[index] if index is not None and index < len(row) else None
 
-        def parse_schedule_datetime(value):
-            if isinstance(value, datetime):
-                parsed = value
-            elif isinstance(value, date):
-                parsed = datetime.combine(value, datetime.min.time())
-            else:
-                parsed = parse_datetime(str(value or '').strip())
-            if parsed is None:
-                raise ValueError
-            if settings.USE_TZ and timezone.is_naive(parsed):
-                parsed = timezone.make_aware(parsed)
-            return parsed
-
         def parse_schedule_price(value):
             if value is None or str(value).strip() == '':
                 return None
-            numeric = float(value)
-            if not numeric.is_integer() or numeric < 0:
+            if isinstance(value, bool):
+                raise ValueError
+            try:
+                numeric = Decimal(str(value).strip())
+            except InvalidOperation as exc:
+                raise ValueError from exc
+            if (
+                not numeric.is_finite()
+                or numeric < 0
+                or numeric != numeric.to_integral_value()
+            ):
                 raise ValueError
             return int(numeric)
 
@@ -485,8 +568,56 @@ def schedule_import(request):
             source_station = str(cell_value(row, 'source station') or '').strip()
             destination_station = str(cell_value(row, 'destination station') or '').strip()
             try:
-                departure_time = parse_schedule_datetime(cell_value(row, 'departure time'))
-                arrival_time = parse_schedule_datetime(cell_value(row, 'arrival time'))
+                departure_value = _parse_excel_datetime_or_time(
+                    cell_value(row, 'departure time'),
+                    workbook.epoch,
+                )
+                arrival_value = _parse_excel_datetime_or_time(
+                    cell_value(row, 'arrival time'),
+                    workbook.epoch,
+                )
+                if has_travel_date:
+                    travel_date = _parse_excel_travel_date(
+                        cell_value(row, 'travel date'),
+                        workbook.epoch,
+                    )
+                    departure_clock = (
+                        departure_value.time()
+                        if isinstance(departure_value, datetime)
+                        else departure_value
+                    ).replace(tzinfo=None)
+                    arrival_clock = (
+                        arrival_value.time()
+                        if isinstance(arrival_value, datetime)
+                        else arrival_value
+                    ).replace(tzinfo=None)
+                    departure_time = datetime.combine(travel_date, departure_clock)
+                    arrival_date = travel_date + (
+                        timedelta(days=1)
+                        if arrival_clock <= departure_clock
+                        else timedelta()
+                    )
+                    arrival_time = datetime.combine(arrival_date, arrival_clock)
+                else:
+                    if not isinstance(departure_value, datetime) or not isinstance(arrival_value, datetime):
+                        raise ValueError
+                    departure_time = departure_value
+                    arrival_time = arrival_value
+                    if settings.USE_TZ:
+                        departure_time = _make_schedule_datetime_aware(departure_time)
+                        arrival_time = _make_schedule_datetime_aware(arrival_time)
+                    if arrival_time <= departure_time:
+                        arrival_clock = (
+                            arrival_time.timetz()
+                            if timezone.is_aware(arrival_time)
+                            else arrival_time.time()
+                        )
+                        arrival_time = datetime.combine(
+                            departure_time.date() + timedelta(days=1),
+                            arrival_clock,
+                        )
+                departure_time = _make_schedule_datetime_aware(departure_time)
+                arrival_time = _make_schedule_datetime_aware(arrival_time)
                 if arrival_time <= departure_time:
                     raise ValueError
                 prices = {
@@ -500,22 +631,54 @@ def schedule_import(request):
 
             raw_schedule_id = cell_value(row, 'schedule id')
             try:
-                schedule_id = int(raw_schedule_id) if raw_schedule_id not in (None, '') else None
-                if schedule_id is not None and (float(raw_schedule_id) != schedule_id or schedule_id <= 0):
-                    raise ValueError
-            except (TypeError, ValueError, OverflowError):
-                errors.append(f'Row {row_number}: Schedule ID must be a positive whole number or blank.')
+                if raw_schedule_id is None or (
+                    isinstance(raw_schedule_id, str) and not raw_schedule_id.strip()
+                ):
+                    schedule_id = None
+                    schedule_identifier_key = None
+                else:
+                    raw_id_text = str(raw_schedule_id).strip()
+                    try:
+                        numeric_id = Decimal(raw_id_text)
+                    except InvalidOperation:
+                        if (
+                            not isinstance(raw_schedule_id, str)
+                            or not raw_id_text[0].isalpha()
+                            or not all(character.isalnum() or character in "_-" for character in raw_id_text)
+                        ):
+                            raise ValueError
+                        # The model has no external-ID field, so labels only identify rows in this upload.
+                        schedule_id = None
+                        schedule_identifier_key = ("external", raw_id_text.casefold())
+                    else:
+                        if (
+                            isinstance(raw_schedule_id, bool)
+                            or not numeric_id.is_finite()
+                            or numeric_id <= 0
+                            or numeric_id != numeric_id.to_integral_value()
+                        ):
+                            raise ValueError
+                        schedule_id = int(numeric_id)
+                        schedule_identifier_key = ("database", schedule_id)
+            except (InvalidOperation, TypeError, ValueError, OverflowError):
+                errors.append(
+                    f'Row {row_number}: Schedule ID must be blank, a positive whole number, '
+                    'or an alphanumeric identifier.'
+                )
                 continue
 
             if not train:
                 errors.append(f'Row {row_number}: train number {train_number or "(blank)"} was not found.')
             elif not source_station or not destination_station:
                 errors.append(f'Row {row_number}: source and destination stations are required.')
-            elif schedule_id is not None and schedule_id in seen_schedule_ids:
-                errors.append(f'Row {row_number}: duplicate Schedule ID {schedule_id}.')
+            elif (
+                schedule_identifier_key is not None
+                and schedule_identifier_key in seen_schedule_identifiers
+            ):
+                errors.append(f'Row {row_number}: duplicate Schedule ID {raw_schedule_id}.')
             else:
-                if schedule_id is not None:
-                    seen_schedule_ids.add(schedule_id)
+                if schedule_identifier_key is not None:
+                    seen_schedule_identifiers.add(schedule_identifier_key)
                 valid_schedules.append({
                     'id': schedule_id,
                     'train': train,
@@ -772,6 +935,11 @@ def admin_profile_update(request):
             return JsonResponse({'success': False, 'error': 'Email already in use.'})
         if AdminProfile.objects.filter(phone_number=phone_number).exclude(pk=profile.pk).exists():
             return JsonResponse({'success': False, 'error': 'Phone number already in use.'})
+        if Profile.objects.filter(phone_number=phone_number).exists():
+            return JsonResponse({
+                'success': False,
+                'error': 'Phone number already belongs to a passenger account.',
+            })
 
         # Password change (optional)
         if new_password or current_password or confirm_password:
