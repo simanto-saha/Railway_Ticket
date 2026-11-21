@@ -54,19 +54,27 @@
     font-weight:800;
     letter-spacing:-.04em;
   }
-  .board-grid {
-    background-image:
-      linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
-    background-size: 36px 36px;
-    -webkit-mask-image: radial-gradient(ellipse at 70% 0%, #000 0%, transparent 70%);
-            mask-image: radial-gradient(ellipse at 70% 0%, #000 0%, transparent 70%);
+  .departure-board {
+    border:1px solid rgba(0,84,62,.2);
+    border-top:4px solid var(--gold);
+    background:linear-gradient(135deg,#fbfcf8 0%,#edf6f1 100%);
   }
+  .departure-board .bd-soft{ border-color:rgba(0,84,62,.14) !important; }
+  .departure-board .bd-line{ border-bottom-color:rgba(0,84,62,.14) !important; }
+  .departure-feature{
+    background:rgba(255,255,255,.78);
+    backdrop-filter:blur(8px);
+  }
+  .departure-date{
+    border:1px solid rgba(0,84,62,.12);
+    background:rgba(255,255,255,.68);
+  }
+  .departure-glow{ background:rgba(26,166,95,.13); }
   .bd-soft { border: 1px solid rgba(255,255,255,.12) !important; }
   .bd-line { border-bottom: 1px solid rgba(255,255,255,.09) !important; }
   .route-line {
     height: 2px;
-    background-image: repeating-linear-gradient(90deg, rgba(255,255,255,.35) 0 6px, transparent 6px 12px);
+    background-image: repeating-linear-gradient(90deg, rgba(0,106,78,.38) 0 6px, transparent 6px 12px);
   }
   /* Step connector (desktop only) */
   @media (min-width: 1024px) {
@@ -144,55 +152,55 @@
     </div>
 
     <!-- Departure board -->
-    <div class="relative overflow-hidden rounded-2xl border-t-4 border-solid border-gold bg-gradient-to-br from-board-800 via-board-700 to-board-900 p-5 shadow-[0_30px_60px_-20px_rgba(7,22,15,0.55)] sm:p-6">
-      <div class="board-grid pointer-events-none absolute inset-0"></div>
-      <div class="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-gold/20 blur-3xl"></div>
+    <div class="departure-board relative overflow-hidden rounded-2xl p-4 sm:p-5">
+      <div class="departure-glow pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full blur-3xl"></div>
 
-      <div class="relative flex min-h-[400px] flex-col justify-between gap-5">
+      <div class="relative flex min-h-[380px] flex-col justify-between gap-4">
+        {% with first=featured_schedules.0 %}
 
         <div class="flex items-start justify-between gap-4">
           <div>
-            <h2 class="m-0 mt-1 font-sans text-xl font-semibold tracking-tight text-white">Upcoming departures</h2>
+            <h2 class="m-0 mt-1 font-sans text-xl font-semibold tracking-tight text-[color:var(--ink)]">Upcoming departures</h2>
           </div>
-          <div class="bd-soft rounded-lg bg-white/5 px-3 py-1.5 text-right">
-            <p class="m-0 text-[0.7rem] font-medium text-white/50">Today</p>
-            <p class="m-0 flex items-center gap-1.5 text-sm font-semibold tabular-nums text-white">
-              <i class="bi bi-calendar3 text-gold-soft"></i>{% now "d M Y" %}
+          <div class="departure-date rounded-lg px-3 py-1.5 text-right">
+            <p class="m-0 text-[0.7rem] font-medium text-[color:var(--charcoal-soft)]">Departure date</p>
+            <p class="m-0 flex items-center gap-1.5 text-sm font-semibold tabular-nums text-[color:var(--flag-green-2)]">
+              <i class="bi bi-calendar3 text-[#9a7000]"></i>
+              {% if first %}{{ first.departure_time|date:"d M Y" }}{% else %}No upcoming trains{% endif %}
             </p>
           </div>
         </div>
 
-        {% with first=featured_schedules.0 %}
         {% if first %}
-        <div class="bd-soft rounded-xl bg-white/[0.05] p-4 backdrop-blur-sm">
-          <div class="mb-3 flex items-center justify-between gap-3 text-xs font-medium text-white/60">
+        <div class="departure-feature bd-soft rounded-xl p-3">
+          <div class="mb-3 flex items-center justify-between gap-3 text-xs font-medium text-[color:var(--charcoal-soft)]">
             <span class="inline-flex items-center gap-2">
               <span class="rounded bg-gold/90 px-1.5 py-0.5 text-[0.68rem] font-bold text-board-900">Next</span>
               {{ first.train.train_name }}
             </span>
-            <span class="tabular-nums">{% now "D, d M" %}</span>
+            <span class="tabular-nums">{{ first.departure_time|date:"D, d M" }}</span>
           </div>
 
           <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
             <div class="min-w-0">
-              <p class="m-0 text-lg font-semibold leading-tight text-white sm:text-2xl">{{ first.source_station }}</p>
-              <p class="m-0 mt-1.5 text-base font-semibold tabular-nums text-gold-soft">{{ first.departure_time|date:"h:i A" }}</p>
+              <p class="m-0 text-lg font-semibold leading-tight text-[color:var(--ink)] sm:text-2xl">{{ first.source_station }}</p>
+              <p class="m-0 mt-1.5 text-base font-semibold tabular-nums text-[#9a7000]">{{ first.departure_time|date:"h:i A" }}</p>
             </div>
 
             <div class="flex w-16 items-center gap-1.5 sm:w-24" aria-hidden="true">
               <span class="route-line flex-1"></span>
-              <i class="bi bi-train-front text-base text-gold-soft"></i>
+              <i class="bi bi-train-front text-base text-[#9a7000]"></i>
               <span class="route-line flex-1"></span>
             </div>
 
             <div class="min-w-0 text-right">
-              <p class="m-0 text-lg font-semibold leading-tight text-white sm:text-2xl">{{ first.destination_station }}</p>
-              <p class="m-0 mt-1.5 text-sm text-white/50">Destination</p>
+              <p class="m-0 text-lg font-semibold leading-tight text-[color:var(--ink)] sm:text-2xl">{{ first.destination_station }}</p>
+              <p class="m-0 mt-1.5 text-sm text-[color:var(--charcoal-soft)]">Destination</p>
             </div>
           </div>
         </div>
         {% else %}
-        <div class="rounded-xl border border-dashed border-white/20 p-6 text-center text-sm text-white/60">
+        <div class="rounded-xl border border-dashed border-[#bdd8cb] p-6 text-center text-sm text-[color:var(--charcoal-soft)]">
           No upcoming departures are listed right now.
         </div>
         {% endif %}
@@ -200,29 +208,32 @@
 
         <div>
           {% if featured_schedules %}
-          <div class="bd-line grid grid-cols-[1fr_auto] gap-4 pb-2 text-xs font-medium text-white/45">
+          <div class="bd-line grid grid-cols-[1fr_auto] gap-4 pb-2 text-xs font-medium text-[color:var(--charcoal-soft)]">
             <span>Train and route</span>
-            <span>Departs on {% now "d M" %}</span>
+            <span>Departure</span>
           </div>
           <ul class="m-0 list-none p-0">
             {% for schedule in featured_schedules %}
-            <li class="{% if not forloop.last %}bd-line {% endif %}grid grid-cols-[1fr_auto] items-center gap-4 py-2">
+            <li class="{% if not forloop.last %}bd-line {% endif %}grid grid-cols-[1fr_auto] items-center gap-4 py-1.5">
               <div class="min-w-0">
-                <p class="m-0 truncate text-sm font-semibold text-white">{{ schedule.train.train_name }}</p>
-                <p class="m-0 mt-0.5 truncate text-xs text-white/55">{{ schedule.source_station }} to {{ schedule.destination_station }}</p>
+                <p class="m-0 truncate text-sm font-semibold text-[color:var(--ink)]">{{ schedule.train.train_name }}</p>
+                <p class="m-0 mt-0.5 truncate text-xs text-[color:var(--charcoal-soft)]">{{ schedule.source_station }} to {{ schedule.destination_station }}</p>
               </div>
-              <time class="rounded-md bg-white/[0.07] px-2.5 py-1 text-sm font-semibold tabular-nums text-gold-soft">
-                {{ schedule.departure_time|date:"h:i A" }}
-              </time>
+              <div class="flex flex-col items-end gap-1">
+                <span class="text-[0.68rem] leading-none text-[color:var(--charcoal-soft)]">{{ schedule.departure_time|date:"d M Y" }}</span>
+                <time class="rounded-md bg-[#e6f3ee] px-2.5 py-1 text-sm font-semibold tabular-nums text-[color:var(--flag-green-2)]">
+                  {{ schedule.departure_time|date:"h:i A" }}
+                </time>
+              </div>
             </li>
             {% endfor %}
           </ul>
-          <a href="{% url 'train_schedule' %}" class="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-300 no-underline hover:text-emerald-200">
+          <a href="{% url 'train_schedule' %}" class="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-[color:var(--flag-green)] no-underline hover:text-[color:var(--flag-green-2)]">
             {% if has_more_schedules %}View all train schedules{% else %}Open train schedule{% endif %}
             <i class="bi bi-arrow-right"></i>
           </a>
           {% else %}
-          <a href="{% url 'train_schedule' %}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-300 no-underline hover:text-emerald-200">
+          <a href="{% url 'train_schedule' %}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-[color:var(--flag-green)] no-underline hover:text-[color:var(--flag-green-2)]">
             Browse train schedules <i class="bi bi-arrow-right"></i>
           </a>
           {% endif %}

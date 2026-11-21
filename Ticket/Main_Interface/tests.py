@@ -159,6 +159,13 @@ class SeatReservationTests(TestCase):
 		)
 		self.client.force_login(self.user)
 
+	def test_home_page_displays_schedule_departure_date(self):
+		with patch.object(views.cache, "get", return_value=None), patch.object(views.cache, "set"):
+			response = self.client.get(reverse("home_page"))
+
+		departure_date = timezone.localtime(self.schedule.departure_time).strftime("%d %b %Y")
+		self.assertContains(response, departure_date)
+
 	def test_home_page_excludes_departed_trains(self):
 		now = timezone.now()
 		past_schedule = TrainSchedule.objects.create(
