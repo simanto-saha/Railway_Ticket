@@ -4,13 +4,81 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 from openpyxl import Workbook
 
 from Main_Interface.models import Profile
 from .models import AdminProfile, TrainInformation, TrainSchedule
+
+
+class AdminPasswordChangePageTests(TestCase):
+	def test_password_change_uses_admin_base_layout(self):
+		user = get_user_model().objects.create_user(
+			username="password-change-admin",
+			password="temporary-password",
+		)
+		AdminProfile.objects.create(
+			user=user,
+			full_name="Password Change Admin",
+			email="password-change-admin@example.com",
+			designation="Officer",
+			phone_number="01700000026",
+			one_time_password=False,
+		)
+		self.client.force_login(user)
+
+		response = self.client.get(reverse("admin_password_change"))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, "Restricted Access")
+		self.assertContains(response, "Change Your Password")
+		self.assertContains(response, "Dashboard")
+
+	def test_password_change_post_uses_csrf_token_after_phone_login(self):
+		user = get_user_model().objects.create_user(
+			username="csrf-password-admin",
+			password="temporary-password",
+		)
+		AdminProfile.objects.create(
+			user=user,
+			full_name="CSRF Password Admin",
+			email="csrf-password-admin@example.com",
+			designation="Officer",
+			phone_number="01700000027",
+			one_time_password=False,
+		)
+		client = Client(enforce_csrf_checks=True)
+		home_response = client.get(reverse("home_page"))
+		self.assertEqual(home_response.status_code, 200)
+		csrf_token = client.cookies["csrftoken"].value
+
+		login_response = client.post(
+			reverse("login"),
+			{
+				"csrfmiddlewaretoken": csrf_token,
+				"phone_number": "01700000027",
+				"password": "temporary-password",
+			},
+		)
+		self.assertTrue(login_response.json()["success"])
+
+		page_response = client.get(reverse("admin_password_change"))
+		self.assertIn("no-store", page_response["Cache-Control"])
+		password_change_token = client.cookies["csrftoken"].value
+		response = client.post(
+			reverse("admin_password_change"),
+			{
+				"csrfmiddlewaretoken": password_change_token,
+				"old_password": "temporary-password",
+				"new_password1": "StrongNewPassword_123!",
+				"new_password2": "StrongNewPassword_123!",
+			},
+		)
+
+		self.assertEqual(page_response.status_code, 200)
+		self.assertRedirects(response, reverse("admin_dashboard"))
 
 
 class AdminPhoneNumberUniquenessTests(TestCase):
@@ -73,7 +141,7 @@ class AdminPhoneNumberUniquenessTests(TestCase):
 			1,
 		)[1].splitlines()[0]
 		login_response = self.client.post(
-			reverse("superuser_login"),
+			reverse("login"),
 			{
 				"phone_number": profile.phone_number,
 				"password": temporary_password,
@@ -183,6 +251,14 @@ class DashboardLoginReturnTests(TestCase):
 			response.json()["redirect_url"],
 			reverse("superuser_dashboard"),
 		)
+
+	def test_admin_logout_redirects_to_homepage(self):
+		self.client.force_login(self.user)
+
+		response = self.client.post(reverse("superuser_logout"))
+
+		self.assertRedirects(response, reverse("home_page"))
+		self.assertNotIn("_auth_user_id", self.client.session)
 
 
 class ScheduleImportTests(TestCase):

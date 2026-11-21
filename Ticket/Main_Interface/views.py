@@ -229,6 +229,33 @@ def login_view(request):
     phone_number = request.POST.get('phone_number')
     password = request.POST.get('password')
 
+    admin_profile = AdminProfile.objects.select_related('user').filter(
+        phone_number=phone_number,
+    ).first()
+    if admin_profile:
+        user = authenticate(
+            request,
+            username=admin_profile.user.username,
+            password=password,
+        )
+        if user is None:
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid phone number or password.',
+            })
+
+        login(request, user)
+        redirect_url = (
+            reverse('admin_dashboard')
+            if admin_profile.one_time_password
+            else reverse('admin_password_change')
+        )
+        return JsonResponse({
+            'success': True,
+            'message': 'Logged in successfully!',
+            'redirect_url': redirect_url,
+        })
+
     try:
         profile = Profile.objects.get(phone_number=phone_number)
         username = profile.user.username

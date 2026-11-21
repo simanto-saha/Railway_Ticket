@@ -15,6 +15,59 @@ from Railway_Admin.models import AdminProfile, TrainInformation, TrainSchedule, 
 
 
 class SharedPhoneNumberAccountTests(TestCase):
+	def test_admin_can_log_in_from_homepage_phone_login(self):
+		admin_user = User.objects.create_user(
+			username="admin-homepage-login",
+			password="temporary-password",
+		)
+		AdminProfile.objects.create(
+			user=admin_user,
+			full_name="Admin",
+			email="admin-homepage-login@example.com",
+			designation="Officer",
+			phone_number="01700000024",
+			one_time_password=False,
+		)
+
+		response = self.client.post(
+			reverse("login"),
+			{
+				"phone_number": "01700000024",
+				"password": "temporary-password",
+			},
+		)
+
+		self.assertTrue(response.json()["success"])
+		self.assertEqual(
+			response.json()["redirect_url"],
+			reverse("admin_password_change"),
+		)
+
+	def test_admin_with_changed_password_goes_to_dashboard(self):
+		admin_user = User.objects.create_user(
+			username="admin-homepage-dashboard",
+			password="current-password",
+		)
+		AdminProfile.objects.create(
+			user=admin_user,
+			full_name="Admin",
+			email="admin-homepage-dashboard@example.com",
+			designation="Officer",
+			phone_number="01700000025",
+			one_time_password=True,
+		)
+
+		response = self.client.post(
+			reverse("login"),
+			{
+				"phone_number": "01700000025",
+				"password": "current-password",
+			},
+		)
+
+		self.assertTrue(response.json()["success"])
+		self.assertEqual(response.json()["redirect_url"], reverse("admin_dashboard"))
+
 	def test_passenger_registration_rejects_admin_phone_number(self):
 		admin_user = User.objects.create_user(
 			username="admin-with-phone",

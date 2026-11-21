@@ -1,5 +1,6 @@
 import secrets
 import string
+import logging
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
@@ -19,6 +20,7 @@ from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.dateparse import parse_datetime
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_POST
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
@@ -28,6 +30,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import AdminProfile
 from Main_Interface.models import Profile
 from openpyxl.utils.datetime import from_excel
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_excel_travel_date(value, epoch):
@@ -180,12 +184,8 @@ def superuser_login(request):
     })
 
 
-def superuser_logout(request):
-    logout(request)
-    return redirect('superuser_login')
-
-
 @login_required(login_url='superuser_login')
+@never_cache
 def admin_password_change(request):
     if request.user.is_superuser or not hasattr(request.user, 'adminprofile'):
         return redirect('admin_dashboard')
@@ -259,6 +259,7 @@ def admin_profile_create(request):
                     fail_silently=False,
                 )
         except Exception:
+            logger.exception('Admin account creation or notification failed.')
             return JsonResponse({
                 'success': False,
                 'error': 'Admin profile could not be created or the email could not be sent.',
@@ -970,6 +971,6 @@ def admin_profile_update(request):
 
 def superuser_logout(request):
     logout(request)
-    return redirect('superuser_dashboard')
+    return redirect('home_page')
 
 
