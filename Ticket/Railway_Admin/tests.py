@@ -206,6 +206,11 @@ class DashboardLoginReturnTests(TestCase):
 			one_time_password=True,
 		)
 
+	def test_superuser_login_template_renders_open_state(self):
+		response = self.client.get(reverse("superuser_login"))
+
+		self.assertContains(response, 'data-open-login="true"')
+
 	def test_admin_phone_login_goes_to_admin_dashboard(self):
 		superuser_dashboard_url = reverse("superuser_dashboard")
 		response = self.client.post(

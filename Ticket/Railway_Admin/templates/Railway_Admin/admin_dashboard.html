@@ -55,8 +55,8 @@
             <td class="num">{{ train.total_seats }}</td>
             <td>
                 <div class="actions">
-                    <button type="button" class="btn btn-ghost btn-sm" onclick="editTrain({{ train.pk }})"><i class="bi bi-pencil-square"></i> Edit</button>
-                    <button type="button" class="btn btn-danger btn-sm" onclick="deleteRow('/super-admin/train/{{ train.pk }}/delete/', 'train-row-{{ train.pk }}')"><i class="bi bi-trash3"></i> Delete</button>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="editTrain(this.dataset.id)" data-id="{{ train.pk }}"><i class="bi bi-pencil-square"></i> Edit</button>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(this.dataset.url, this.dataset.rowId)" data-url="/super-admin/train/{{ train.pk }}/delete/" data-row-id="train-row-{{ train.pk }}"><i class="bi bi-trash3"></i> Delete</button>
                 </div>
             </td>
         </tr>
@@ -116,8 +116,8 @@
             </td>
             <td>
                 <div class="actions">
-                    <button type="button" class="btn btn-ghost btn-sm" onclick="editSchedule({{ s.pk }})"><i class="bi bi-pencil-square"></i> Edit</button>
-                    <button type="button" class="btn btn-danger btn-sm" onclick="deleteRow('/super-admin/schedule/{{ s.pk }}/delete/', 'schedule-row-{{ s.pk }}')"><i class="bi bi-trash3"></i> Delete</button>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="editSchedule(this.dataset.id)" data-id="{{ s.pk }}"><i class="bi bi-pencil-square"></i> Edit</button>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(this.dataset.url, this.dataset.rowId)" data-url="/super-admin/schedule/{{ s.pk }}/delete/" data-row-id="schedule-row-{{ s.pk }}"><i class="bi bi-trash3"></i> Delete</button>
                 </div>
             </td>
         </tr>
@@ -173,8 +173,8 @@
             <td class="num">{{ d.contact_number }}</td>
             <td>
                 <div class="actions">
-                    <button type="button" class="btn btn-ghost btn-sm" onclick="editDriver({{ d.pk }})"><i class="bi bi-pencil-square"></i> Edit</button>
-                    <button type="button" class="btn btn-danger btn-sm" onclick="deleteRow('{% url 'driver_delete' d.pk %}', 'driver-row-{{ d.pk }}')"><i class="bi bi-trash3"></i> Delete</button>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="editDriver(this.dataset.id)" data-id="{{ d.pk }}"><i class="bi bi-pencil-square"></i> Edit</button>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(this.dataset.url, this.dataset.rowId)" data-url="{% url 'driver_delete' d.pk %}" data-row-id="driver-row-{{ d.pk }}"><i class="bi bi-trash3"></i> Delete</button>
                 </div>
             </td>
         </tr>
@@ -192,7 +192,7 @@
         <button class="close-btn" onclick="closeModal('trainModal')" aria-label="Close">&times;</button>
         <h2 id="trainModalTitle">Add train</h2>
         <div class="error-text" id="trainError" style="display:none;"></div>
-        <form id="trainForm" onsubmit="submitForm(event, this.dataset.url || '{% url 'train_create' %}', 'trainError', 'trainModal', addTrainRow)">
+        <form id="trainForm" data-create-url="{% url 'train_create' %}" onsubmit="submitForm(event, this.dataset.url || this.dataset.createUrl, 'trainError', 'trainModal', addTrainRow)">
             {% csrf_token %}
             <label>Train number</label>
             <input type="text" name="train_number" placeholder="e.g. 701" required>
@@ -211,7 +211,7 @@
         <button class="close-btn" onclick="closeModal('scheduleModal')" aria-label="Close">&times;</button>
         <h2 id="scheduleModalTitle">Add schedule</h2>
         <div class="error-text" id="scheduleError" style="display:none;"></div>
-        <form id="scheduleForm" onsubmit="submitForm(event, this.dataset.url || '{% url 'schedule_create' %}', 'scheduleError', 'scheduleModal', reloadDashboard)">
+        <form id="scheduleForm" data-create-url="{% url 'schedule_create' %}" onsubmit="submitForm(event, this.dataset.url || this.dataset.createUrl, 'scheduleError', 'scheduleModal', reloadDashboard)">
             {% csrf_token %}
             <label>Train</label>
             <select name="train" required>
@@ -243,7 +243,7 @@
         <button class="close-btn" onclick="closeModal('driverModal')" aria-label="Close">&times;</button>
         <h2 id="driverModalTitle">Add driver</h2>
         <div class="error-text" id="driverError" style="display:none;"></div>
-        <form id="driverForm" onsubmit="submitForm(event, this.dataset.url || '{% url 'driver_create' %}', 'driverError', 'driverModal', reloadDashboard)">
+        <form id="driverForm" data-create-url="{% url 'driver_create' %}" onsubmit="submitForm(event, this.dataset.url || this.dataset.createUrl, 'driverError', 'driverModal', reloadDashboard)">
             {% csrf_token %}
             <label>Train</label>
             <select name="train" required>

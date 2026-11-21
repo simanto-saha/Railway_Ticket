@@ -426,7 +426,7 @@
     {% block extra_scripts %}{% endblock %}
     {% endif %}
 
-    <div class="modal-overlay" id="loginModal">
+    <div class="modal-overlay" id="loginModal" data-open-login="{{ open_login|yesno:'true,false' }}">
         <div class="modal-box">
             <button class="close-btn" onclick="document.getElementById('loginModal').classList.remove('active')" aria-label="Close">&times;</button>
             <h2>Administrator Login</h2>
@@ -445,7 +445,7 @@
         const loginForm = document.getElementById('loginForm');
         const loginError = document.getElementById('loginError');
 
-        if ({{ open_login|yesno:"true,false" }}) {
+        if (document.getElementById('loginModal').dataset.openLogin === 'true') {
             document.getElementById('loginModal').classList.add('active');
         }
 
