@@ -115,7 +115,7 @@
   .brand-logo-wrap{
     display:inline-flex;
     align-items:center; justify-content:center;
-    width:46px; height:46px;
+    width:40px; height:40px;
     border-radius:50%;
     background:var(--mist);
     border:2px solid #fff;
@@ -123,10 +123,18 @@
     flex-shrink:0;
   }
   .brand-logo{
-    width:36px; height:36px;
+    width:30px; height:30px;
     object-fit:cover;
   }
   .brand-text-block{ display:flex; flex-direction:column; line-height:1.2; }
+  .brand-subtitle{
+    color:var(--charcoal-soft);
+    font-family:'Inter',sans-serif;
+    font-size:.66rem;
+    font-weight:500;
+    letter-spacing:.015em;
+    white-space:nowrap;
+  }
   .brand-text{
     font-family:'Merriweather',serif;
     font-weight:900;
@@ -135,45 +143,62 @@
     white-space:nowrap;
   }
   .brand-text .txt-railway{ color:var(--ink); }
-  .brand-text .txt-sheba{ color:var(--flag-red); }
+  .brand-text .txt-sheba{ color:var(--flag-green); }
 
-  /* Brand colours inside the green nav (red would be unreadable on green) */
-  .site-nav .brand-text .txt-railway{ color:#fff; }
-  .site-nav .brand-text .txt-sheba{ color:var(--gold-light); }
+  /* ===== Utility strip ===== */
+  .utility-bar{
+    background:var(--flag-green-2);
+    color:rgba(255,255,255,.9);
+    font-size:.76rem;
+  }
+  .utility-bar .wrap{
+    min-height:30px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+  }
+  .utility-message, .utility-link{ display:inline-flex; align-items:center; gap:8px; }
+  .utility-message i{ color:#a9dfc2; }
+  .utility-link{ color:#fff; font-weight:600; }
+  .utility-link:hover{ color:#c8ecd8; }
+  .utility-divider{ color:rgba(255,255,255,.4); }
 
-  /* ===== Nav bar ===== */
+  /* ===== Main navigation ===== */
   .site-nav{
     position:sticky; top:0; z-index:1030;
-    background:var(--flag-green);
-    border-bottom:3px solid var(--flag-red);
+    background:#fff;
+    border-bottom:1px solid var(--line);
+    box-shadow:0 6px 20px rgba(0,40,25,.07);
   }
   .site-nav .wrap{
     display:flex; align-items:center;
-    height:66px;
-    gap:28px;
+    min-height:64px;
+    gap:22px;
   }
   .nav-center{
-    display:flex; align-items:center; gap:4px;
+    display:flex; align-items:center; gap:4px; margin-left:auto;
   }
   .nav-center a{
-    color:rgba(255,255,255,0.92);
-    font-size:0.94rem;
+    color:var(--ink);
+    font-size:0.9rem;
     font-weight:600;
     position:relative;
-    padding:10px 18px;
-    border-radius:3px;
+    padding:7px 12px;
+    border-radius:6px;
     transition:background 0.15s ease, color 0.15s ease;
   }
-  .nav-center a:hover{ background:rgba(255,255,255,0.12); color:#fff; }
-  .nav-center a.active{ background:var(--flag-green-2); color:#fff; }
+  .nav-center a:hover{ background:#e8f4ed; color:var(--flag-green-2); }
+  .nav-center a.active{ background:var(--flag-green); color:#fff; }
 
   /* Buttons pushed to the far right */
-  .nav-actions{ display:flex; align-items:center; gap:10px; margin-left:auto; }
+  .nav-actions{ display:flex; align-items:center; gap:10px; }
+  .nav-actions .btn{ border-radius:6px; padding:.4rem .85rem; }
+  .nav-login-btn{ color:var(--flag-green-2); border-color:rgba(0,84,62,.32); }
+  .nav-login-btn:hover{ background:#e8f4ed; border-color:var(--flag-green); color:var(--flag-green-2); }
+  .nav-create-btn{ box-shadow:0 5px 14px rgba(0,106,78,.18); }
 
   .profile-menu{ position:relative; }
   .profile-trigger{
     display:flex; align-items:center; gap:9px;
-    border:0; background:transparent; color:#fff;
+    border:0; background:transparent; color:var(--ink);
     padding:4px 0 4px 8px; cursor:pointer;
   }
   .profile-avatar{
@@ -186,7 +211,7 @@
   }
   .profile-avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
   .profile-trigger .profile-name{ font-size:0.9rem; font-weight:600; }
-  .profile-trigger i{ color:rgba(255,255,255,0.85); font-size:0.8rem; }
+  .profile-trigger i{ color:var(--charcoal-soft); font-size:0.8rem; }
   .profile-dropdown{
     position:absolute; top:calc(100% + 13px); right:0;
     min-width:210px; padding:8px;
@@ -221,28 +246,38 @@
   @media (max-width:520px){
     .profile-trigger .profile-name, .profile-trigger > i{ display:none; }
     .profile-dropdown{ right:-8px; }
+    .nav-create-btn{ display:none; }
   }
 
   .navbar-toggler-custom{
     display:none;
-    background:transparent;
-    border:1px solid rgba(255,255,255,0.4);
-    color:#fff;
+    background:#fff;
+    border:1px solid var(--line);
+    color:var(--flag-green);
     border-radius:6px;
     padding:6px 11px;
     font-size:1.2rem;
     line-height:1;
   }
 
-  @media (min-width:861px){
+  @media (min-width:1025px){
     #navMobile{ display:none !important; }
   }
-  @media (max-width:860px){
+  @media (max-width:1024px){
     .site-nav .wrap{ gap:14px; padding:0 16px; }
     .nav-center{ display:none; }
+    .nav-actions{ margin-left:auto; }
     .navbar-toggler-custom{ display:inline-flex; }
     .brand-text{ font-size:1.15rem; }
   }
+  #navMobile{ background:#fff; border-top:1px solid var(--line); }
+  #navMobile .wrap{ display:block; min-height:0; }
+  .mobile-nav-links{ padding:10px 0 16px; }
+  .mobile-nav-link{
+    display:block; padding:10px 12px; border-radius:6px;
+    color:var(--ink); font-weight:600;
+  }
+  .mobile-nav-link:hover, .mobile-nav-link.active{ background:#e8f4ed; color:var(--flag-green-2); }
   @media (max-width:420px){
     .site-nav .wrap{ gap:7px; }
     .brand{ gap:6px; }
@@ -251,6 +286,11 @@
     .nav-actions{ gap:4px; }
     .nav-actions .btn{ padding:0.32rem 0.48rem; font-size:0.72rem; }
     .brand-text{ font-size:0.92rem; }
+    .brand-subtitle{ display:none; }
+  }
+  @media (max-width:520px){
+    .utility-bar .wrap{ min-height:28px; font-size:.68rem; }
+    .utility-bar .wrap > span:last-child{ display:none !important; }
   }
 
   .modal-content{
@@ -400,7 +440,17 @@
 </head>
 <body>
 
-<!-- ============ Nav (logo + links left, buttons right) ============ -->
+<div class="utility-bar">
+  <div class="wrap">
+    <span class="utility-message"><i class="bi bi-train-front"></i> Bangladesh Railway · Official Passenger Services</span>
+    <span class="d-flex align-items-center gap-3">
+      <a class="utility-link" href="{% url 'varification_ticket' %}">Ticket Verification</a>
+      <span class="utility-divider">|</span>
+      <span>Secure online ticketing</span>
+    </span>
+  </div>
+</div>
+
 <nav class="site-nav">
   <div class="wrap">
     <a href="{% url 'home_page' %}" class="brand" aria-label="RailwaySheba home">
@@ -409,6 +459,7 @@
       </span>
       <span class="brand-text-block">
         <span class="brand-text"><span class="txt-railway">Railway</span><span class="txt-sheba">Sheba</span></span>
+        <span class="brand-subtitle">Official train ticket portal</span>
       </span>
     </a>
 
@@ -448,10 +499,10 @@
           </div>
         </div>
       {% else %}
-        <button type="button" class="btn btn-ghost-light" style="color:#fff;border-color:rgba(255,255,255,0.5);" data-bs-toggle="modal" data-bs-target="#loginModal">
+        <button type="button" class="btn btn-ghost-light nav-login-btn" data-bs-toggle="modal" data-bs-target="#loginModal">
           <span>Login</span>
         </button>
-        <button type="button" class="btn btn-accent" style="background:#fff;color:var(--flag-green);box-shadow:none;" data-bs-toggle="modal" data-bs-target="#registerModal">
+        <button type="button" class="btn btn-accent nav-create-btn" data-bs-toggle="modal" data-bs-target="#registerModal">
           <span>Create Account</span>
         </button>
       {% endif %}
@@ -462,13 +513,16 @@
     </div>
   </div>
 
-  <div class="collapse" id="navMobile" style="background:var(--flag-green-2);">
-    <div class="wrap pb-3" style="display:block;height:auto;">
-      <a href="{% url 'home_page' %}" class="d-block py-2" style="color:#fff;">Home</a>
+  <div class="collapse" id="navMobile">
+    <div class="wrap mobile-nav-links">
+      <a href="{% url 'home_page' %}" class="mobile-nav-link{% if request.resolver_match.url_name == 'home_page' %} active{% endif %}">Home</a>
       {% if request.user.is_authenticated %}
-        <a href="{% url 'ticket_page' %}" class="d-block py-2" style="color:#fff;">Book Ticket</a>
+        <a href="{% url 'ticket_page' %}" class="mobile-nav-link">Book Ticket</a>
+      {% else %}
+        <a href="#" class="mobile-nav-link" data-bs-toggle="modal" data-bs-target="#registerModal">Create Account</a>
       {% endif %}
-      <a href="{% url 'train_schedule' %}" class="d-block py-2" style="color:#fff;">Train Schedule</a>
+      <a href="{% url 'train_schedule' %}" class="mobile-nav-link{% if request.resolver_match.url_name == 'train_schedule' %} active{% endif %}">Train Schedule</a>
+      <a href="{% url 'varification_ticket' %}" class="mobile-nav-link{% if request.resolver_match.url_name == 'varification_ticket' %} active{% endif %}">Ticket Verification</a>
     </div>
   </div>
 </nav>
