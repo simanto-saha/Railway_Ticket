@@ -270,11 +270,33 @@
     .navbar-toggler-custom{ display:inline-flex; }
     .brand-text{ font-size:1.15rem; }
   }
-  #navMobile{ background:#fff; border-top:1px solid var(--line); }
-  #navMobile .wrap{ display:block; min-height:0; }
-  .mobile-nav-links{ padding:10px 0 16px; }
+  .mobile-nav-drawer{
+    --bs-offcanvas-width:min(88vw, 380px);
+    top:16px;
+    right:16px;
+    bottom:auto;
+    height:auto;
+    max-height:calc(100vh - 32px);
+    background:rgba(255,255,255,.86);
+    border:1px solid rgba(255,255,255,.7);
+    border-radius:20px;
+    box-shadow:0 18px 48px rgba(0,40,25,.22);
+    -webkit-backdrop-filter:blur(14px);
+    backdrop-filter:blur(14px);
+  }
+  #navMobile .offcanvas-header{
+    padding:20px 24px;
+    border-bottom:1px solid var(--line);
+  }
+  #navMobile .offcanvas-title{
+    color:var(--ink);
+    font-size:1.05rem;
+    font-weight:700;
+  }
+  #navMobile .offcanvas-body{ padding:14px 16px; }
+  .mobile-nav-links{ display:flex; flex-direction:column; gap:5px; }
   .mobile-nav-link{
-    display:block; padding:10px 12px; border-radius:6px;
+    display:block; padding:12px 14px; border-radius:6px;
     color:var(--ink); font-weight:600;
   }
   .mobile-nav-link:hover, .mobile-nav-link.active{ background:#e8f4ed; color:var(--flag-green-2); }
@@ -497,14 +519,20 @@
         </button>
       {% endif %}
 
-      <button type="button" class="navbar-toggler-custom" data-bs-toggle="collapse" data-bs-target="#navMobile" aria-label="Toggle menu">
+      <button type="button" class="navbar-toggler-custom" data-bs-toggle="offcanvas" data-bs-target="#navMobile" aria-controls="navMobile" aria-label="Open menu">
         <i class="bi bi-list"></i>
       </button>
     </div>
   </div>
+</nav>
 
-  <div class="collapse" id="navMobile">
-    <div class="wrap mobile-nav-links">
+<div class="offcanvas offcanvas-end mobile-nav-drawer" tabindex="-1" id="navMobile" aria-labelledby="navMobileLabel">
+  <div class="offcanvas-header">
+    <h2 class="offcanvas-title" id="navMobileLabel">Menu</h2>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close menu"></button>
+  </div>
+  <div class="offcanvas-body">
+    <nav class="mobile-nav-links" aria-label="Mobile navigation">
       <a href="{% url 'home_page' %}" class="mobile-nav-link{% if request.resolver_match.url_name == 'home_page' %} active{% endif %}">Home</a>
       {% if request.user.is_authenticated %}
         <a href="{% url 'ticket_page' %}" class="mobile-nav-link">Book Ticket</a>
@@ -513,9 +541,9 @@
       {% endif %}
       <a href="{% url 'train_schedule' %}" class="mobile-nav-link{% if request.resolver_match.url_name == 'train_schedule' %} active{% endif %}">Train Schedule</a>
       <a href="{% url 'varification_ticket' %}" class="mobile-nav-link{% if request.resolver_match.url_name == 'varification_ticket' %} active{% endif %}">Ticket Verification</a>
-    </div>
+    </nav>
   </div>
-</nav>
+</div>
 
 <main>
   {% block content %}{% endblock %}

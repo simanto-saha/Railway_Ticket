@@ -4,25 +4,109 @@
 
 {% block extra_css %}
 <style>
-  .verify-page{ padding:72px 0 100px; background:var(--mist); min-height:560px; }
-  .verify-card{ max-width:520px; margin:0 auto; background:#fff; border:1px solid var(--line);
-    border-radius:var(--radius-m); box-shadow:var(--shadow-1); padding:32px; }
-  .verify-card h1{ font-size:1.5rem; margin-bottom:6px; }
-  .verify-card > p{ color:var(--charcoal-soft); font-size:0.9rem; margin-bottom:20px; }
-  .verify-card input[type=text]{ width:100%; padding:12px 14px; border:1.5px solid var(--line);
-    border-radius:var(--radius-s); background:var(--mist); color:var(--ink); }
-  .verify-card input[type=text]:focus{ outline:none; border-color:var(--flag-green);
+  /* ---------- Page ---------- */
+  .verify-page{ padding:64px 0 100px; min-height:620px;
+    background:
+      radial-gradient(circle at 12% 8%, rgba(0,106,78,0.10), transparent 38%),
+      radial-gradient(circle at 90% 90%, rgba(0,106,78,0.07), transparent 40%),
+      var(--mist); }
+  .verify-card{ max-width:540px; margin:0 auto; background:#fff; border:1px solid var(--line);
+    border-radius:var(--radius-m); box-shadow:var(--shadow-1); overflow:hidden;
+    animation:verifyUp .45s ease both; }
+
+  /* ---------- Header ---------- */
+  .verify-head{ position:relative; overflow:hidden; text-align:center;
+    padding:34px 32px 30px; background:var(--flag-green); color:#fff; }
+  .verify-head::before,
+  .verify-head::after{ content:""; position:absolute; border-radius:50%;
+    background:rgba(255,255,255,0.08); }
+  .verify-head::before{ width:180px; height:180px; top:-90px; right:-50px; }
+  .verify-head::after{ width:120px; height:120px; bottom:-70px; left:-30px; }
+  .verify-icon{ width:64px; height:64px; margin:0 auto 14px; display:grid; place-items:center;
+    font-size:1.8rem; border-radius:50%; background:#fff; color:var(--flag-green);
+    box-shadow:0 0 0 7px rgba(255,255,255,0.18); }
+  .verify-head h1{ font-size:1.6rem; margin:0 0 6px; color:#fff; }
+  .verify-head p{ margin:0; font-size:0.9rem; color:rgba(255,255,255,0.85); }
+
+  /* ---------- Form ---------- */
+  .verify-body{ padding:28px 32px 30px; }
+  .verify-body .field-label{ display:block; margin-bottom:8px; }
+  .input-group-verify{ position:relative; }
+  .input-group-verify i{ position:absolute; left:15px; top:50%; transform:translateY(-50%);
+    color:var(--charcoal-soft); pointer-events:none; transition:color .2s; }
+  .input-group-verify input[type=text]{ width:100%; padding:14px 14px 14px 44px;
+    border:1.5px solid var(--line); border-radius:var(--radius-s); background:var(--mist);
+    color:var(--ink); letter-spacing:0.5px;
+    transition:border-color .2s, box-shadow .2s, background .2s; }
+  .input-group-verify input[type=text]:focus{ outline:none; border-color:var(--flag-green);
     box-shadow:0 0 0 4px rgba(0,106,78,0.12); background:#fff; }
-  .result{ margin-top:22px; padding:16px; border-radius:var(--radius-s); }
+  .input-group-verify:focus-within i{ color:var(--flag-green); }
+  .verify-btn{ display:flex; align-items:center; justify-content:center; gap:8px;
+    padding-top:12px; padding-bottom:12px; font-weight:600;
+    transition:transform .2s, box-shadow .2s; }
+  .verify-btn:hover{ transform:translateY(-2px); box-shadow:0 8px 18px rgba(0,0,0,0.14); }
+  .verify-btn:active{ transform:translateY(0); }
+
+  /* ---------- Result ---------- */
+  .result{ margin-top:26px; border-radius:var(--radius-m); overflow:hidden;
+    animation:verifyUp .4s ease both; }
   .result.valid{ background:#e6f3ee; border:1px solid var(--flag-green); }
   .result.invalid{ background:#fff2f0; border:1px solid var(--flag-red); }
-  .result h2{ font-size:1.1rem; margin-bottom:0; display:flex; align-items:center; gap:8px; }
+  .result-head{ display:flex; align-items:center; gap:14px; padding:18px; }
+  .result-badge{ flex:0 0 46px; height:46px; display:grid; place-items:center;
+    border-radius:50%; font-size:1.4rem; color:#fff; animation:verifyPop .45s .15s ease both; }
+  .result.valid .result-badge{ background:var(--flag-green); }
+  .result.invalid .result-badge{ background:var(--flag-red); }
+  .result h2{ font-size:1.12rem; margin:0 0 2px; }
   .result.valid h2{ color:var(--flag-green); }
   .result.invalid h2{ color:var(--flag-red-2); }
-  .result-details{ margin-top:12px; font-size:0.88rem; color:var(--charcoal); }
-  .result-details div{ display:flex; justify-content:space-between; padding:6px 0;
-    border-top:1px solid rgba(0,0,0,0.06); }
-  .result-details span{ color:var(--charcoal-soft); }
+  .result-head p{ margin:0; font-size:0.83rem; color:var(--charcoal-soft); }
+
+  /* ---------- Ticket style details ---------- */
+  .ticket-body{ position:relative; background:#fff; padding:22px 18px 18px;
+    border-top:2px dashed rgba(0,106,78,0.35); }
+  .ticket-body::before,
+  .ticket-body::after{ content:""; position:absolute; top:-11px; width:20px; height:20px;
+    border-radius:50%; background:#fff; border:1px solid var(--flag-green); }
+  .ticket-body::before{ left:-11px; }
+  .ticket-body::after{ right:-11px; }
+
+  .ticket-route{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center;
+    gap:12px; margin-bottom:18px; }
+  .station small,
+  .info-box small{ display:block; margin-bottom:3px; font-size:0.72rem; text-transform:uppercase;
+    letter-spacing:0.8px; color:var(--charcoal-soft); }
+  .station strong{ font-size:1.05rem; color:var(--ink); overflow-wrap:anywhere; }
+  .station.to{ text-align:right; }
+  .route-line{ display:flex; align-items:center; gap:6px; color:var(--flag-green); }
+  .route-line::before,
+  .route-line::after{ content:""; width:26px; border-top:2px dotted var(--flag-green); }
+
+  .ticket-info{ display:grid; gap:10px; }
+  .info-box{ display:flex; align-items:center; gap:12px; padding:12px 14px;
+    border:1px solid var(--line); border-radius:var(--radius-s); background:var(--mist); }
+  .info-box > i{ font-size:1.25rem; color:var(--flag-green); }
+  .info-box strong{ font-size:0.92rem; color:var(--charcoal); overflow-wrap:anywhere; }
+
+  /* ---------- Animation ---------- */
+  @keyframes verifyUp{ from{ opacity:0; transform:translateY(14px); }
+    to{ opacity:1; transform:translateY(0); } }
+  @keyframes verifyPop{ 0%{ transform:scale(0.4); } 70%{ transform:scale(1.12); }
+    100%{ transform:scale(1); } }
+  @media (prefers-reduced-motion: reduce){
+    .verify-card, .result, .result-badge{ animation:none; }
+    .verify-btn, .verify-btn:hover{ transition:none; transform:none; }
+  }
+
+  /* ---------- Mobile ---------- */
+  @media (max-width:575px){
+    .verify-page{ padding:32px 16px 64px; }
+    .verify-head{ padding:28px 20px 24px; }
+    .verify-body{ padding:22px 18px 24px; }
+    .route-line::before,
+    .route-line::after{ width:10px; }
+    .station strong{ font-size:0.95rem; }
+  }
 </style>
 {% endblock %}
 
@@ -30,33 +114,83 @@
 <section class="verify-page">
   <div class="wrap">
     <div class="verify-card">
-      <h1>Verify Ticket</h1>
-      <p>Enter the confirmation number to check if the ticket is valid.</p>
 
-      <form method="get" action="{% url 'varification_ticket' %}">
-        <label class="field-label" for="confirmation_number">Confirmation Number</label>
-        <input type="text" id="confirmation_number" name="confirmation_number"
-               value="{{ code }}" placeholder="Enter confirmation number" required>
-        <button type="submit" class="btn btn-accent w-100 mt-3">Verify</button>
-      </form>
+      <div class="verify-head">
+        <div class="verify-icon"><i class="bi bi-ticket-perforated-fill"></i></div>
+        <h1>Verify Ticket</h1>
+        <p>Enter the confirmation number to check if the ticket is valid.</p>
+      </div>
 
-      {% if checked %}
-        {% if ticket %}
-          <div class="result valid">
-            <h2><i class="bi bi-check-circle-fill"></i> Ticket is valid</h2>
-            <div class="result-details">
-              <div><span>Train</span><strong>{{ ticket.train_schedule.train.train_name }}</strong></div>
-              <div><span>Route</span><strong>{{ ticket.train_schedule.source_station }} → {{ ticket.train_schedule.destination_station }}</strong></div>
-              <div><span>Departure</span><strong>{{ ticket.train_schedule.departure_time|date:"d M Y, h:i A" }}</strong></div>
-              
+      <div class="verify-body">
+        <form method="get" action="{% url 'varification_ticket' %}">
+          <label class="field-label" for="confirmation_number">Confirmation Number</label>
+          <div class="input-group-verify">
+            <i class="bi bi-upc-scan"></i>
+            <input type="text" id="confirmation_number" name="confirmation_number"
+                   value="{{ code|default_if_none:'' }}" placeholder="Enter confirmation number"
+                   autocomplete="off" required>
+          </div>
+          <button type="submit" class="btn btn-accent w-100 mt-3 verify-btn">
+            <i class="bi bi-shield-check"></i> Verify
+          </button>
+        </form>
+
+        {% if checked %}
+          {% if ticket %}
+            <div class="result valid" role="status">
+              <div class="result-head">
+                <div class="result-badge"><i class="bi bi-check-lg"></i></div>
+                <div>
+                  <h2>Ticket is valid</h2>
+                  <p>This confirmation number has been verified.</p>
+                </div>
+              </div>
+
+              <div class="ticket-body">
+                <div class="ticket-route">
+                  <div class="station">
+                    <small>From</small>
+                    <strong>{{ ticket.train_schedule.source_station }}</strong>
+                  </div>
+                  <div class="route-line"><i class="bi bi-train-front-fill"></i></div>
+                  <div class="station to">
+                    <small>To</small>
+                    <strong>{{ ticket.train_schedule.destination_station }}</strong>
+                  </div>
+                </div>
+
+                <div class="ticket-info">
+                  <div class="info-box">
+                    <i class="bi bi-train-front"></i>
+                    <div>
+                      <small>Train</small>
+                      <strong>{{ ticket.train_schedule.train.train_name }}</strong>
+                    </div>
+                  </div>
+                  <div class="info-box">
+                    <i class="bi bi-calendar-event"></i>
+                    <div>
+                      <small>Departure</small>
+                      <strong>{{ ticket.train_schedule.departure_time|date:"d M Y, h:i A" }}</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        {% else %}
-          <div class="result invalid">
-            <h2><i class="bi bi-x-circle-fill"></i> Ticket is invalid</h2>
-          </div>
+          {% else %}
+            <div class="result invalid" role="alert">
+              <div class="result-head">
+                <div class="result-badge"><i class="bi bi-x-lg"></i></div>
+                <div>
+                  <h2>Ticket is invalid</h2>
+                  <p>Please check the confirmation number and try again.</p>
+                </div>
+              </div>
+            </div>
+          {% endif %}
         {% endif %}
-      {% endif %}
+      </div>
+
     </div>
   </div>
 </section>
